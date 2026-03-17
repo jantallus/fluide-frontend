@@ -29,26 +29,21 @@ export default function PlanningAdmin() {
   useEffect(() => { loadInitialData(); }, []);
 
   const loadInitialData = async () => {
-    try {
-      const [apptsRes, monRes, flightRes] = await Promise.all([
-        apiFetch('/api/bookings'), 
-        apiFetch('/api/monitors'), 
-        apiFetch('/api/vols')
-      ]);
+  try {
+    const [apptsRes, monRes, flightRes] = await Promise.all([
+      apiFetch('/api/appointments'), // C'est celui qui contient tes "chiffres"
+      apiFetch('/api/monitors'),
+      apiFetch('/api/vols')
+    ]);
 
-      if (apptsRes.ok) {
-        const rawEvents = await apptsRes.json();
-        setAppointments(rawEvents);
-        setCalendarKey(prev => prev + 1);
-      }
-      
-      if (monRes.ok) {
+    if (apptsRes.ok) setAppointments(await apptsRes.json());
+    if (monRes.ok) {
         const monData = await monRes.json();
-        setMonitors(monData.map((m: any) => ({ id: m.id, title: m.first_name })));
-      }
-      if (flightRes.ok) setFlightTypes(await flightRes.json());
-    } catch (err) { console.error(err); }
-  };
+        setMonitors(monData.map((m: any) => ({ id: m.id.toString(), title: m.first_name })));
+    }
+    if (flightRes.ok) setFlightTypes(await flightRes.json());
+  } catch (err) { console.error(err); }
+};
 
   const handleEventClick = (info: any) => {
     const event = info.event;
@@ -74,33 +69,28 @@ export default function PlanningAdmin() {
   };
 
   const handleSaveMove = async () => {
-  if (!selectedEvent || !selectedEvent.id) return;
-
+  if (!selectedEvent?.id) return;
+  
   try {
-    // 💡 VERIFICATION : Est-ce que ton backend utilise 'appointments' ou 'slots' ?
-    // Si tu as un doute, essaie de remplacer 'appointments' par 'slots' ci-dessous
+    // On repasse sur /api/appointments car c'est là que sont tes données
     const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
       method: 'PUT',
       body: JSON.stringify({ 
+        title: selectedEvent.title, // Le nom du passager
         monitorId: selectedEvent.monitorId,
         notes: selectedEvent.notes,
-        title: selectedEvent.title,
         status: selectedEvent.title ? 'booked' : 'available'
       })
     });
 
     if (res.ok) {
       setShowEditModal(false);
-      await loadInitialData(); // On recharge pour voir le changement
+      await loadInitialData();
     } else {
-      const errorData = await res.json();
-      console.error("Erreur Backend:", errorData);
-      alert("Erreur lors de la mise à jour : " + (errorData.message || "Inconnu"));
+      // Si ça remet 404 ici, c'est que ton BACKEND n'autorise pas le PUT sur appointments
+      alert("Le serveur refuse la modification (Erreur 404). Vérifie le Backend.");
     }
-  } catch (err) {
-    console.error("Erreur réseau:", err);
-    alert("Impossible de joindre le serveur.");
-  }
+  } catch (err) { alert("Erreur de connexion"); }
 };
 const handleClearReservation = async () => {
     if (!selectedEvent || !selectedEvent.id) return;
