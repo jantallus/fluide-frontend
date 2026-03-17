@@ -102,6 +102,31 @@ export default function PlanningAdmin() {
     alert("Impossible de joindre le serveur.");
   }
 };
+const handleClearReservation = async () => {
+    if (!selectedEvent || !selectedEvent.id) return;
+    if (!confirm("Voulez-vous vraiment libérer ce créneau et supprimer la réservation ?")) return;
+
+    try {
+      // On remet le titre à vide et le statut à 'available'
+      const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          title: "", 
+          status: 'available', 
+          notes: "" 
+        })
+      });
+
+      if (res.ok) {
+        setShowEditModal(false);
+        await loadInitialData(); // On rafraîchit le calendrier
+      } else {
+        alert("Erreur lors de la libération du créneau.");
+      }
+    } catch (err) {
+      console.error("Erreur réseau:", err);
+    }
+  };
   return (
     <div className="p-4 bg-white min-h-screen">
       <style jsx global>{`
