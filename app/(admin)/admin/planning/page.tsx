@@ -74,67 +74,34 @@ export default function PlanningAdmin() {
   };
 
   const handleSaveMove = async () => {
-    if (!selectedEvent) return;
-    const hasMoved = targetDate !== selectedEvent.oldStart || selectedEvent.monitorId !== selectedEvent.oldMonitorId;
+  if (!selectedEvent || !selectedEvent.id) return;
 
-    try {
-      let res;
-      if (hasMoved && selectedEvent.title && selectedEvent.title.trim() !== "") {
-        const targetSlot = appointments.find(s => {
-          const sDate = new Date(s.start);
-          const sFormatted = `${sDate.getFullYear()}-${String(sDate.getMonth() + 1).padStart(2, '0')}-${String(sDate.getDate()).padStart(2, '0')}T${String(sDate.getHours()).padStart(2, '0')}:${String(sDate.getMinutes()).padStart(2, '0')}`;
-          return sFormatted === targetDate && s.resourceId === selectedEvent.monitorId && s.status === 'available';
-        });
+  try {
+    // 💡 VERIFICATION : Est-ce que ton backend utilise 'appointments' ou 'slots' ?
+    // Si tu as un doute, essaie de remplacer 'appointments' par 'slots' ci-dessous
+    const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        monitorId: selectedEvent.monitorId,
+        notes: selectedEvent.notes,
+        title: selectedEvent.title,
+        status: selectedEvent.title ? 'booked' : 'available'
+      })
+    });
 
-        if (!targetSlot) return alert("Destination occupée ou inexistante.");
-
-        await apiFetch(`/api/appointments/${selectedEvent.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ title: null, status: 'available', notes: '' })
-        });
-
-        res = await apiFetch(`/api/appointments/${targetSlot.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ title: selectedEvent.title, status: 'booked', notes: selectedEvent.notes })
-        });
-      } else {
-        res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ 
-            monitorId: selectedEvent.monitorId,
-            notes: selectedEvent.notes,
-            title: selectedEvent.title && selectedEvent.title.trim() !== "" ? selectedEvent.title : null,
-            status: selectedEvent.title && selectedEvent.title.trim() !== "" ? 'booked' : 'available'
-          })
-        });
-      }
-
-      if (res && res.ok) {
-        setShowEditModal(false);
-        await loadInitialData();
-      } else {
-        const errJson = await res?.json();
-        alert("Erreur serveur : " + (errJson?.error || "Vérifiez vos données"));
-      }
-    } catch (err) {
-      alert("Erreur de connexion réseau.");
+    if (res.ok) {
+      setShowEditModal(false);
+      await loadInitialData(); // On recharge pour voir le changement
+    } else {
+      const errorData = await res.json();
+      console.error("Erreur Backend:", errorData);
+      alert("Erreur lors de la mise à jour : " + (errorData.message || "Inconnu"));
     }
-  };
-
-  const handleClearReservation = async () => {
-    if(!confirm("Libérer ce créneau ?")) return;
-    try {
-      const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, { 
-        method: 'PUT', 
-        body: JSON.stringify({ title: null, status: 'available', notes: '' }) 
-      });
-      if (res.ok) {
-        setShowEditModal(false); 
-        await loadInitialData();
-      }
-    } catch (err) { console.error(err); }
-  };
-
+  } catch (err) {
+    console.error("Erreur réseau:", err);
+    alert("Impossible de joindre le serveur.");
+  }
+};
   return (
     <div className="p-4 bg-white min-h-screen">
       <style jsx global>{`
