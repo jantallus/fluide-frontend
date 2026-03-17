@@ -31,7 +31,7 @@ export default function PlanningAdmin() {
   const loadInitialData = async () => {
     try {
       const [apptsRes, monRes, flightRes] = await Promise.all([
-        apiFetch('/api/appointments'), 
+        apiFetch('/api/bookings'), 
         apiFetch('/api/monitors'), 
         apiFetch('/api/vols')
       ]);
