@@ -1,0 +1,129 @@
+"use client";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function PlanningPage() {
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newSlotDate, setNewSlotDate] = useState('');
+  const [userName, setUserName] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedId = localStorage.getItem('userId');
+    const role = localStorage.getItem('userRole');
+    const name = localStorage.getItem('userName');
+
+    if (!storedId || role !== 'monitor') {
+      router.push('/login');
+      return;
+    }
+
+    setUserName(name || 'Moniteur');
+    fetchSlots(storedId);
+  }, []);
+
+  const fetchSlots = async (id: string) => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/monitor/slots/${id}`);
+      const data = await res.json();
+      setSlots(data);
+    } catch (err) {
+      console.error("Erreur chargement:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const monitorId = localStorage.getItem('userId');
+    if (!newSlotDate) return;
+
+    const res = await fetch('http://localhost:3001/api/slots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monitor_id: monitorId, start_time: newSlotDate }),
+    });
+
+    if (res.ok) {
+      setNewSlotDate('');
+      fetchSlots(monitorId!);
+    }
+  };
+
+  const toggleStatus = async (slotId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
+    const res = await fetch(`http://localhost:3001/api/slots/${slotId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      setSlots((prev: any) => prev.map((s: any) => s.id === slotId ? { ...s, status: newStatus } : s));
+    }
+  };
+
+  if (loading) return <div className="p-10 text-center font-bold italic">Chargement du planning...</div>;
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <header className="max-w-2xl mx-auto mb-10 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Planning : {userName}</h1>
+          <p className="text-slate-500 font-medium">Gérez vos disponibilités de vol.</p>
+        </div>
+        <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="p-3 bg-white rounded-2xl shadow-sm hover:text-rose-500 transition-colors">🚪</button>
+      </header>
+
+      <div className="max-w-2xl mx-auto">
+        {/* FORMULAIRE D'AJOUT */}
+        <section className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
+          <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Ouvrir une nouvelle date</h2>
+          <form onSubmit={handleAddSlot} className="flex flex-col md:flex-row gap-3">
+            <input 
+              type="datetime-local" 
+              className="flex-1 p-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 rounded-2xl outline-none font-bold text-slate-700 transition-all"
+              value={newSlotDate}
+              onChange={(e) => setNewSlotDate(e.target.value)}
+              required
+            />
+            <button type="submit" className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-sky-600 transition-all shadow-lg active:scale-95">
+              Ajouter
+            </button>
+          </form>
+        </section>
+
+        {/* LISTE DES CRÉNEAUX */}
+        <div className="space-y-4">
+          {slots.length === 0 && <p className="text-center text-slate-400 py-10 italic">Aucun créneau créé pour le moment.</p>}
+          {slots.map((s: any) => (
+            <div key={s.id} className={`p-6 rounded-[32px] border flex justify-between items-center transition-all ${s.status === 'booked' ? 'bg-blue-50 border-blue-100 shadow-inner' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  {new Date(s.start_time).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                </span>
+                <p className="text-2xl font-black text-slate-800 tracking-tighter">
+                  {new Date(s.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+
+              {s.status === 'booked' ? (
+                <div className="text-right">
+                  <span className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-blue-100">💰 Réservé</span>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => toggleStatus(s.id, s.status)}
+                  className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-90 ${s.status === 'available' ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white' : 'bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
+                >
+                  {s.status === 'available' ? 'Ouvert' : 'Fermé'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
