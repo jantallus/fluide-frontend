@@ -27,7 +27,7 @@ export default function PlanningAdmin() {
       ]);
       if (appRes.ok) setAppointments(await appRes.json());
       if (monRes.ok) setMonitors(await monRes.json());
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Erreur chargement planning:", err); }
   };
 
   return (
@@ -46,7 +46,7 @@ export default function PlanningAdmin() {
           resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
           events={appointments.map(a => ({
             ...a,
-            // SI LIBRE : Titre vide. SI RÉSERVÉ : Nom + Tel
+            // Titre vide si libre, sinon Nom + Tel
             title: a.status === 'booked' ? `${a.title || 'Client'} 📞 ${a.notes || ''}` : '',
             backgroundColor: a.status === 'booked' ? '#0f172a' : 'transparent',
             textColor: '#ffffff',
@@ -56,11 +56,12 @@ export default function PlanningAdmin() {
           slotMinTime="08:00:00"
           slotMaxTime="19:00:00"
           height="auto"
+          allDaySlot={false}
           eventClick={(info) => { setSelectedEvent(info.event); setShowEditModal(true); }}
         />
       </div>
 
-      {/* MODALE RÉSERVATION / ÉDITION */}
+      {/* MODALE RÉSERVATION */}
       {showEditModal && selectedEvent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl text-slate-900">
