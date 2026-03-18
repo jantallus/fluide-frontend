@@ -48,7 +48,7 @@ export default function PlanningAdmin() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">Planning <span className="text-sky-500">Pro</span></h1>
-        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl hover:bg-sky-500 transition-all">⚙️ Générer auto</button>
+        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl">⚙️ Générer auto</button>
       </div>
 
       <div className="max-w-7xl mx-auto bg-white rounded-[40px] shadow-2xl p-6 overflow-hidden border border-slate-200">
@@ -61,9 +61,9 @@ export default function PlanningAdmin() {
           events={appointments.map(a => ({
             ...a,
             title: a.status === 'booked' ? `${a.title} ${a.notes ? '📞 ' + a.notes : ''}` : '',
-            backgroundColor: a.status === 'booked' ? '#bae6fd' : '#ffffff', 
-            textColor: a.status === 'booked' ? '#0369a1' : '#94a3b8',
-            borderColor: a.status === 'booked' ? '#7dd3fc' : '#f1f5f9',
+            backgroundColor: a.status === 'booked' ? (a.title.includes('BLOQUÉ') ? '#fecaca' : '#bae6fd') : '#ffffff', 
+            textColor: a.status === 'booked' ? (a.title.includes('BLOQUÉ') ? '#991b1b' : '#0369a1') : '#94a3b8',
+            borderColor: '#e2e8f0',
             extendedProps: { ...a }
           }))}
           slotMinTime="08:00:00"
@@ -85,35 +85,42 @@ export default function PlanningAdmin() {
 
             {activeTab === 'reserver' ? (
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <input id="pop_name" type="text" defaultValue={selectedEvent.title.split('📞')[0].trim()} placeholder="Nom du passager" className="w-full p-4 rounded-2xl bg-slate-50 border-none font-bold" />
-                </div>
-                <input id="pop_phone" type="text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Téléphone" className="w-full p-4 rounded-2xl bg-slate-50 border-none font-bold" />
-                <select id="pop_monitor" className="w-full p-4 rounded-2xl bg-slate-50 border-none font-bold">
+                <input id="pop_name" type="text" defaultValue={selectedEvent.title.split('📞')[0].trim()} placeholder="Nom client" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold" />
+                <input id="pop_phone" type="text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Téléphone" className="p-4 rounded-2xl bg-slate-50 border-none font-bold" />
+                <select id="pop_monitor" className="p-4 rounded-2xl bg-slate-50 border-none font-bold">
                   {monitors.map(m => (<option key={m.id} value={m.id} selected={m.id == selectedEvent.extendedProps.monitor_id}>{m.first_name}</option>))}
                 </select>
-                <select id="pop_flight" className="col-span-2 w-full p-4 rounded-2xl bg-slate-50 border-none font-bold">
-                  <option value="">Choisir un type de vol...</option>
+                <select id="pop_flight" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold">
+                  <option value="">Type de vol...</option>
                   {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
                 </select>
-                <button onClick={() => handleUpdate({ title: (document.getElementById('pop_name') as any).value, notes: (document.getElementById('pop_phone') as any).value, monitor_id: (document.getElementById('pop_monitor') as any).value, status: 'booked' })} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic">Enregistrer le vol</button>
+                <button onClick={() => handleUpdate({ title: (document.getElementById('pop_name') as any).value, notes: (document.getElementById('pop_phone') as any).value, monitor_id: (document.getElementById('pop_monitor') as any).value, status: 'booked' })} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
+                {selectedEvent.extendedProps.status === 'booked' && (
+                  <button onClick={async () => { if(confirm("Libérer ?")) { await apiFetch(`/api/admin/appointments/${selectedEvent.id}/cancel`, { method: 'DELETE' }); setShowEditModal(false); loadData(); setCalendarKey(k=>k+1); }}} className="col-span-2 text-rose-500 font-black text-[10px] uppercase mt-2">Libérer le créneau</button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
-                <textarea id="pop_notes" placeholder="Notes de blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none"></textarea>
-                <button onClick={() => handleUpdate({ title: 'BLOQUÉ', notes: (document.getElementById('pop_notes') as any).value, status: 'booked' })} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer ce créneau</button>
+                <textarea id="pop_notes" placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => handleUpdate({ title: '🚫 BLOQUÉ', notes: (document.getElementById('pop_notes') as any).value, status: 'booked' })} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
+                  <button onClick={async () => {
+                      await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes: (document.getElementById('pop_notes') as any).value }) });
+                      setShowEditModal(false); loadData(); setCalendarKey(k=>k+1);
+                    }} className="bg-rose-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer TOUS</button>
+                </div>
               </div>
             )}
-            <button onClick={() => setShowEditModal(false)} className="w-full py-2 font-bold text-slate-300 uppercase text-[10px] text-center mt-4">Fermer</button>
+            <button onClick={() => setShowEditModal(false)} className="w-full py-2 font-bold text-slate-300 uppercase text-[10px] text-center mt-6">Fermer</button>
           </div>
         </div>
       )}
 
-      {/* MODALE GÉNÉRATION AUTO */}
+      {/* MODALE GÉNÉRATION */}
       {showGenModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-black mb-8 uppercase italic text-center">Génération Auto</h2>
+          <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl text-slate-900">
+            <h2 className="text-2xl font-black mb-8 uppercase italic text-center">Génération</h2>
             <div className="space-y-6">
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, startDate: e.target.value})} />
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
@@ -123,7 +130,7 @@ export default function PlanningAdmin() {
                   if (res.ok) { setShowGenModal(false); loadData(); setCalendarKey(k => k + 1); }
                   setIsGenerating(false);
                 }} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase italic shadow-xl">
-                {isGenerating ? "⏳ Génération..." : "Lancer la génération"}
+                {isGenerating ? "⏳..." : "Générer"}
               </button>
               <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px] text-center">Annuler</button>
             </div>
