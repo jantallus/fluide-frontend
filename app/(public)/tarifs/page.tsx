@@ -17,7 +17,7 @@ export default function TarifsPage() {
 
   useEffect(() => {
     // Appel à ton API Backend
-    fetch('http://localhost:3001/api/vols')
+    fetch('https://fluide-production.up.railway.app/api/vols')
       .then(res => res.json())
       .then(data => {
         setVols(data);

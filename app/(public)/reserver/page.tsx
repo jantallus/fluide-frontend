@@ -17,7 +17,7 @@ function ReserverContent() {
 
   useEffect(() => {
     // On récupère tous les créneaux du backend
-    fetch('http://localhost:3001/api/slots')
+    fetch('https://fluide-production.up.railway.app/api/slots')
       .then(res => res.json())
       .then(data => {
         // On ne garde que ceux qui sont "available"
@@ -36,7 +36,7 @@ function ReserverContent() {
     const userId = "8f61c474-006e-4ba0-89d6-2f393ac420dd"; 
 
     try {
-      const res = await fetch('http://localhost:3001/api/bookings', {
+      const res = await fetch('https://fluide-production.up.railway.app/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
