@@ -1,4 +1,4 @@
-// Version Production 2.1 - Fix Localhost Redirect
+// Version Production 2.2 - Fix Localhost Redirect
 const BASE_URL = 'https://fluide-production.up.railway.app'; 
 
 export async function apiFetch(endpoint: string, options: any = {}) {
