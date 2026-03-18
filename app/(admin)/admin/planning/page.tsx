@@ -74,10 +74,9 @@ export default function PlanningAdmin() {
         />
       </div>
 
-      {/* MODALE RÉSERVATION / BLOCAGE */}
       {showEditModal && selectedEvent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl">
+          <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl text-slate-900">
             <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
               <button onClick={() => setActiveTab('reserver')} className={`flex-1 py-2 rounded-xl font-black text-[10px] uppercase ${activeTab === 'reserver' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>Réservation</button>
               <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-xl font-black text-[10px] uppercase ${activeTab === 'notes' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>Notes / Blocage</button>
@@ -94,18 +93,24 @@ export default function PlanningAdmin() {
                   <option value="">Type de vol...</option>
                   {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
                 </select>
-                <button onClick={() => handleUpdate({ title: (document.getElementById('pop_name') as any).value, notes: (document.getElementById('pop_phone') as any).value, monitor_id: (document.getElementById('pop_monitor') as any).value, status: 'booked' })} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
+                <button onClick={() => handleUpdate({ 
+                    title: (document.getElementById('pop_name') as any).value, 
+                    notes: (document.getElementById('pop_phone') as any).value, 
+                    monitor_id: (document.getElementById('pop_monitor') as any).value, 
+                    status: 'booked' 
+                })} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
                 {selectedEvent.extendedProps.status === 'booked' && (
                   <button onClick={async () => { if(confirm("Libérer ?")) { await apiFetch(`/api/admin/appointments/${selectedEvent.id}/cancel`, { method: 'DELETE' }); setShowEditModal(false); loadData(); setCalendarKey(k=>k+1); }}} className="col-span-2 text-rose-500 font-black text-[10px] uppercase mt-2">Libérer le créneau</button>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                <textarea id="pop_notes" placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
+                <textarea id="pop_notes_text" placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => handleUpdate({ title: '🚫 BLOQUÉ', notes: (document.getElementById('pop_notes') as any).value, status: 'booked' })} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
+                  <button onClick={() => handleUpdate({ title: '🚫 BLOQUÉ', notes: (document.getElementById('pop_notes_text') as any).value, status: 'booked' })} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
                   <button onClick={async () => {
-                      await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes: (document.getElementById('pop_notes') as any).value }) });
+                      const notes = (document.getElementById('pop_notes_text') as any).value;
+                      await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes }) });
                       setShowEditModal(false); loadData(); setCalendarKey(k=>k+1);
                     }} className="bg-rose-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer TOUS</button>
                 </div>
