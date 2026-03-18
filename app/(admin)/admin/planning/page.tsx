@@ -97,26 +97,26 @@ const handleClearReservation = async () => {
     if (!confirm("Voulez-vous vraiment libérer ce créneau et supprimer la réservation ?")) return;
 
     try {
-      // On remet le titre à vide et le statut à 'available'
-      const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ 
-          title: "", 
-          status: 'available', 
-          notes: "" 
-        })
+      // 1. On utilise la route '/clear' que nous avons ajoutée à l'index.js
+      // 2. Pas besoin de 'body' car le serveur sait déjà quoi vider
+      const res = await apiFetch(`/api/appointments/${selectedEvent.id}/clear`, {
+        method: 'PUT'
       });
 
       if (res.ok) {
+        // 3. On ferme la modale et on recharge les données
         setShowEditModal(false);
-        await loadInitialData(); // On rafraîchit le calendrier
+        await loadInitialData(); 
+        alert("Le créneau a été libéré.");
       } else {
-        alert("Erreur lors de la libération du créneau.");
+        const errorData = await res.json();
+        alert("Erreur : " + (errorData.error || "Impossible de libérer le créneau"));
       }
     } catch (err) {
-      console.error("Erreur réseau:", err);
+      console.error("Erreur lors de la libération:", err);
+      alert("Une erreur est survenue.");
     }
-  };
+};
   return (
     <div className="p-4 bg-white min-h-screen">
       <style jsx global>{`
