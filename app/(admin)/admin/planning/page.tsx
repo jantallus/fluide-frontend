@@ -34,18 +34,16 @@ export default function PlanningAdmin() {
   };
 
   const handleUpdate = async (data: any) => {
-    try {
-      const res = await apiFetch(`/api/admin/appointments/${selectedEvent.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          ...data,
-          start_time: selectedEvent.start,
-          end_time: selectedEvent.end,
-          monitor_id: data.monitor_id || selectedEvent.extendedProps.monitor_id
-        })
-      });
-      if (res.ok) { setShowEditModal(false); await loadData(); setCalendarKey(k => k + 1); }
-    } catch (err) { console.error(err); }
+    const res = await apiFetch(`/api/admin/appointments/${selectedEvent.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...data,
+        start_time: selectedEvent.start,
+        end_time: selectedEvent.end,
+        monitor_id: data.monitor_id || selectedEvent.extendedProps.monitor_id
+      })
+    });
+    if (res.ok) { setShowEditModal(false); await loadData(); setCalendarKey(k => k + 1); }
   };
 
   return (
@@ -61,12 +59,13 @@ export default function PlanningAdmin() {
           plugins={[resourceTimeGridPlugin, interactionPlugin]}
           initialView="resourceTimeGridDay"
           locale={frLocale}
+          timeZone="local" // TRÈS IMPORTANT pour le décalage
           resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
           events={appointments.map(a => ({
             ...a,
             title: a.status === 'booked' ? `${a.title} ${a.notes ? '📞 ' + a.notes : ''}` : '',
-            backgroundColor: a.status === 'booked' ? (a.title?.includes('BLOQUÉ') || a.title?.includes('PAUSE') ? '#fecaca' : '#bae6fd') : '#ffffff', 
-            textColor: a.status === 'booked' ? (a.title?.includes('BLOQUÉ') || a.title?.includes('PAUSE') ? '#991b1b' : '#0369a1') : '#94a3b8',
+            backgroundColor: a.status === 'booked' ? (a.title?.includes('PAUSE') ? '#fecaca' : '#bae6fd') : '#ffffff', 
+            textColor: a.status === 'booked' ? (a.title?.includes('PAUSE') ? '#991b1b' : '#0369a1') : '#94a3b8',
             borderColor: '#f1f5f9',
             extendedProps: { ...a }
           }))}
@@ -86,47 +85,49 @@ export default function PlanningAdmin() {
               <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-xl font-black text-[10px] uppercase ${activeTab === 'notes' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400'}`}>Notes / Blocage</button>
             </div>
 
-            {activeTab === 'reserver' ? (
-              <div className="grid grid-cols-2 gap-4">
-                <input id="pop_name" type="text" defaultValue={selectedEvent.title?.split('📞')[0].trim()} placeholder="Nom client" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold outline-none" />
-                <input id="pop_phone" type="text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Téléphone" className="p-4 rounded-2xl bg-slate-50 border-none font-bold" />
-                <select id="pop_monitor" className="p-4 rounded-2xl bg-slate-50 border-none font-bold">
-                  {monitors.map(m => (<option key={m.id} value={m.id} selected={m.id == selectedEvent.extendedProps.monitor_id}>{m.first_name}</option>))}
-                </select>
-                <select id="pop_flight" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold">
-                  <option value="">Type de vol...</option>
-                  {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
-                </select>
-                <button onClick={() => {
-                  const n = (document.getElementById('pop_name') as any).value;
-                  const p = (document.getElementById('pop_phone') as any).value;
-                  const m = (document.getElementById('pop_monitor') as any).value;
-                  const f = (document.getElementById('pop_flight') as any).value;
-                  handleUpdate({ title: f ? `${n} (${f})` : n, notes: p, monitor_id: m, status: 'booked' });
-                }} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic">Enregistrer le vol</button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <textarea id="pop_notes_text" placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
-                <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-4">
+              {activeTab === 'reserver' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <input id="pop_name" type="text" defaultValue={selectedEvent.title?.split('📞')[0].trim()} placeholder="Nom client" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold outline-none" />
+                  <input id="pop_phone" type="text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Téléphone" className="p-4 rounded-2xl bg-slate-50 border-none font-bold" />
+                  <select id="pop_monitor" className="p-4 rounded-2xl bg-slate-50 border-none font-bold">
+                    {monitors.map(m => (<option key={m.id} value={m.id} selected={m.id == selectedEvent.extendedProps.monitor_id}>{m.first_name}</option>))}
+                  </select>
+                  <select id="pop_flight" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold">
+                    <option value="">Type de vol...</option>
+                    {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
+                  </select>
                   <button onClick={() => {
-                    const note = (document.getElementById('pop_notes_text') as any).value;
-                    handleUpdate({ title: '🚫 BLOQUÉ', notes: note, status: 'booked' });
-                  }} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
-                  <button onClick={async () => {
-                      const note = (document.getElementById('pop_notes_text') as any).value;
-                      await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes: note }) });
-                      setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1);
-                    }} className="bg-rose-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer TOUS</button>
+                    const n = (document.getElementById('pop_name') as any).value;
+                    const p = (document.getElementById('pop_phone') as any).value;
+                    const m = (document.getElementById('pop_monitor') as any).value;
+                    const f = (document.getElementById('pop_flight') as any).value;
+                    handleUpdate({ title: f ? `${n} (${f})` : n, notes: p, monitor_id: m, status: 'booked' });
+                  }} className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer le vol</button>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4">
+                  <textarea id="pop_notes_text" placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => {
+                      const note = (document.getElementById('pop_notes_text') as any).value;
+                      handleUpdate({ title: '🚫 BLOQUÉ', notes: note, status: 'booked' });
+                    }} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
+                    <button onClick={async () => {
+                        const note = (document.getElementById('pop_notes_text') as any).value;
+                        await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes: note }) });
+                        setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1);
+                      }} className="bg-rose-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer TOUS</button>
+                  </div>
+                </div>
+              )}
+            </div>
             
-            <div className="mt-6 flex flex-col gap-2">
+            <div className="mt-6 flex flex-col gap-2 text-center">
                 {selectedEvent.extendedProps.status === 'booked' && (
-                  <button onClick={async () => { if(confirm("Libérer ?")) { await apiFetch(`/api/admin/appointments/${selectedEvent.id}/cancel`, { method: 'DELETE' }); setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1); }}} className="text-rose-500 font-black text-[10px] uppercase underline">Réinitialiser le créneau</button>
+                  <button onClick={async () => { if(confirm("Libérer ?")) { await apiFetch(`/api/admin/appointments/${selectedEvent.id}/cancel`, { method: 'DELETE' }); setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1); }}} className="text-rose-500 font-black text-[10px] uppercase underline">Libérer le créneau</button>
                 )}
-                <button onClick={() => setShowEditModal(false)} className="py-2 font-bold text-slate-300 uppercase text-[10px] text-center">Fermer</button>
+                <button onClick={() => setShowEditModal(false)} className="py-2 font-bold text-slate-300 uppercase text-[10px]">Fermer</button>
             </div>
           </div>
         </div>
@@ -135,7 +136,7 @@ export default function PlanningAdmin() {
       {showGenModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-black mb-8 uppercase italic text-center">Génération Auto</h2>
+            <h2 className="text-2xl font-black mb-8 uppercase italic text-center">Génération</h2>
             <div className="space-y-6">
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, startDate: e.target.value})} />
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
@@ -145,7 +146,7 @@ export default function PlanningAdmin() {
                   if (res.ok) { setShowGenModal(false); await loadData(); setCalendarKey(k => k + 1); }
                   setIsGenerating(false);
                 }} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase italic shadow-xl">
-                {isGenerating ? "⏳ Génération..." : "Lancer la génération"}
+                {isGenerating ? "⏳..." : "Générer"}
               </button>
               <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px] text-center">Annuler</button>
             </div>
