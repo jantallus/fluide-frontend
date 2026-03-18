@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="bg-white p-8 rounded-[32px] shadow-2xl w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900">
-            FLUIDE <span className="text-sky-500">PROD</span>
+            FLUIDE <span className="text-sky-500">TEST</span>
           </h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Accès Administration</p>
         </div>
