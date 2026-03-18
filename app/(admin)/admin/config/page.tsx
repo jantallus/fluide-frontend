@@ -38,12 +38,14 @@ export default function ConfigPage() {
   };
 
   useEffect(() => {
-    const init = async () => {
-      await Promise.all([loadSlotDefs(), loadConfig()]);
-      setLoading(false);
-    };
-    init();
-  }, []);
+  const init = async () => {
+    setLoading(true);
+    await loadSlotDefs(); // Charge la structure logistique 
+    await loadConfig();   // Charge les bornes et tarifs
+    setLoading(false);
+  };
+  init();
+}, []);
 
   const loadConfig = async () => {
     try {
