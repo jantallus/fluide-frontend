@@ -18,6 +18,7 @@ export default function PlanningAdmin() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [targetDate, setTargetDate] = useState("");
   const [calendarKey, setCalendarKey] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [genConfig, setGenConfig] = useState<any>({ 
     startDate: '', 
     endDate: '', 
@@ -150,9 +151,40 @@ export default function PlanningAdmin() {
               <input type="date" className="w-full border-2 border-slate-50 bg-slate-50 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
               <div className="flex gap-2 justify-center py-2">
                 {[1, 2, 3, 4, 5, 6, 0].map(d => (
-                  <button key={d} onClick={() => setGenConfig((prev: any) => ({...prev, daysToApply: prev.daysToApply.includes(d) ? prev.daysToApply.filter((x: any) => x !== d) : [...prev.daysToApply, d]}))} className={`w-9 h-9 rounded-xl text-[10px] font-black ${genConfig.daysToApply.includes(d) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                    {['D','L','M','M','J','V','S'][d]}
-                  </button>
+                  <button 
+  disabled={isGenerating}
+  onClick={async () => {
+    setIsGenerating(true);
+    try {
+      const res = await apiFetch('/api/admin/appointments/generate', { 
+        method: 'POST', 
+        body: JSON.stringify(genConfig) 
+      });
+      if (res.ok) { 
+        setShowGenModal(false); 
+        await loadInitialData(); 
+      } else {
+        alert("Erreur lors de la génération");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion");
+    } finally {
+      setIsGenerating(false);
+    }
+  }} 
+  className={`w-full py-5 rounded-2xl font-black uppercase italic shadow-xl transition-all ${
+    isGenerating ? 'bg-slate-400 cursor-not-allowed text-white' : 'bg-slate-900 text-white hover:bg-sky-500'
+  }`}
+>
+  {isGenerating ? (
+    <span className="flex items-center justify-center gap-2">
+      <span className="animate-spin text-xl">⏳</span> Génération en cours...
+    </span>
+  ) : (
+    "Lancer la génération"
+  )}
+</button>
                 ))}
               </div>
               <button onClick={async () => {
