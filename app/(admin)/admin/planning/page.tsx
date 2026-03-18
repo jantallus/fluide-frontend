@@ -27,17 +27,27 @@ export default function PlanningAdmin() {
       ]);
       if (appRes.ok) setAppointments(await appRes.json());
       if (monRes.ok) setMonitors(await monRes.json());
-    } catch (err) { console.error("Erreur chargement planning:", err); }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleCancelBooking = async (id: string) => {
+    if (!confirm("Voulez-vous vraiment annuler ce vol et libérer le créneau ?")) return;
+    const res = await apiFetch(`/api/admin/appointments/${id}/cancel`, { method: 'DELETE' });
+    if (res.ok) {
+      setShowEditModal(false);
+      await loadInitialData();
+      setCalendarKey(k => k + 1);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black italic uppercase text-slate-900">Planning <span className="text-sky-500">Pro</span></h1>
-        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl">⚙️ Générer</button>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+      <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">Planning <span className="text-sky-500">Pro</span></h1>
+        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl hover:bg-sky-500 transition-all">⚙️ Générer</button>
       </div>
 
-      <div className="bg-white rounded-[40px] shadow-2xl p-6 overflow-hidden border border-slate-100">
+      <div className="bg-white rounded-[40px] shadow-2xl p-6 overflow-hidden border border-slate-200 max-w-7xl mx-auto">
         <FullCalendar
           key={calendarKey}
           plugins={[resourceTimeGridPlugin, interactionPlugin, timeGridPlugin]}
@@ -46,33 +56,41 @@ export default function PlanningAdmin() {
           resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
           events={appointments.map(a => ({
             ...a,
-            // Titre vide si libre, sinon Nom + Tel
             title: a.status === 'booked' ? `${a.title || 'Client'} 📞 ${a.notes || ''}` : '',
-            backgroundColor: a.status === 'booked' ? '#0f172a' : 'transparent',
-            textColor: '#ffffff',
-            borderColor: a.status === 'booked' ? '#0f172a' : '#e2e8f0',
+            // DESIGN : Bleu ciel pour le réservé, blanc avec bordure pour le libre
+            backgroundColor: a.status === 'booked' ? '#0ea5e9' : '#ffffff',
+            textColor: a.status === 'booked' ? '#ffffff' : '#94a3b8',
+            borderColor: '#e2e8f0',
             extendedProps: { ...a }
           }))}
           slotMinTime="08:00:00"
           slotMaxTime="19:00:00"
-          height="auto"
           allDaySlot={false}
+          height="auto"
           eventClick={(info) => { setSelectedEvent(info.event); setShowEditModal(true); }}
         />
       </div>
 
-      {/* MODALE RÉSERVATION */}
+      {/* MODALE RÉSERVATION / ÉDITION */}
       {showEditModal && selectedEvent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl text-slate-900">
-            <h2 className="text-xl font-black mb-6 uppercase italic text-center">
+            <h2 className="text-xl font-black mb-6 uppercase italic">
               {selectedEvent.extendedProps.status === 'booked' ? 'Fiche Vol' : 'Nouvelle Réservation'}
             </h2>
             <div className="space-y-4">
               {selectedEvent.extendedProps.status === 'booked' ? (
-                <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
-                  <div><p className="text-[9px] font-black text-slate-400 uppercase">Passager</p><p className="font-black text-lg">{selectedEvent.extendedProps.title}</p></div>
-                  <div><p className="text-[9px] font-black text-slate-400 uppercase">Téléphone</p><p className="font-bold text-sky-600">{selectedEvent.extendedProps.notes}</p></div>
+                <div className="space-y-4">
+                  <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
+                    <div><p className="text-[9px] font-black text-slate-400 uppercase">Passager</p><p className="font-black text-lg">{selectedEvent.extendedProps.title}</p></div>
+                    <div><p className="text-[9px] font-black text-slate-400 uppercase">Téléphone</p><p className="font-bold text-sky-600">{selectedEvent.extendedProps.notes}</p></div>
+                  </div>
+                  <button 
+                    onClick={() => handleCancelBooking(selectedEvent.id)}
+                    className="w-full bg-rose-100 text-rose-600 py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-rose-500 hover:text-white transition-all"
+                  >
+                    Supprimer la réservation
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -107,6 +125,7 @@ export default function PlanningAdmin() {
               <button 
                 disabled={isGenerating}
                 onClick={async () => {
+                  if (!genConfig.startDate || !genConfig.endDate) return alert("Dates manquantes");
                   setIsGenerating(true);
                   const res = await apiFetch('/api/admin/appointments/generate', { method: 'POST', body: JSON.stringify(genConfig) });
                   if (res.ok) { setShowGenModal(false); await loadInitialData(); setCalendarKey(prev => prev + 1); }
