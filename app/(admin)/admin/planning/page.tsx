@@ -50,7 +50,10 @@ export default function PlanningAdmin() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">Planning <span className="text-sky-500">Pro</span></h1>
+        <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">
+  Planning <span className="text-sky-500">Pro</span> 
+  <span className="ml-4 bg-red-600 text-white px-4 py-1 rounded-full animate-bounce">TEST LIVE 2026</span>
+</h1>
         <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl">⚙️ Générer auto</button>
       </div>
 
