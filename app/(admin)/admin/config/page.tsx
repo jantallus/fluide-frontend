@@ -1,4 +1,12 @@
 "use client";
+const getEndTime = (start: string, duration: number) => {
+  if (!start) return "";
+  const [h, m] = start.split(':').map(Number);
+  const totalMin = h * 60 + m + duration;
+  const endH = Math.floor(totalMin / 60).toString().padStart(2, '0');
+  const endM = (totalMin % 60).toString().padStart(2, '0');
+  return `${endH}:${endM}`;
+};
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 
