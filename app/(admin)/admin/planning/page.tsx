@@ -145,14 +145,24 @@ export default function PlanningAdmin() {
             <div className="space-y-6">
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, startDate: e.target.value})} />
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
-              <button disabled={isGenerating} onClick={async () => {
-                  setIsGenerating(true);
-                  const res = await apiFetch('/api/admin/appointments/generate', { method: 'POST', body: JSON.stringify(genConfig) });
-                  if (res.ok) { setShowGenModal(false); await loadData(); setCalendarKey(k => k + 1); }
-                  setIsGenerating(false);
-                }} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase italic shadow-xl">
-                {isGenerating ? "⏳..." : "Générer"}
-              </button>
+              <button 
+  disabled={isGenerating} 
+  onClick={async () => {
+    setIsGenerating(true);
+    const res = await apiFetch('/api/admin/appointments/generate', { 
+      method: 'POST', 
+      body: JSON.stringify(genConfig) 
+    });
+    if (res.ok) { 
+      setShowGenModal(false); 
+      await loadData(); // Recharge les données
+      setCalendarKey(k => k + 1); // Rafraîchit le calendrier
+    }
+    setIsGenerating(false);
+  }}
+>
+  {isGenerating ? "⏳..." : "Lancer la génération"}
+</button>
               <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px] text-center">Annuler</button>
             </div>
           </div>
