@@ -34,18 +34,21 @@ export default function PlanningAdmin() {
   };
 
   const handleUpdate = async (data: any) => {
-    try {
-      const res = await apiFetch(`/api/admin/appointments/${selectedEvent.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-      });
-      if (res.ok) { 
-        setShowEditModal(false); 
-        await loadData(); 
-        setCalendarKey(k => k + 1); 
-      }
-    } catch (err) { console.error(err); }
-  };
+  try {
+    const res = await apiFetch(`/api/admin/appointments/${selectedEvent.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...data,
+        monitor_id: data.monitor_id || selectedEvent.extendedProps.monitor_id
+      })
+    });
+    if (res.ok) { 
+      setShowEditModal(false); 
+      await loadData(); 
+      setCalendarKey(k => k + 1); 
+    }
+  } catch (err) { console.error(err); }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
@@ -103,16 +106,21 @@ export default function PlanningAdmin() {
                   {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
                 </select>
                 <button 
-                  onClick={() => {
-                    const n = (document.getElementById('pop_name') as HTMLInputElement).value;
-                    const p = (document.getElementById('pop_phone') as HTMLInputElement).value;
-                    const m = (document.getElementById('pop_monitor') as HTMLSelectElement).value;
-                    const f = (document.getElementById('pop_flight') as HTMLSelectElement).value;
-                    if (!n) return alert("Nom requis");
-                    handleUpdate({ title: f ? `${n} (${f})` : n, notes: p, monitor_id: m, status: 'booked' });
-                  }} 
-                  className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl"
-                >Enregistrer le vol</button>
+  onClick={() => {
+    const n = (document.getElementById('pop_name') as HTMLInputElement).value;
+    const p = (document.getElementById('pop_phone') as HTMLInputElement).value;
+    const m = (document.getElementById('pop_monitor') as HTMLSelectElement).value;
+    const f = (document.getElementById('pop_flight') as HTMLSelectElement).value;
+    if (!n) return alert("Le nom est obligatoire");
+    handleUpdate({ 
+      title: f ? `${n} (${f})` : n, 
+      notes: p, 
+      monitor_id: m, 
+      status: 'booked' 
+    });
+  }} 
+  className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl"
+>Confirmer l'inscription</button>
               </div>
             ) : (
               <div className="space-y-4">
