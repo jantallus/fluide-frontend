@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -7,175 +7,116 @@ import frLocale from '@fullcalendar/core/locales/fr';
 import { apiFetch } from '@/lib/api';
 
 export default function PlanningAdmin() {
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [monitors, setMonitors] = useState<any[]>([]);
-  const [flightTypes, setFlightTypes] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState([]);
+  const [monitors, setMonitors] = useState([]);
   const [showGenModal, setShowGenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [activeTab, setActiveTab] = useState('reserver');
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [targetDate, setTargetDate] = useState("");
   const [calendarKey, setCalendarKey] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genConfig, setGenConfig] = useState<any>({ startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0] });
+  const [genConfig, setGenConfig] = useState({ startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0] });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadInitialData(); }, []);
 
-  const loadData = async () => {
+  const loadInitialData = async () => {
     try {
-      const [app, mon, flight] = await Promise.all([
-        apiFetch('/api/admin/appointments'),
-        apiFetch('/api/monitors'),
-        apiFetch('/api/admin/flight-types')
+      const [apptsRes, monRes] = await Promise.all([
+        apiFetch('/api/appointments'), 
+        apiFetch('/api/monitors')
       ]);
-      if (app.ok) setAppointments(await app.json());
-      if (mon.ok) setMonitors(await mon.json());
-      if (flight.ok) setFlightTypes(await flight.json());
+      if (apptsRes.ok) setAppointments(await apptsRes.json());
+      if (monRes.ok) setMonitors((await monRes.json()).map(m => ({ id: m.id, title: m.first_name })));
+      setCalendarKey(prev => prev + 1);
     } catch (err) { console.error(err); }
   };
 
-  const handleUpdate = async (data: any) => {
-  try {
-    const res = await apiFetch(`/api/admin/appointments/${selectedEvent.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        ...data,
-        monitor_id: data.monitor_id || selectedEvent.extendedProps.monitor_id
-      })
+  const handleEventClick = (info) => {
+    const event = info.event;
+    const d = event.start;
+    const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    
+    setSelectedEvent({
+      id: event.id,
+      title: event.title || '',
+      start: formattedDate,
+      oldStart: formattedDate,
+      monitorId: event.getResources()[0]?.id,
+      oldMonitorId: event.getResources()[0]?.id,
+      notes: event.extendedProps.notes || '',
+      status: event.extendedProps.status
     });
-    if (res.ok) { 
-      setShowEditModal(false); 
-      await loadData(); 
-      setCalendarKey(k => k + 1); 
-    }
-  } catch (err) { console.error(err); }
-};
+    setTargetDate(formattedDate);
+    setShowEditModal(true);
+  };
+
+  const handleSaveMove = async () => {
+    if (!selectedEvent) return;
+    try {
+      const res = await apiFetch(`/api/appointments/${selectedEvent.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          monitorId: selectedEvent.monitorId,
+          notes: selectedEvent.notes,
+          title: selectedEvent.title.trim() !== "" ? selectedEvent.title : null,
+          status: selectedEvent.title.trim() !== "" ? 'booked' : 'available'
+        })
+      });
+      if (res.ok) { setShowEditModal(false); loadInitialData(); }
+    } catch (err) { alert("Erreur de connexion."); }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">
-  Planning <span className="text-sky-500">Pro</span> 
-  <span className="ml-4 bg-red-600 text-white px-4 py-1 rounded-full animate-bounce">TEST LIVE 2026</span>
-</h1>
-        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-xl">⚙️ Générer auto</button>
+    <div className="p-8 bg-slate-50 min-h-screen">
+       <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-black uppercase italic text-slate-900">Planning <span className="text-sky-500 text-sm bg-white px-3 py-1 rounded-full shadow-sm ml-2">VERSION RESTAURÉE</span></h1>
+        <button onClick={() => setShowGenModal(true)} className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-lg">⚙️ Générer</button>
       </div>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-[40px] shadow-2xl p-6 border border-slate-200">
+      <div className="bg-white shadow-2xl rounded-[40px] overflow-hidden p-6 border border-slate-200">
         <FullCalendar
-  key={calendarKey}
-  plugins={[resourceTimeGridPlugin, interactionPlugin]}
-  initialView="resourceTimeGridDay"
-  locale={frLocale}
-  timeZone="local" // S'aligne sur l'heure de votre navigateur
-  slotEventOverlap={false} // Empêche les événements de se chevaucher
-  eventOverlap={false}     // Interdit la superposition
-  resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
-  events={appointments.map(a => ({
-    ...a,
-    title: a.status === 'booked' ? `${a.title} ${a.notes ? '📞 ' + a.notes : ''}` : '',
-    backgroundColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#fecaca' : '#bae6fd') : '#ffffff', 
-    textColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#991b1b' : '#0369a1') : '#94a3b8',
-    borderColor: '#f1f5f9',
-    extendedProps: { ...a }
-  }))}
-  slotMinTime="08:00:00"
-  slotMaxTime="19:00:00"
-  allDaySlot={false}
-  height="auto"
-  eventClick={(info) => { setSelectedEvent(info.event); setActiveTab('reserver'); setShowEditModal(true); }}
-/>
+          key={calendarKey}
+          plugins={[resourceTimeGridPlugin, interactionPlugin]}
+          initialView="resourceTimeGridDay"
+          locale={frLocale}
+          timeZone="local"
+          resources={monitors}
+          events={appointments.map(a => ({
+            ...a,
+            backgroundColor: a.status === 'booked' ? '#bae6fd' : '#ffffff',
+            textColor: a.status === 'booked' ? '#0369a1' : '#94a3b8',
+            borderColor: '#f1f5f9'
+          }))}
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridWeek' }}
+          slotMinTime="08:00:00"
+          slotMaxTime="19:00:00"
+          height="auto"
+          eventClick={handleEventClick}
+        />
       </div>
 
       {showEditModal && selectedEvent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl text-slate-900">
-            <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
-              <button onClick={() => setActiveTab('reserver')} className={`flex-1 py-2 rounded-xl font-black text-[10px] uppercase ${activeTab === 'reserver' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400'}`}>Réservation</button>
-              <button onClick={() => setActiveTab('notes')} className={`flex-1 py-2 rounded-xl font-black text-[10px] uppercase ${activeTab === 'notes' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400'}`}>Notes / Blocage</button>
-            </div>
-
-            {activeTab === 'reserver' ? (
-              <div className="grid grid-cols-2 gap-4">
-                <input id="pop_name" type="text" defaultValue={selectedEvent.title?.split('📞')[0].trim()} placeholder="Nom client" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold" />
-                <input id="pop_phone" type="text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Téléphone" className="p-4 rounded-2xl bg-slate-50 border-none font-bold" />
-                <select id="pop_monitor" className="p-4 rounded-2xl bg-slate-50 border-none font-bold">
-                  {monitors.map(m => (<option key={m.id} value={m.id} selected={m.id == selectedEvent.extendedProps.monitor_id}>{m.first_name}</option>))}
-                </select>
-                <select id="pop_flight" className="col-span-2 p-4 rounded-2xl bg-slate-50 border-none font-bold">
-                  <option value="">Type de vol...</option>
-                  {flightTypes.map(f => (<option key={f.id} value={f.name}>{f.name}</option>))}
-                </select>
-                <button 
-  onClick={() => {
-    const n = (document.getElementById('pop_name') as HTMLInputElement).value;
-    const p = (document.getElementById('pop_phone') as HTMLInputElement).value;
-    const m = (document.getElementById('pop_monitor') as HTMLSelectElement).value;
-    const f = (document.getElementById('pop_flight') as HTMLSelectElement).value;
-    if (!n) return alert("Le nom est obligatoire");
-    handleUpdate({ 
-      title: f ? `${n} (${f})` : n, 
-      notes: p, 
-      monitor_id: m, 
-      status: 'booked' 
-    });
-  }} 
-  className="col-span-2 bg-sky-500 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl"
->Confirmer l'inscription</button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <textarea id="pop_notes_text" defaultValue={selectedEvent.extendedProps.notes} placeholder="Raison du blocage..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 border-none font-bold resize-none outline-none focus:ring-2 focus:ring-slate-200"></textarea>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => {
-                    const note = (document.getElementById('pop_notes_text') as HTMLTextAreaElement).value;
-                    handleUpdate({ title: '🚫 BLOQUÉ', notes: note, status: 'booked', monitor_id: selectedEvent.extendedProps.monitor_id });
-                  }} className="bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer Pilote</button>
-                  <button onClick={async () => {
-                      const note = (document.getElementById('pop_notes_text') as HTMLTextAreaElement).value;
-                      await apiFetch('/api/admin/appointments/block-all', { method: 'POST', body: JSON.stringify({ start_time: selectedEvent.start, notes: note }) });
-                      setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1);
-                    }} className="bg-rose-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Bloquer TOUS</button>
-                </div>
-              </div>
-            )}
-            
-            <div className="mt-6 flex flex-col gap-2">
-                {selectedEvent.extendedProps.status === 'booked' && (
-                  <button onClick={async () => { if(confirm("Libérer ?")) { await apiFetch(`/api/admin/appointments/${selectedEvent.id}/cancel`, { method: 'DELETE' }); setShowEditModal(false); await loadData(); setCalendarKey(k=>k+1); }}} className="text-rose-500 font-black text-[10px] uppercase underline text-center">Libérer le créneau</button>
-                )}
-                <button onClick={() => setShowEditModal(false)} className="py-2 font-bold text-slate-300 uppercase text-[10px] text-center">Fermer</button>
-            </div>
+          <div className="bg-white rounded-[40px] w-full max-w-lg p-8 shadow-2xl">
+             <input className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold mb-4" placeholder="Nom du Passager" value={selectedEvent.title} onChange={(e) => setSelectedEvent({...selectedEvent, title: e.target.value})} />
+             <textarea className="w-full border-2 border-slate-100 rounded-2xl p-4 mb-4" placeholder="Notes..." value={selectedEvent.notes} onChange={(e) => setSelectedEvent({...selectedEvent, notes: e.target.value})} />
+             <div className="flex gap-4">
+                <button onClick={handleSaveMove} className="flex-1 bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
+                <button onClick={() => setShowEditModal(false)} className="px-6 py-4 font-bold text-slate-300 uppercase text-[10px]">Fermer</button>
+             </div>
           </div>
         </div>
       )}
 
       {showGenModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-black mb-8 uppercase italic text-center">Génération</h2>
-            <div className="space-y-6">
-              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, startDate: e.target.value})} />
-              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
-              <button 
-  disabled={isGenerating} 
-  onClick={async () => {
-    setIsGenerating(true);
-    const res = await apiFetch('/api/admin/appointments/generate', { 
-      method: 'POST', 
-      body: JSON.stringify(genConfig) 
-    });
-    if (res.ok) { 
-      setShowGenModal(false); 
-      await loadData(); // Recharge les données
-      setCalendarKey(k => k + 1); // Rafraîchit le calendrier
-    }
-    setIsGenerating(false);
-  }}
->
-  {isGenerating ? "⏳..." : "Lancer la génération"}
-</button>
-              <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px] text-center">Annuler</button>
-            </div>
+          <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
+            <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 mb-4" onChange={(e) => setGenConfig({...genConfig, startDate: e.target.value})} />
+            <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 mb-4" onChange={(e) => setGenConfig({...genConfig, endDate: e.target.value})} />
+            <button onClick={async () => {
+              const res = await apiFetch('/api/admin/generate-slots', { method: 'POST', body: JSON.stringify(genConfig) });
+              if (res.ok) { setShowGenModal(false); loadInitialData(); }
+            }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase italic">Lancer la génération</button>
           </div>
         </div>
       )}
