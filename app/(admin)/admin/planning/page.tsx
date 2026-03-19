@@ -25,10 +25,25 @@ export default function PlanningAdmin() {
         apiFetch('/api/appointments'), 
         apiFetch('/api/monitors')
       ]);
-      if (apptsRes.ok) setAppointments(await apptsRes.json());
-      if (monRes.ok) setMonitors((await monRes.json()).map(m => ({ id: m.id, title: m.first_name })));
+      
+      if (apptsRes.ok) {
+        const apptsData = await apptsRes.json();
+        setAppointments(apptsData);
+      }
+
+      if (monRes.ok) {
+        const monData = await monRes.json();
+        // On définit le type de 'm' explicitement pour TypeScript
+        setMonitors(monData.map((m: { id: string; first_name: string }) => ({ 
+          id: m.id, 
+          title: m.first_name 
+        })));
+      }
+      
       setCalendarKey(prev => prev + 1);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Erreur lors du chargement :", err); 
+    }
   };
 
   const handleEventClick = (info) => {
