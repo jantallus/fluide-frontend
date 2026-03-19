@@ -4,16 +4,16 @@ import { apiFetch } from '@/lib/api';
 
 export default function ConfigPage() {
   const [slotDefs, setSlotDefs] = useState<any[]>([]);
+  const [flightTypes, setFlightTypes] = useState<any[]>([]); // Ajouté pour les tarifs
   const [loading, setLoading] = useState(true);
   const [newStartTime, setNewStartTime] = useState("");
   const [newDuration, setNewDuration] = useState(65); 
   const [isPause, setIsPause] = useState(false);
 
-  const getEndTime = (start: string, duration: number) => {
-    if (!start) return "";
-    const [h, m] = start.split(':').map(Number);
-    const totalMin = h * 60 + m + duration;
-    return `${Math.floor(totalMin/60).toString().padStart(2,'0')}:${(totalMin%60).toString().padStart(2,'0')}`;
+  // Conversion en minutes pour comparer les collisions
+  const toMin = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
   };
 
   const loadSlotDefs = async () => {
@@ -26,24 +26,39 @@ export default function ConfigPage() {
     } catch (err) { console.error(err); }
   };
 
+  // Chargement initial
   useEffect(() => {
-    loadSlotDefs().then(() => setLoading(false));
+    const init = async () => {
+      await loadSlotDefs();
+      const resVols = await apiFetch('/api/vols'); // On appelle la nouvelle route
+      if (resVols.ok) setFlightTypes(await resVols.json());
+      setLoading(false);
+    };
+    init();
   }, []);
 
   const addSlotDef = async () => {
     if (!newStartTime) return alert("Choisis une heure");
+    
+    const startMin = toMin(newStartTime);
+    const endMin = startMin + newDuration;
+
+    // --- SÉCURITÉ ANTI-COLLISION ---
+    const hasOverlap = slotDefs.some((def: any) => {
+      const defStart = toMin(def.start_time);
+      const defEnd = defStart + def.duration_minutes;
+      // Autorise si l'heure de début est ÉGALE à l'heure de fin du précédent (14:25)
+      return (startMin < defEnd && endMin > defStart);
+    });
+
+    if (hasOverlap) return alert("⚠️ Collision : Ce créneau chevauche une structure existante.");
+
     const label = isPause ? "PAUSE" : "LOGISTIQUE + VOL";
     const res = await apiFetch('/api/admin/config/slots-definitions', {
       method: 'POST',
       body: JSON.stringify({ start_time: newStartTime, duration_minutes: newDuration, label }),
     });
     if (res.ok) { setNewStartTime(""); await loadSlotDefs(); }
-  };
-
-  const deleteSlotDef = async (id: number) => {
-    if (!confirm("Supprimer ?")) return;
-    const res = await apiFetch(`/api/admin/config/slots-definitions/${id}`, { method: 'DELETE' });
-    if (res.ok) await loadSlotDefs();
   };
 
   if (loading) return <div className="p-10 text-center font-black animate-pulse text-slate-300 uppercase italic">Chargement...</div>;
