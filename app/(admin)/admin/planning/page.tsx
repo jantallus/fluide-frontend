@@ -73,6 +73,8 @@ export default function PlanningAdmin() {
           slotMinTime="08:00:00"
           slotMaxTime="19:00:00"
           allDaySlot={false}
+          slotEventOverlap={false}
+          eventOverlap={false}
           height="auto"
           eventClick={(info) => { setSelectedEvent(info.event); setActiveTab('reserver'); setShowEditModal(true); }}
         />
