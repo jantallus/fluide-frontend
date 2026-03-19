@@ -56,28 +56,28 @@ export default function PlanningAdmin() {
 
       <div className="max-w-7xl mx-auto bg-white rounded-[40px] shadow-2xl p-6 border border-slate-200">
         <FullCalendar
-          key={calendarKey}
-          plugins={[resourceTimeGridPlugin, interactionPlugin]}
-          initialView="resourceTimeGridDay"
-          locale={frLocale}
-          timeZone="local"
-          resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
-          events={appointments.map(a => ({
-            ...a,
-            title: a.status === 'booked' ? `${a.title} ${a.notes ? '📞 ' + a.notes : ''}` : '',
-            backgroundColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#fecaca' : '#bae6fd') : '#ffffff', 
-            textColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#991b1b' : '#0369a1') : '#94a3b8',
-            borderColor: '#f1f5f9',
-            extendedProps: { ...a }
-          }))}
-          slotMinTime="08:00:00"
-          slotMaxTime="19:00:00"
-          allDaySlot={false}
-          slotEventOverlap={false}
-          eventOverlap={false}
-          height="auto"
-          eventClick={(info) => { setSelectedEvent(info.event); setActiveTab('reserver'); setShowEditModal(true); }}
-        />
+  key={calendarKey}
+  plugins={[resourceTimeGridPlugin, interactionPlugin]}
+  initialView="resourceTimeGridDay"
+  locale={frLocale}
+  timeZone="local" // S'aligne sur l'heure de votre navigateur
+  slotEventOverlap={false} // Empêche les événements de se chevaucher
+  eventOverlap={false}     // Interdit la superposition
+  resources={monitors.map(m => ({ id: m.id.toString(), title: m.first_name }))}
+  events={appointments.map(a => ({
+    ...a,
+    title: a.status === 'booked' ? `${a.title} ${a.notes ? '📞 ' + a.notes : ''}` : '',
+    backgroundColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#fecaca' : '#bae6fd') : '#ffffff', 
+    textColor: a.status === 'booked' ? (a.title?.includes('PAUSE') || a.title?.includes('BLOQUÉ') ? '#991b1b' : '#0369a1') : '#94a3b8',
+    borderColor: '#f1f5f9',
+    extendedProps: { ...a }
+  }))}
+  slotMinTime="08:00:00"
+  slotMaxTime="19:00:00"
+  allDaySlot={false}
+  height="auto"
+  eventClick={(info) => { setSelectedEvent(info.event); setActiveTab('reserver'); setShowEditModal(true); }}
+/>
       </div>
 
       {showEditModal && selectedEvent && (
