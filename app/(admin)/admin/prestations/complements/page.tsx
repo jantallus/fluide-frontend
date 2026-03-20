@@ -1,91 +1,71 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api'; // Import sécurisé
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 
 export default function ComplementsPage() {
-  const [photoPrice, setPhotoPrice] = useState(30);
-  const [loading, setLoading] = useState(false);
+  const [extras, setExtras] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Note : Idéalement, tu devrais charger ce prix depuis ta DB au montage de la page
-  // useEffect(() => { ... charger le prix actuel ... }, []);
-
-  const handleSave = async () => {
+  const loadExtras = async () => {
     setLoading(true);
     try {
-      // On utilise une route générique ou spécifique pour les options/extras
-      // Ici, on simule l'envoi vers une configuration de vol ou une table dédiée
-      const res = await apiFetch('/api/admin/config/options', {
-        method: 'PUT',
-        body: JSON.stringify({ 
-          option_name: 'photos_videos',
-          price_euro: photoPrice 
-        }),
-      });
-
-      if (res.ok) {
-        alert("Tarif des options enregistré avec succès !");
-      } else {
-        alert("Erreur lors de l'enregistrement.");
-      }
-    } catch (err) {
-      console.error("Erreur réseau:", err);
-      alert("Erreur de connexion au serveur.");
-    } finally {
-      setLoading(false);
-    }
+      const res = await apiFetch('/api/complements');
+      if (res.ok) setExtras(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
+  useEffect(() => { loadExtras(); }, []);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-12 p-6">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 italic uppercase tracking-tighter">Photos & Vidéos</h1>
-        <p className="text-slate-500 font-medium">Configurez les options numériques proposées par les moniteurs.</p>
-      </div>
-
-      <div className="bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-10 flex flex-col md:flex-row items-center gap-10">
-          <div className="w-32 h-32 bg-rose-50 text-rose-500 rounded-[32px] flex items-center justify-center text-5xl">
-            📸
+    <div className="p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <header className="flex justify-between items-center mb-12">
+          <div>
+            <p className="text-emerald-500 font-black uppercase text-xs tracking-widest mb-2">Options de vol</p>
+            <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
+              Tes <span className="text-emerald-500">Compléments</span>
+            </h1>
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight">Option Photos & Vidéos SD/HD</h2>
-                <p className="text-slate-400 font-bold text-sm tracking-widest uppercase mt-1">Livrées sur carte SD ou transfert mobile</p>
+          <button className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl">
+            + Ajouter une option
+          </button>
+        </header>
+
+        <div className="grid gap-4">
+          {extras.map((extra) => (
+            <div key={extra.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl">
+                  {extra.name.includes('GoPro') ? '📹' : '✨'}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-800 uppercase text-lg leading-tight">{extra.name}</h3>
+                  <p className="text-slate-400 text-xs font-medium">{extra.description}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                <span className="text-[10px] font-black text-emerald-600 uppercase">Actif</span>
+
+              <div className="flex items-center gap-8">
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-300 uppercase">Tarif</p>
+                  <p className="text-xl font-black text-slate-900 italic">{extra.price_cents / 100}€</p>
+                </div>
+                <button className="p-3 bg-slate-50 text-slate-300 rounded-xl group-hover:text-rose-500 transition-colors">
+                  🗑️
+                </button>
               </div>
             </div>
-
-            <div className="flex items-end gap-6 pt-4">
-              <div className="flex-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Prix de l'option (€)</label>
-                <input 
-                  type="number" 
-                  value={photoPrice} 
-                  onChange={(e) => setPhotoPrice(Number(e.target.value))}
-                  className="w-full mt-1 bg-slate-50 border-none rounded-2xl p-4 font-black text-xl focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
-              <button 
-                onClick={handleSave}
-                disabled={loading}
-                className={`bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-500 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-        
-        <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-between items-center px-10">
-          <p className="text-xs text-slate-400 font-bold uppercase italic">Affiché sur la page de réservation client</p>
-          <div className="flex gap-2">
-             <span className="w-3 h-3 bg-sky-400 rounded-full"></span>
-             <span className="w-3 h-3 bg-indigo-400 rounded-full"></span>
-          </div>
+
+        <div className="mt-12 bg-emerald-900 rounded-[40px] p-8 text-white flex items-center justify-between overflow-hidden relative">
+            <div className="relative z-10">
+                <h4 className="text-xl font-black uppercase italic mb-2">Astuce Fluide</h4>
+                <p className="text-emerald-200 text-sm max-w-md font-medium">
+                    Ces options seront proposées aux clients lors de leur réservation en ligne ou pourront être ajoutées manuellement sur le planning.
+                </p>
+            </div>
+            <div className="text-6xl opacity-20 absolute -right-4 -bottom-4 rotate-12">🚀</div>
         </div>
       </div>
     </div>
