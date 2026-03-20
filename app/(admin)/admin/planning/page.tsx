@@ -173,19 +173,19 @@ export default function PlanningAdmin() {
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
-                  <input 
-                    type="number"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                    // On utilise || '' pour que si la valeur est nulle ou NaN, l'input soit simplement vide
-                    value={formData.weight || ''} 
-                    onChange={e => {
-                      // On convertit en nombre seulement si le champ n'est pas vide
-                      const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                      setFormData({...formData, weight: val});
-                    }}
-                  />
-                </div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+                <input 
+                  type="number"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                  // On utilise || '' pour que si la valeur est nulle ou NaN, l'input soit simplement vide
+                  value={formData.weight || ''} 
+                  onChange={e => {
+                    // On convertit en nombre seulement si le champ n'est pas vide
+                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                    setFormData({...formData, weight: val});
+                  }}
+                />
+              </div>
               </div>
               <button onClick={handleSave} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4">
                 Enregistrer
