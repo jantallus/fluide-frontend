@@ -16,12 +16,17 @@ export default function PlanningAdmin() {
   const [calendarKey, setCalendarKey] = useState(0);
   
   // État pour la réservation
-  const [formData, setFormData] = useState({
-    title: '',
-    flight_type_id: '',
-    weight: '',
-    notes: ''
-  });
+  const [formData, setFormData] = useState<{
+  title: string,
+  flight_type_id: string,
+  weight: string | number, // On autorise les deux types ici
+  notes: string
+}>({
+  title: '',
+  flight_type_id: '',
+  weight: '',
+  notes: ''
+});
 
   const [genConfig, setGenConfig] = useState({ 
     startDate: '', 
@@ -173,19 +178,18 @@ export default function PlanningAdmin() {
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
-                <input 
-                  type="number"
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                  // On utilise || '' pour que si la valeur est nulle ou NaN, l'input soit simplement vide
-                  value={formData.weight || ''} 
-                  onChange={e => {
-                    // On convertit en nombre seulement si le champ n'est pas vide
-                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                    setFormData({...formData, weight: val});
-                  }}
-                />
-              </div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+                  <input 
+                    type="number"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                    value={formData.weight} 
+                    onChange={e => {
+                      // Si le champ est vide, on met une chaîne vide, sinon on convertit en nombre
+                      const val = e.target.value === '' ? '' : Number(e.target.value);
+                      setFormData({...formData, weight: val});
+                    }}
+                  />
+                </div>
               </div>
               <button onClick={handleSave} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4">
                 Enregistrer
