@@ -6,7 +6,18 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
 
   useEffect(() => {
-    apiFetch('/api/gift-cards').then(res => res.ok && res.json().then(setCoupons));
+    const fetchData = async () => {
+      try {
+        const res = await apiFetch('/api/gift-cards');
+        if (res.ok) {
+          const data = await res.json();
+          setCoupons(data);
+        }
+      } catch (err) {
+        console.error("Erreur coupons:", err);
+      }
+    };
+    fetchData();
   }, []);
 
   return (

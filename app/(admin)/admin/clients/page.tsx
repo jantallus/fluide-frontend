@@ -7,7 +7,18 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    apiFetch('/api/clients').then(res => res.ok && res.json().then(setClients));
+    const fetchData = async () => {
+      try {
+        const res = await apiFetch('/api/clients');
+        if (res.ok) {
+          const data = await res.json();
+          setClients(data);
+        }
+      } catch (err) {
+        console.error("Erreur clients:", err);
+      }
+    };
+    fetchData();
   }, []);
 
   const filtered = clients.filter(c => 
