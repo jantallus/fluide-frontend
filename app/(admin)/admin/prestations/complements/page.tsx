@@ -3,69 +3,84 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 
 export default function ComplementsPage() {
-  const [extras, setExtras] = useState<any[]>([]);
+  const [complements, setComplements] = useState<any[]>([]);
+  const [newComp, setNewComp] = useState({ name: '', description: '', price_cents: 2000 });
   const [loading, setLoading] = useState(true);
 
-  const loadExtras = async () => {
-    setLoading(true);
+  const loadComplements = async () => {
     try {
-      const res = await apiFetch('/api/complements');
-      if (res.ok) setExtras(await res.json());
+      const res = await apiFetch('/api/admin/complements');
+      if (res.ok) setComplements(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadExtras(); }, []);
+  useEffect(() => { loadComplements(); }, []);
+
+  const handleAdd = async () => {
+    if (!newComp.name) return;
+    const res = await apiFetch('/api/complements', {
+      method: 'POST',
+      body: JSON.stringify(newComp)
+    });
+    if (res.ok) {
+      setNewComp({ name: '', description: '', price_cents: 2000 });
+      loadComplements();
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Supprimer ce complément ?")) return;
+    const res = await apiFetch(`/api/complements/${id}`, { method: 'DELETE' });
+    if (res.ok) loadComplements();
+  };
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
-          <div>
-            <p className="text-emerald-500 font-black uppercase text-xs tracking-widest mb-2">Options de vol</p>
-            <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
-              Tes <span className="text-emerald-500">Compléments</span>
-            </h1>
-          </div>
-          <button className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl">
-            + Ajouter une option
-          </button>
+        <header className="mb-12">
+          <p className="text-emerald-500 font-black uppercase text-xs tracking-widest mb-2">Options</p>
+          <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
+            Compléments <span className="text-emerald-500">de vol</span>
+          </h1>
         </header>
 
-        <div className="grid gap-4">
-          {extras.map((extra) => (
-            <div key={extra.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
-              <div className="flex items-center gap-6">
-                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl">
-                  {extra.name.includes('GoPro') ? '📹' : '✨'}
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-800 uppercase text-lg leading-tight">{extra.name}</h3>
-                  <p className="text-slate-400 text-xs font-medium">{extra.description}</p>
-                </div>
-              </div>
+        {/* FORMULAIRE D'AJOUT RAPIDE */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input 
+              type="text" placeholder="Nom (ex: Option Vidéo)" 
+              className="border-2 border-slate-100 rounded-2xl p-4 font-bold"
+              value={newComp.name} onChange={e => setNewComp({...newComp, name: e.target.value})}
+            />
+            <input 
+              type="number" placeholder="Prix (€)" 
+              className="border-2 border-slate-100 rounded-2xl p-4 font-bold"
+              value={newComp.price_cents / 100} onChange={e => setNewComp({...newComp, price_cents: Number(e.target.value) * 100})}
+            />
+            <button onClick={handleAdd} className="bg-emerald-500 text-white rounded-2xl font-black uppercase italic shadow-lg hover:bg-emerald-600 transition-all">
+              Ajouter
+            </button>
+          </div>
+        </section>
 
-              <div className="flex items-center gap-8">
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-300 uppercase">Tarif</p>
-                  <p className="text-xl font-black text-slate-900 italic">{extra.price_cents / 100}€</p>
-                </div>
-                <button className="p-3 bg-slate-50 text-slate-300 rounded-xl group-hover:text-rose-500 transition-colors">
-                  🗑️
-                </button>
+        {/* LISTE DES COMPLÉMENTS */}
+        <div className="space-y-4">
+          {complements.map((c) => (
+            <div key={c.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group">
+              <div className="flex items-center gap-6">
+                <span className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-black">{c.price_cents / 100}€</span>
+                <p className="font-black uppercase text-slate-800 tracking-tight">{c.name}</p>
               </div>
+              <button 
+                onClick={() => handleDelete(c.id)}
+                className="opacity-0 group-hover:opacity-100 p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-all"
+              >
+                🗑️ Supprimer
+              </button>
             </div>
           ))}
-        </div>
-
-        <div className="mt-12 bg-emerald-900 rounded-[40px] p-8 text-white flex items-center justify-between overflow-hidden relative">
-            <div className="relative z-10">
-                <h4 className="text-xl font-black uppercase italic mb-2">Astuce Fluide</h4>
-                <p className="text-emerald-200 text-sm max-w-md font-medium">
-                    Ces options seront proposées aux clients lors de leur réservation en ligne ou pourront être ajoutées manuellement sur le planning.
-                </p>
-            </div>
-            <div className="text-6xl opacity-20 absolute -right-4 -bottom-4 rotate-12">🚀</div>
+          {complements.length === 0 && !loading && <p className="text-center text-slate-400 font-bold uppercase text-xs italic">Aucun complément pour le moment</p>}
         </div>
       </div>
     </div>
