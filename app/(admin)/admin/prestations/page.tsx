@@ -30,23 +30,38 @@ export default function PrestationsPage() {
   useEffect(() => { loadFlights(); }, []);
 
   const handleSave = async () => {
-    const method = editingId ? 'PUT' : 'POST';
-    const url = editingId ? `/api/flight-types/${editingId}` : '/api/flight-types';
+  const method = editingId ? 'PUT' : 'POST';
+  const url = editingId ? `/api/flight-types/${editingId}` : '/api/flight-types';
 
-    const res = await apiFetch(url, {
-      method,
-      body: JSON.stringify(formData)
-    });
-
-    if (res.ok) {
-      setShowModal(false);
-      setEditingId(null);
-      setFormData({ name: '', duration_minutes: 60, price_cents: 10000, restricted_start_time: '', restricted_end_time: '', color_code: '#3b82f6' });
-      loadFlights();
-    } else {
-      alert("Erreur lors de l'enregistrement");
-    }
+  // On s'assure que les nombres sont bien des nombres
+  const payload = {
+    ...formData,
+    duration_minutes: Number(formData.duration_minutes),
+    price_cents: Number(formData.price_cents)
   };
+
+  const res = await apiFetch(url, {
+    method,
+    body: JSON.stringify(payload)
+  });
+
+  if (res.ok) {
+    setShowModal(false);
+    setEditingId(null);
+    setFormData({ 
+      name: '', 
+      duration_minutes: 60, 
+      price_cents: 10000, 
+      restricted_start_time: '', 
+      restricted_end_time: '', 
+      color_code: '#3b82f6' 
+    });
+    loadFlights();
+  } else {
+    const errorData = await res.json();
+    alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
+  }
+};
 
   const deleteFlight = async (id: number) => {
     if (!confirm("Supprimer définitivement ce vol ?")) return;
