@@ -177,9 +177,10 @@ export default function PlanningAdmin() {
                   <input 
                     type="number"
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                    // On force une valeur vide si c'est null ou NaN pour éviter l'erreur console
+                    // On utilise || '' pour que si la valeur est nulle ou NaN, l'input soit simplement vide
                     value={formData.weight || ''} 
                     onChange={e => {
+                      // On convertit en nombre seulement si le champ n'est pas vide
                       const val = e.target.value === '' ? '' : parseInt(e.target.value);
                       setFormData({...formData, weight: val});
                     }}
