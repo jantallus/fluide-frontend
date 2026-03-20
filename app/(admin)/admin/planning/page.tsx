@@ -177,8 +177,12 @@ export default function PlanningAdmin() {
                   <input 
                     type="number"
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                    value={formData.weight}
-                    onChange={e => setFormData({...formData, weight: e.target.value})}
+                    // On force une valeur vide si c'est null ou NaN pour éviter l'erreur console
+                    value={formData.weight || ''} 
+                    onChange={e => {
+                      const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                      setFormData({...formData, weight: val});
+                    }}
                   />
                 </div>
               </div>
