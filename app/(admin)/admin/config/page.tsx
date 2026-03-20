@@ -7,8 +7,8 @@ export default function ConfigPage() {
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   
-  // États pour la modale d'ajout
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null); // AJOUTÉ
   const [newRotation, setNewRotation] = useState({ start_time: '', duration_minutes: 60, label: 'VOL' });
 
   const loadData = async () => {
@@ -30,17 +30,26 @@ export default function ConfigPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleAddRotation = async () => {
+  // MODIFIÉ : Gère POST (Ajout) et PUT (Modification)
+  const handleSaveRotation = async () => {
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/slot-definitions/${editingId}` : '/api/slot-definitions';
+    
     try {
-      const res = await apiFetch('/api/slot-definitions', {
-        method: 'POST',
+      const res = await apiFetch(url, {
+        method: method,
         body: JSON.stringify(newRotation)
       });
       if (res.ok) {
         setShowAddModal(false);
+        setEditingId(null);
+        setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL' });
         loadData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Erreur lors de l'enregistrement");
       }
-    } catch (err) { alert("Erreur lors de l'ajout"); }
+    } catch (err) { alert("Erreur réseau"); }
   };
 
   const deleteDef = async (id: number) => {
@@ -87,7 +96,11 @@ export default function ConfigPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">⏱️ Rotations types</h2>
             <button 
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                setEditingId(null);
+                setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL' });
+                setShowAddModal(true);
+              }}
               className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
             >
               + Ajouter une rotation
@@ -96,7 +109,15 @@ export default function ConfigPage() {
           
           <div className="space-y-3">
             {definitions.map((def) => (
-              <div key={def.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+              <div 
+                key={def.id} 
+                onClick={() => {
+                   setEditingId(def.id);
+                   setNewRotation({ start_time: def.start_time.slice(0,5), duration_minutes: def.duration_minutes, label: def.label });
+                   setShowAddModal(true);
+                }}
+                className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:bg-indigo-50 transition-colors"
+              >
                 <div className="flex items-center gap-6">
                   <span className="bg-white px-4 py-2 rounded-xl font-black text-indigo-600 shadow-sm">{def.start_time.slice(0, 5)}</span>
                   <div>
@@ -104,25 +125,49 @@ export default function ConfigPage() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase">{def.duration_minutes} min</p>
                   </div>
                 </div>
-                <button onClick={() => deleteDef(def.id)} className="opacity-0 group-hover:opacity-100 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all">🗑️</button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); deleteDef(def.id); }} 
+                  className="opacity-0 group-hover:opacity-100 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                >
+                  🗑️
+                </button>
               </div>
             ))}
           </div>
         </section>
 
-        {/* MODALE D'AJOUT */}
+        {/* MODALE D'AJOUT / MODIF */}
         {showAddModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
-              <h2 className="text-xl font-black uppercase italic mb-6">Nouvelle Rotation</h2>
+              <h2 className="text-xl font-black uppercase italic mb-6">
+                {editingId ? 'Modifier Rotation' : 'Nouvelle Rotation'}
+              </h2>
               <div className="space-y-4">
-                <input type="time" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={e => setNewRotation({...newRotation, start_time: e.target.value})} />
-                <input type="number" placeholder="Durée (min)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={e => setNewRotation({...newRotation, duration_minutes: parseInt(e.target.value)})} />
-                <select className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={e => setNewRotation({...newRotation, label: e.target.value})}>
+                <input 
+                  type="time" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.start_time}
+                  onChange={e => setNewRotation({...newRotation, start_time: e.target.value})} 
+                />
+                <input 
+                  type="number" 
+                  placeholder="Durée (min)" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.duration_minutes}
+                  onChange={e => setNewRotation({...newRotation, duration_minutes: parseInt(e.target.value)})} 
+                />
+                <select 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.label}
+                  onChange={e => setNewRotation({...newRotation, label: e.target.value})}
+                >
                   <option value="VOL">VOL</option>
                   <option value="PAUSE">PAUSE</option>
                 </select>
-                <button onClick={handleAddRotation} className="w-full bg-indigo-600 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
+                <button onClick={handleSaveRotation} className="w-full bg-indigo-600 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">
+                   {editingId ? 'Mettre à jour' : 'Enregistrer'}
+                </button>
                 <button onClick={() => setShowAddModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
               </div>
             </div>
