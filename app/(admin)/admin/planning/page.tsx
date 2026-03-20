@@ -16,12 +16,17 @@ export default function PlanningAdmin() {
   const [calendarKey, setCalendarKey] = useState(0);
   
   // État pour la réservation
-  const [formData, setFormData] = useState({
-    title: '',
-    flight_type_id: '',
-    weight: '',
-    notes: ''
-  });
+  const [formData, setFormData] = useState<{
+  title: string,
+  flight_type_id: string,
+  weight: string | number, // On autorise les deux types ici
+  notes: string
+}>({
+  title: '',
+  flight_type_id: '',
+  weight: '',
+  notes: ''
+});
 
   const [genConfig, setGenConfig] = useState({ 
     startDate: '', 
