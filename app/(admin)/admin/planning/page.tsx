@@ -31,7 +31,6 @@ export default function PlanningAdmin() {
 
   const loadData = async () => {
     try {
-      // MODIFIÉ : On pointe vers /api/slots (ta table V3)
       const [apptsRes, monRes, flightRes] = await Promise.all([
         apiFetch('/api/slots'),
         apiFetch('/api/monitors'),
@@ -42,9 +41,9 @@ export default function PlanningAdmin() {
       
       if (monRes.ok) {
         const mons = await monRes.json();
-        // MODIFIÉ : On force l'ID en string pour correspondre aux UUIDs de la DB
+        // On force l'ID en string pour correspondre aux UUIDs de la base de données
         setMonitors(mons.map((m: any) => ({ 
-          id: m.id.toString(), 
+          id: String(m.id), 
           title: m.first_name 
         })));
       }
