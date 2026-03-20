@@ -132,7 +132,18 @@ export default function PlanningAdmin() {
           allDaySlot={false}
           height="auto"
           eventClick={handleEventClick}
-        />
+          slotDuration="00:05:00"        // Grain plus fin pour éviter les chevauchements visuels
+  snapDuration="00:05:00"
+  eventOverlap={false}           // Interdire visuellement la superposition
+  slotEventOverlap={false}       // Forcer les événements à se suivre proprement
+  displayEventTime={true}
+  eventTimeFormat={{
+    hour: '2-digit',
+    minute: '2-digit',
+    meridiem: false,
+    hour12: false
+  }}
+/>
       </div>
 
       {/* MODALE ÉDITION / RÉSERVATION */}
