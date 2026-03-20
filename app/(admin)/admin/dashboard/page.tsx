@@ -63,7 +63,7 @@ export default function DashboardPage() {
               <div key={f.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-[30px] border border-slate-100">
                 <div className="flex items-center gap-6">
                   <span className="bg-white px-4 py-2 rounded-xl font-black text-sky-600 shadow-sm border border-slate-100">
-                    {f.start_time.split('T')[1].slice(0, 5)}
+                    {new Date(f.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <div>
                     <p className="font-black uppercase text-slate-800">{f.title || 'Client Inconnu'}</p>
