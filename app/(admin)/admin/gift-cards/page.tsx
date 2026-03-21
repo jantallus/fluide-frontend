@@ -38,40 +38,41 @@ export default function GiftCardsPage() {
   useEffect(() => { loadData(); }, []);
 
   const handleCreate = async () => {
-    if (!newCard.flight_type_id || !newCard.buyer_name || !newCard.beneficiary_name) {
-      alert("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
+  if (!newCard.flight_type_id || !newCard.buyer_name || !newCard.beneficiary_name) {
+    alert("Veuillez remplir tous les champs obligatoires");
+    return;
+  }
 
-    const flight = flights.find(f => f.id === parseInt(newCard.flight_type_id));
-    
-    // Calcul du prix total (Vol + Compléments sélectionnés)
-    const selectedCompsData = complements.filter(c => newCard.selectedComplements.includes(c.id));
-    const totalCompsPrice = selectedCompsData.reduce((acc, curr) => acc + curr.price_cents, 0);
-    const totalPrice = (flight?.price_cents || 0) + totalCompsPrice;
+  const flight = flights.find(f => f.id === parseInt(newCard.flight_type_id));
+  const selectedCompsData = complements.filter(c => newCard.selectedComplements.includes(c.id));
+  const totalCompsPrice = selectedCompsData.reduce((acc, curr) => acc + curr.price_cents, 0);
+  const totalPrice = (flight?.price_cents || 0) + totalCompsPrice;
 
-    // On prépare les notes pour le planning futur
-    const notes = selectedCompsData.length > 0 
-      ? `Options incluses : ${selectedCompsData.map(c => c.name).join(', ')}`
-      : '';
+  // On prépare les notes qui seront stockées dans la colonne 'notes' de la table gift_cards
+  const notesString = selectedCompsData.length > 0 
+    ? `Options incluses : ${selectedCompsData.map(c => c.name).join(', ')}`
+    : '';
 
-    const res = await apiFetch('/api/gift-cards', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        ...newCard, 
-        price_paid_cents: totalPrice,
-        notes: notes 
-      })
-    });
+  const res = await apiFetch('/api/gift-cards', {
+    method: 'POST',
+    body: JSON.stringify({ 
+      flight_type_id: newCard.flight_type_id,
+      buyer_name: newCard.buyer_name,
+      beneficiary_name: newCard.beneficiary_name,
+      price_paid_cents: totalPrice,
+      notes: notesString // On envoie la string formatée
+    })
+  });
 
-    if (res.ok) {
-      setShowModal(false);
-      setNewCard({ flight_type_id: '', buyer_name: '', beneficiary_name: '', selectedComplements: [] });
-      loadData();
-    } else {
-      alert("Erreur lors de la création du bon");
-    }
-  };
+  if (res.ok) {
+    setShowModal(false);
+    setNewCard({ flight_type_id: '', buyer_name: '', beneficiary_name: '', selectedComplements: [] });
+    loadData();
+  } else {
+    const errorMsg = await res.json();
+    alert("Erreur : " + (errorMsg.error || "Problème lors de la création"));
+  }
+};
 
   const toggleComplement = (id: number) => {
     setNewCard(prev => ({
