@@ -21,16 +21,24 @@ export default function LoginPage() {
       console.log("Réponse reçue :", data);
 
       if (res.ok) {
-  const data = await res.json();
-  // IMPORTANT : On sépare le token du reste
-  localStorage.setItem('token', data.token); 
-  localStorage.setItem('user', JSON.stringify({ 
-    first_name: data.first_name, 
-    role: data.role 
-  }));
+        const data = await res.json();
+        
+        // 1. On stocke le jeton pour l'API
+        localStorage.setItem('token', data.token); 
+        
+        // 2. On stocke les infos de l'utilisateur en texte (JSON)
+        localStorage.setItem('user', JSON.stringify({ 
+          first_name: data.first_name, 
+          role: data.role 
+        }));
 
-  window.location.href = '/admin/dashboard';
-}
+        // 3. On déclenche la redirection
+        if (data.role === 'admin') {
+          window.location.assign('/admin/dashboard');
+        } else {
+          window.location.assign('/admin/planning');
+        }
+      }
     } catch (err: any) {
       alert("ERREUR RÉSEAU : " + err.message);
       setStatus('Erreur réseau : ' + err.message);
