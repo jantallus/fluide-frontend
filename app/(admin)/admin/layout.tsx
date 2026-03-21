@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
     { name: 'Moniteurs', icon: '👥', path: '/admin/moniteurs' },
     { name: 'Clients', icon: '👤', path: '/admin/clients', badge: clientCount }, // On injecte le compteur
-    { name: 'Coupons & Cadeaux', icon: '🎁', path: '/admin/coupons' },
+    { name: 'Bons Cadeaux', icon: '🎁', path: '/admin/gift-cards' },
     { name: 'Configurations', icon: '⚙️', path: '/admin/config' },
   ];
 
