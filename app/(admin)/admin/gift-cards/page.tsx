@@ -8,6 +8,21 @@ export default function GiftCardsPage() {
   const [complements, setComplements] = useState<any[]>([]); // État pour les compléments
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const toggleCardStatus = async (id: number, currentStatus: string) => {
+  const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
+  const confirmMsg = newStatus === 'valid' 
+    ? "Réactiver ce bon ? Il pourra de nouveau être utilisé sur le planning." 
+    : "Marquer ce bon comme utilisé manuellement ?";
+    
+  if (!confirm(confirmMsg)) return;
+
+  const res = await apiFetch(`/api/gift-cards/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus })
+  });
+
+  if (res.ok) loadData();
+};
   
   // État du nouveau bon avec support des compléments
   const [newCard, setNewCard] = useState({ 
@@ -119,9 +134,16 @@ export default function GiftCardsPage() {
                 <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Acheteur : {c.buyer_name}</p>
               </div>
             </div>
-            <div className={`px-6 py-2 rounded-full font-black uppercase text-xs ${c.status === 'valid' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-              {c.status === 'valid' ? '● Valide' : 'Utilisé'}
-            </div>
+            <button 
+              onClick={() => toggleCardStatus(c.id, c.status)}
+              className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all hover:scale-105 shadow-sm ${
+                c.status === 'valid' 
+                ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' 
+                : 'bg-rose-100 text-rose-400 hover:bg-rose-200'
+              }`}
+            >
+              {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
+            </button>
           </div>
         ))}
       </div>
