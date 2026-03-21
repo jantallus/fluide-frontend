@@ -1,17 +1,26 @@
 "use client";
-import { useState, useEffect } from 'react'; // Ajout de useEffect
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch } from '@/lib/api'; // Import pour le compteur
+import { apiFetch } from '@/lib/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [clientCount, setClientCount] = useState(0); // État pour le compteur
+  const [clientCount, setClientCount] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Récupération du nombre de clients sans casser le reste
+  // 1. Récupération du rôle et du compteur
   useEffect(() => {
+    // Récupération du rôle
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      setUserRole(parsed.role);
+    }
+
+    // Récupération du nombre de clients (uniquement si admin)
     const fetchCount = async () => {
       try {
         const res = await apiFetch('/api/admin/clients');
@@ -31,32 +40,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/login');
   };
 
-  // Menu conservé à l'identique avec l'ajout de la propriété "badge" pour les clients
-  const menuItems = [
-    { name: 'Tableau de bord', icon: '📊', path: '/admin/dashboard' },
-    { name: 'Calendrier', icon: '📅', path: '/admin/planning' },
+  // 2. Configuration du menu avec filtrage par RÔLE
+  // On définit quels rôles ont accès à quelle page
+  const allMenuItems = [
+    { name: 'Tableau de bord', icon: '📊', path: '/admin/dashboard', roles: ['admin'] },
+    { name: 'Calendrier', icon: '📅', path: '/admin/planning', roles: ['admin', 'permanent'] },
     { 
       name: 'Prestations', 
       icon: '🪂', 
       path: '/admin/prestations',
+      roles: ['admin'],
       subItems: [{ name: 'Photos & Vidéos', path: '/admin/prestations/complements' }]
     },
-    { name: 'Moniteurs', icon: '👥', path: '/admin/moniteurs' },
-    { name: 'Clients', icon: '👤', path: '/admin/clients', badge: clientCount }, // On injecte le compteur
-    { name: 'Bons Cadeaux', icon: '🎁', path: '/admin/gift-cards' },
-    { name: 'Configurations', icon: '⚙️', path: '/admin/config' },
+    { name: 'Moniteurs', icon: '👥', path: '/admin/monitors', roles: ['admin'] }, // Chemin corrigé /monitors
+    { name: 'Clients', icon: '👤', path: '/admin/clients', badge: clientCount, roles: ['admin'] },
+    { name: 'Bons Cadeaux', icon: '🎁', path: '/admin/gift-cards', roles: ['admin'] },
+    { name: 'Configurations', icon: '⚙️', path: '/admin/config', roles: ['admin'] },
   ];
+
+  // Filtrage effectif
+  const authorizedMenus = allMenuItems.filter(item => 
+    userRole && item.roles.includes(userRole)
+  );
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
       
-      {/* SIDEBAR GAUCHE */}
+      {/* SIDEBAR GAUCHE (Style conservé) */}
       <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-900 text-white transition-all duration-300 flex flex-col shadow-2xl z-20`}>
         <div className="p-6 flex justify-between items-center border-b border-slate-800 h-20">
           {!isCollapsed && (
-            <span className="font-black italic text-xl tracking-tighter">
-              FLUIDE <span className="text-sky-400">PRO</span>
-            </span>
+            <div className="flex flex-col">
+              <span className="font-black italic text-xl tracking-tighter leading-none">
+                FLUIDE <span className="text-sky-400">PRO</span>
+              </span>
+              <span className="text-[8px] uppercase font-bold text-slate-500 mt-1 tracking-widest">
+                {userRole === 'admin' ? '🛡️ Admin' : '🔑 Permanent'}
+              </span>
+            </div>
           )}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
@@ -67,7 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
+          {authorizedMenus.map((item) => {
             const isActive = pathname.startsWith(item.path);
             
             return (
@@ -83,7 +104,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {!isCollapsed && <span className="font-bold text-sm">{item.name}</span>}
                   </div>
 
-                  {/* AJOUT DU BADGE VISUEL DANS LE LIEN */}
                   {!isCollapsed && item.badge !== undefined && item.badge > 0 && (
                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                       isActive ? 'bg-white text-sky-600' : 'bg-sky-500/20 text-sky-400'
@@ -136,11 +156,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900">Ju Admin</p>
-              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">En ligne</p>
+              <p className="text-sm font-black text-slate-900">
+                {userRole === 'admin' ? 'Ju Admin' : 'Moniteur'}
+              </p>
+              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest text-right">En ligne</p>
             </div>
-            <div className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center font-black text-sm">
-              J
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm text-white ${userRole === 'admin' ? 'bg-slate-900' : 'bg-sky-600'}`}>
+              {userRole === 'admin' ? 'J' : 'M'}
             </div>
           </div>
         </header>
