@@ -1,23 +1,19 @@
 // PROD CONFIG FINAL V3
 const BASE_URL = "https://fluide-production.up.railway.app";
 
-export async function apiFetch(endpoint: string, options: any = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
+export async function apiFetch(endpoint, options = {}) {
+  const token = localStorage.getItem('token'); // On récupère la clé
+  
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}), // On l'envoie au serveur
     ...options.headers,
   };
 
-  return fetch(url, { ...options, headers }).then(res => {
-    if (res.status === 401 || res.status === 403) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }
-    }
-    return res;
+  const response = await fetch(`https://fluide-production.up.railway.app${endpoint}`, {
+    ...options,
+    headers,
   });
+
+  return response;
 }

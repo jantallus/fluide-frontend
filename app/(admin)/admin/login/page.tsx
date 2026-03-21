@@ -21,16 +21,18 @@ export default function LoginPage() {
       console.log("Réponse reçue :", data);
 
       if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data));
+        const data = await res.json();
         
-        // CETTE ALERTE DOIT S'AFFICHER SI LE SERVEUR DIT OUI
-        alert("SERVEUR OK ! Redirection vers le Dashboard...");
-        
-        // Redirection brutale vers l'URL absolue
+        // On stocke le token seul ET l'objet user complet pour tes composants
+        localStorage.setItem('token', data.token); 
+        localStorage.setItem('user', JSON.stringify({
+          id: data.id,
+          role: data.role,
+          first_name: data.first_name
+        }));
+
+        alert("Accès validé pour " + data.first_name);
         window.location.replace('/admin/dashboard');
-      } else {
-        setStatus('Erreur : ' + (data.message || 'Identifiants incorrects'));
       }
     } catch (err: any) {
       alert("ERREUR RÉSEAU : " + err.message);
