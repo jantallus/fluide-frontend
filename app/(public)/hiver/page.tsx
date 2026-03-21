@@ -170,7 +170,7 @@ export default function HiverPage() {
           {/* PHOTO RÉELLE INTÉGRÉE ICI */}
           <div className="image-container-hiver">
             <Image 
-              src="/hiver-hero.jpg" 
+              src="/hhero2.jpg" 
               alt="Décollage à ski à La Clusaz" 
               fill 
               style={{ objectFit: 'cover' }} 
