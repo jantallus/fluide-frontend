@@ -30,25 +30,32 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Stockage sécurisé des infos de session
+        const data = await res.json();
+        
+        // --- ÉTAPE A : SAUVEGARDE ---
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify({ 
           first_name: data.first_name, 
           role: data.role 
         }));
 
-        // Redirection basée sur le rôle renvoyé par le serveur
+        // --- ÉTAPE B : ALERTE DE SÉCURITÉ (Pour confirmer que le code arrive ici) ---
+        // Tu peux supprimer cette ligne après le test réussi
+        alert("Connexion validée ! Rôle : " + data.role + ". Redirection en cours...");
+
+        // --- ÉTAPE C : REDIRECTION FORCÉE ---
+        // On utilise l'URL absolue pour éviter tout problème de dossier
         if (data.role === 'admin') {
-          window.location.href = '/admin/dashboard';
+          window.location.assign('/admin/dashboard');
         } else if (data.role === 'permanent') {
-          window.location.href = '/admin/planning';
+          window.location.assign('/admin/planning');
         } else {
-          setError("Accès non autorisé au backoffice.");
-          localStorage.clear();
+          setError("Accès non autorisé pour le rôle : " + data.role);
         }
+
       } else {
-        // Affiche le message d'erreur précis du serveur (ex: "Identifiants invalides")
-        setError(data.message || 'Erreur d\'authentification');
+        const errData = await res.json();
+        setError(errData.message || 'Identifiants invalides');
       }
     } catch (err) {
       // Diagnostic précis en cas d'échec de liaison
