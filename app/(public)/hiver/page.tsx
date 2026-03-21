@@ -128,7 +128,7 @@ export default function HiverPage() {
       {/* --- SECTION 1 : HERO --- */}
       <section style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-          <Image src="/ete-hero.jpg" alt="Parapente Hiver" fill style={{ objectFit: 'cover' }} priority />
+          <Image src="/hiver-hero.jpg" alt="Parapente Hiver" fill style={{ objectFit: 'cover' }} priority />
         </div>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.1, maxWidth: '800px', textShadow: '0 4px 15px rgba(0,0,0,0.6)' }}>
