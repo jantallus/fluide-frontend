@@ -24,22 +24,19 @@ export default function LoginPage() {
       if (res.ok) {
         const data = await res.json();
         
-        // 1. Stockage du token pour les appels API
+        // Stockage
         localStorage.setItem('token', data.token);
-        
-        // 2. Stockage des infos utilisateur pour le Layout
         localStorage.setItem('user', JSON.stringify({ 
           first_name: data.first_name, 
           role: data.role 
         }));
 
-        // 3. Redirection intelligente selon le rôle
+        // Redirection intelligente
         if (data.role === 'admin') {
           router.push('/admin/dashboard');
         } else if (data.role === 'permanent') {
           router.push('/admin/planning');
         } else {
-          // Cas sécurité : si un moniteur "journée" essaie de se connecter
           setError("Votre compte n'a pas d'accès au backoffice.");
           localStorage.clear();
         }
@@ -48,7 +45,8 @@ export default function LoginPage() {
         setError(errData.message || 'Identifiants invalides');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur de production');
+      console.error(err);
+      setError('Impossible de joindre le serveur. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }
@@ -104,21 +102,9 @@ export default function LoginPage() {
               : 'bg-slate-900 text-white hover:bg-sky-600 hover:scale-[1.02] active:scale-95'
             }`}
           >
-            {loading ? (
-              <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-              </span>
-            ) : (
-              <>Prendre les commandes 🚀</>
-            )}
+            {loading ? "Vérification..." : "Prendre les commandes 🚀"}
           </button>
         </form>
-
-        <p className="text-center mt-8 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-          Accès réservé au personnel Fluide
-        </p>
       </div>
     </div>
   );
