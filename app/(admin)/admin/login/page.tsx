@@ -5,85 +5,43 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
+    
     try {
-      const res = await fetch('https://fluide-production.up.railway.app/api/login', {
+      const response = await fetch('https://fluide-production.up.railway.app/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: email.trim(), password })
       });
 
-      // LOG POUR DEBUG
-      console.log("Statut HTTP reçu :", res.status);
+      const data = await response.json();
 
-      const data = await res.json();
-      console.log("Données JSON reçues :", data);
-
-      if (res.ok) {
+      if (response.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ first_name: data.first_name, role: data.role }));
-        
-        // ALERTE DE FORCE (Si ça s'affiche, c'est gagné)
-        alert("BRAVO ! Connexion réussie. Rôle : " + data.role);
-
-        // REDIRECTION BRUTALE
-        if (data.role === 'admin') {
-          window.location.href = '/admin/dashboard';
-        } else {
-          window.location.href = '/admin/planning';
-        }
+        localStorage.setItem('user', JSON.stringify(data));
+        alert("ALERTE : Le serveur a dit OUI. On tente la redirection vers le dashboard.");
+        window.location.assign('/admin/dashboard');
       } else {
-        setError(data.message || "Erreur d'identifiants");
+        setError(data.message || "Identifiants refusés");
       }
-    } catch (err) {
-      console.error("ERREUR CAPTURÉE :", err);
-      // On affiche l'erreur technique pour comprendre pourquoi le navigateur bloque
-      setError("Erreur technique : " + (err instanceof Error ? err.message : "Inconnue"));
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      alert("ERREUR RÉSEAU : " + err.message);
+      setError("Détail technique : " + err.message);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
-      <div className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-md">
-        <h1 className="text-3xl font-black text-center mb-8 uppercase italic">Fluide <span className="text-sky-500">Pro</span></h1>
-        
-        {error && (
-          <div className="bg-rose-100 text-rose-600 p-4 rounded-2xl mb-6 text-sm font-bold border border-rose-200">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Mot de passe"
-            className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button 
-            type="submit" 
-            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold uppercase hover:bg-sky-600 transition-colors"
-          >
-            {loading ? "Chargement..." : "Connexion 🚀"}
-          </button>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', fontFamily: 'sans-serif' }}>
+      <div style={{ background: 'white', padding: '40px', borderRadius: '20px', width: '100%', maxWidth: '400px', color: '#1e293b' }}>
+        <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>FLUIDE PRO</h1>
+        {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '10px', marginBottom: '10px', fontSize: '12px' }}>{error}</div>}
+        <form onSubmit={handleLogin}>
+          <input type="email" placeholder="Email" style={{ width: '100%', padding: '15px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #ddd' }} value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Mot de passe" style={{ width: '100%', padding: '15px', marginBottom: '20px', borderRadius: '10px', border: '1px solid #ddd' }} value={password} onChange={e => setPassword(e.target.value)} required />
+          <button type="submit" style={{ width: '100%', padding: '15px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>SE CONNECTER</button>
         </form>
       </div>
     </div>
