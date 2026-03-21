@@ -15,6 +15,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log("Tentative d'appel vers l'API...");
       const res = await fetch('https://fluide-production.up.railway.app/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -23,32 +24,25 @@ export default function LoginPage() {
 
       if (res.ok) {
         const data = await res.json();
-        
-        // Stockage
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify({ 
           first_name: data.first_name, 
           role: data.role 
         }));
 
-        // Redirection intelligente
         if (data.role === 'admin') {
           router.push('/admin/dashboard');
         } else if (data.role === 'permanent') {
           router.push('/admin/planning');
-        } else {
-          setError("Votre compte n'a pas d'accès au backoffice.");
-          localStorage.clear();
         }
       } else {
-        const errData = await res.json();
-        setError(errData.message || 'Identifiants invalides');
+        const errorData = await res.json();
+        setError(errorData.message || 'Identifiants invalides');
       }
     } catch (err) {
-      console.error(err);
-      setError('Impossible de joindre le serveur. Vérifiez votre connexion.');
-    } finally {
-      setLoading(false);
+      // ICI : On affiche l'erreur exacte dans la console F12
+      console.error("ERREUR RÉSEAU DÉTECTÉE :", err);
+      setError('Serveur injoignable. Vérifie la console (F12).');
     }
   };
 
