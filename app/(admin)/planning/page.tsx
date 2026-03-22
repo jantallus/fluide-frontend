@@ -119,8 +119,8 @@ export default function PlanningAdmin() {
           resources={monitors}
           // MODIFIÉ : Mapping complet pour l'affichage
           events={appointments.map(a => ({
-            id: a.id.toString(),
-            resourceId: a.monitor_id.toString(),
+            id: a.id?.toString() || Math.random().toString(),
+            resourceId: a.monitor_id?.toString() || "",
             start: a.start_time,
             end: a.end_time,
             title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
@@ -173,7 +173,11 @@ export default function PlanningAdmin() {
                   onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
                 >
                   <option value="">Choisir un vol...</option>
-                  {flightTypes.map(f => <option key={f.id} value={f.id}>{f.name} - {f.price_cents/100}€</option>)}
+                  {flightTypes?.map(f => (
+                    <option key={f.id?.toString()} value={f.id}>
+                      {f.name} - {f.price_cents ? f.price_cents/100 : 0}€
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="flex gap-4">
