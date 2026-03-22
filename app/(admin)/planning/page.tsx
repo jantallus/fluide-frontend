@@ -15,7 +15,6 @@ export default function PlanningAdmin() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
   const [slotDuration, setSlotDuration] = useState<number>(0); // Durée du créneau en minutes
-  const [activeTab, setActiveTab] = useState<'client' | 'note'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
