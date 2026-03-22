@@ -14,22 +14,24 @@ export default function PlanningAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
+  
+  // --- NOUVEAUX ÉTATS POUR LES ONGLETS ET LE BLOCAGE ---
   const [activeTab, setActiveTab] = useState<'client' | 'note'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
-  const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]); // Pour le blocage ciblé
+  const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   
   // État pour la réservation
   const [formData, setFormData] = useState<{
-  title: string,
-  flight_type_id: string,
-  weight: string | number, // On autorise les deux types ici
-  notes: string
-}>({
-  title: '',
-  flight_type_id: '',
-  weight: '',
-  notes: ''
-});
+    title: string,
+    flight_type_id: string,
+    weight: string | number,
+    notes: string
+  }>({
+    title: '',
+    flight_type_id: '',
+    weight: '',
+    notes: ''
+  });
 
   const [genConfig, setGenConfig] = useState({ 
     startDate: '', 
@@ -49,7 +51,6 @@ export default function PlanningAdmin() {
       
       if (monRes.ok) {
         const mons = await monRes.json();
-        // On force l'ID en string pour correspondre aux UUIDs de la base de données
         setMonitors(mons.map((m: any) => ({ 
           id: String(m.id), 
           title: m.first_name 
@@ -78,75 +79,69 @@ export default function PlanningAdmin() {
       weight: event.extendedProps.weight || '',
       notes: event.extendedProps.notes || ''
     });
+    // On réinitialise les onglets à chaque ouverture de modale
+    setActiveTab('client');
+    setBlockType('none');
+    setSelectedMonitors([]);
     setShowEditModal(true);
   };
 
-  const handleSave = async () => {
+  // --- NOUVELLE FONCTION DE SAUVEGARDE (INCLUANT LE BLOCAGE) ---
+  const handleSaveNote = async () => {
     if (!selectedEvent) return;
+    try {
+      if (blockType === 'all') {
+        const allSlots = appointments.filter(a => a.start_time === selectedEvent.start_time);
+        await Promise.all(allSlots.map(slot => 
+          apiFetch(`/api/slots/${slot.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ title: formData.title || '❌ BLOCAGE', notes: formData.notes, status: 'booked' })
+          })
+        ));
+      } else if (blockType === 'specific') {
+        const slotsToBlock = appointments.filter(a => 
+          a.start_time === selectedEvent.start_time && selectedMonitors.includes(a.monitor_id?.toString() || "")
+        );
+        await Promise.all(slotsToBlock.map(slot => 
+          apiFetch(`/api/slots/${slot.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ title: formData.title || '❌ INDISPO', notes: formData.notes, status: 'booked' })
+          })
+        ));
+      } else {
+        await apiFetch(`/api/slots/${selectedEvent.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            ...formData,
+            status: formData.title ? 'booked' : 'available'
+          })
+        });
+      }
+      setShowEditModal(false);
+      await loadData();
+    } catch (err) { alert("Erreur lors de la sauvegarde"); }
+  };
+
+  // --- NOUVELLE FONCTION POUR LIBÉRER LE CRÉNEAU ---
+  const handleRelease = async () => {
+    if (!selectedEvent || !confirm("Libérer ce créneau ?")) return;
     try {
       const res = await apiFetch(`/api/slots/${selectedEvent.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          ...formData,
-          status: formData.title ? 'booked' : 'available'
+          title: '',
+          flight_type_id: null,
+          weight: null,
+          notes: '',
+          status: 'available'
         })
       });
       if (res.ok) {
         setShowEditModal(false);
-        await loadData(); // Force le rechargement immédiat de la base de données
+        await loadData();
       }
-    } catch (err) { alert("Erreur lors de la sauvegarde"); }
+    } catch (err) { console.error(err); }
   };
-
-  const handleSaveNote = async () => {
-  if (!selectedEvent) return;
-
-  // 1. Si blocage global "TOUT LE MONDE"
-  if (blockType === 'all') {
-    const allSlotsAtSameTime = appointments.filter(a => a.start_time === selectedEvent.start_time);
-    
-    await Promise.all(allSlotsAtSameTime.map(slot => 
-      apiFetch(`/api/slots/${slot.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          title: formData.title || '❌ BLOCAGE',
-          notes: formData.notes,
-          status: 'booked'
-        })
-      })
-    ));
-  } 
-  // 2. Si blocage "MONITEURS SPÉCIFIQUES"
-  else if (blockType === 'specific') {
-    const slotsToBlock = appointments.filter(a => 
-      a.start_time === selectedEvent.start_time && selectedMonitors.includes(a.monitor_id?.toString())
-    );
-
-    await Promise.all(slotsToBlock.map(slot => 
-      apiFetch(`/api/slots/${slot.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          title: formData.title || '❌ INDISPO',
-          notes: formData.notes,
-          status: 'booked'
-        })
-      })
-    ));
-  }
-  // 3. Simple Note sur le créneau actuel
-  else {
-    await apiFetch(`/api/slots/${selectedEvent.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        ...formData,
-        status: formData.title.trim() !== "" ? 'booked' : 'available'
-      })
-    });
-  }
-
-  setShowEditModal(false);
-  loadData();
-};
 
   return (
     <div className="p-4 bg-slate-50 min-h-screen">
@@ -170,7 +165,6 @@ export default function PlanningAdmin() {
           plugins={[resourceTimeGridPlugin, interactionPlugin]}
           initialView="resourceTimeGridDay"
           resources={monitors}
-          // MODIFIÉ : Mapping complet pour l'affichage
           events={appointments.map(a => ({
             id: a.id?.toString() || Math.random().toString(),
             resourceId: a.monitor_id?.toString() || "",
@@ -190,82 +184,135 @@ export default function PlanningAdmin() {
           allDaySlot={false}
           height="auto"
           eventClick={handleEventClick}
-          slotDuration="00:05:00"        // Grain plus fin pour éviter les chevauchements visuels
-  snapDuration="00:05:00"
-  eventOverlap={false}           // Interdire visuellement la superposition
-  slotEventOverlap={false}       // Forcer les événements à se suivre proprement
-  displayEventTime={true}
-  eventTimeFormat={{
-    hour: '2-digit',
-    minute: '2-digit',
-    meridiem: false,
-    hour12: false
-  }}
-/>
+          slotDuration="00:05:00"
+          snapDuration="00:05:00"
+          eventOverlap={false}
+          slotEventOverlap={false}
+          displayEventTime={true}
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            meridiem: false,
+            hour12: false
+          }}
+        />
       </div>
 
-      {/* MODALE ÉDITION / RÉSERVATION */}
-      {/* MODALE ÉDITION */}
-{showEditModal && (
-  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-    <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
-      
-      <h2 className="text-2xl font-black uppercase italic mb-6 text-slate-900">Gestion Créneau</h2>
+      {/* MODALE ÉDITION / RÉSERVATION AVEC ONGLETS */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
+            <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
+            
+            {/* ONGLETS */}
+            <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
+              <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
+              <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note / Alerte</button>
+            </div>
 
-      {/* --- C'EST ICI QUE TU COLLES LE BLOC --- */}
-      
-      {/* ONGLETS */}
-      <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
-        <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[10px] ${activeTab === 'client' ? 'bg-white text-sky-500' : 'text-slate-400'}`}>👤 CLIENT</button>
-        <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[10px] ${activeTab === 'note' ? 'bg-white text-amber-500' : 'text-slate-400'}`}>📝 NOTE / ALERTE</button>
-      </div>
+            <div className="space-y-4">
+              {activeTab === 'client' ? (
+                <>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
+                    <input 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={formData.title}
+                      onChange={e => setFormData({...formData, title: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
+                    <select 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={formData.flight_type_id}
+                      onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
+                    >
+                      <option value="">Choisir un vol...</option>
+                      {flightTypes?.map(f => (
+                        <option key={f.id?.toString()} value={f.id}>
+                          {f.name} - {f.price_cents ? f.price_cents/100 : 0}€
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+                      <input 
+                        type="number"
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                        value={formData.weight} 
+                        onChange={e => {
+                          const val = e.target.value === '' ? '' : Number(e.target.value);
+                          setFormData({...formData, weight: val});
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Note</label>
+                    <textarea 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24"
+                      value={formData.notes}
+                      onChange={e => setFormData({...formData, notes: e.target.value})}
+                      placeholder="Infos météo, retard, indispo..."
+                    />
+                  </div>
 
-      {activeTab === 'client' ? (
-        <div className="space-y-4">
-          {/* Tes inputs clients (Nom, Prestation, Poids) */}
-          <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Client</label>
-            <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          </div>
-          <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prestation</label>
-            <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.flight_type_id} onChange={e => setFormData({...formData, flight_type_id: e.target.value})}>
-              <option value="">Choisir...</option>
-              {flightTypes?.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
-            </select>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-           {/* Le contenu de l'onglet NOTE que tu as fourni */}
-           <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Message / Note</label>
-            <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="Infos météo, retard, indispo..." />
-          </div>
-          <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-             {/* ... Reste du bloc select blockType et checkbox monitors ... */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Action sur le planning</label>
+                    <select 
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold"
+                      value={blockType}
+                      onChange={(e: any) => setBlockType(e.target.value)}
+                    >
+                      <option value="none">Simple note (pas de blocage)</option>
+                      <option value="all">🚫 Bloquer TOUS les pilotes</option>
+                      <option value="specific">👥 Bloquer certains pilotes</option>
+                    </select>
+
+                    {blockType === 'specific' && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {monitors.map(m => (
+                          <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={selectedMonitors.includes(m.id.toString())}
+                              onChange={(e) => {
+                                const id = m.id.toString();
+                                setSelectedMonitors(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id));
+                              }}
+                            />
+                            {m.title}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <div className="pt-4 space-y-3">
+                <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4">
+                  Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
+                </button>
+                {selectedEvent?.title && (
+                  <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
+                    🗑️ Libérer le créneau
+                  </button>
+                )}
+                <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">
+                  Annuler
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
-
-      {/* BOUTONS ACTIONS (En bas de modale) */}
-      <div className="pt-6 space-y-3">
-        <button onClick={handleSaveNote} className="w-full bg-slate-900 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">
-          Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
-        </button>
-        {selectedEvent?.title && (
-          <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
-            🗑️ Libérer le créneau
-          </button>
-        )}
-        <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
-      </div>
-
-      {/* --- FIN DU BLOC --- */}
-
-    </div>
-  </div>
-)}
 
       {/* MODALE GÉNÉRATION */}
       {showGenModal && (
