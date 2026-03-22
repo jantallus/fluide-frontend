@@ -4,10 +4,12 @@ import { apiFetch } from '../../../lib/api';
 
 export default function PrestationsPage() {
   const [flights, setFlights] = useState<any[]>([]);
-  const [slotDefs, setSlotDefs] = useState<any[]>([]); // Pour charger les créneaux disponibles
+  const [slotDefs, setSlotDefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // États pour la gestion du formulaire
+  // Nouveau state pour le filtre d'affichage (ALL, SUMMER, WINTER)
+  const [seasonFilter, setSeasonFilter] = useState<'ALL' | 'SUMMER' | 'WINTER'>('ALL');
+  
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -17,7 +19,8 @@ export default function PrestationsPage() {
     restricted_start_time: '',
     restricted_end_time: '',
     color_code: '#3b82f6',
-    allowed_time_slots: [] as string[] // Nouveau champ JSON
+    allowed_time_slots: [] as string[],
+    season: 'ALL' // Nouveau champ
   });
 
   const loadData = async () => {
@@ -25,7 +28,7 @@ export default function PrestationsPage() {
     try {
       const [flightsRes, slotsRes] = await Promise.all([
         apiFetch('/api/flight-types'),
-        apiFetch('/api/slot-definitions') // On charge les rotations
+        apiFetch('/api/slot-definitions')
       ]);
       if (flightsRes.ok) setFlights(await flightsRes.json());
       if (slotsRes.ok) setSlotDefs(await slotsRes.json());
@@ -72,14 +75,14 @@ export default function PrestationsPage() {
       restricted_start_time: f.restricted_start_time || '',
       restricted_end_time: f.restricted_end_time || '',
       color_code: f.color_code || '#3b82f6',
-      allowed_time_slots: f.allowed_time_slots || [] // On charge les créneaux sauvegardés
+      allowed_time_slots: f.allowed_time_slots || [],
+      season: f.season || 'ALL'
     });
     setShowModal(true);
   };
 
   const startNew = () => {
     setEditingId(null);
-    // Par défaut, un vol de 60 min prend tous les créneaux >= 60 min
     const defaultDuration = 60;
     const compatibleSlots = slotDefs
       .filter(s => s.duration_minutes >= defaultDuration && !s.label?.includes('PAUSE'))
@@ -92,10 +95,18 @@ export default function PrestationsPage() {
       restricted_start_time: '', 
       restricted_end_time: '', 
       color_code: '#3b82f6',
-      allowed_time_slots: compatibleSlots
+      allowed_time_slots: compatibleSlots,
+      season: 'ALL'
     });
     setShowModal(true);
   };
+
+  // Filtrage des vols selon le bouton sélectionné
+  const filteredFlights = flights.filter(f => {
+    if (seasonFilter === 'ALL') return true;
+    // Si on filtre sur "SUMMER", on affiche les vols "SUMMER" ET les vols "ALL" (toute l'année)
+    return f.season === seasonFilter || f.season === 'ALL';
+  });
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
@@ -107,12 +118,37 @@ export default function PrestationsPage() {
               Tes <span className="text-sky-500">Prestations</span>
             </h1>
           </div>
-          <button 
-            onClick={startNew}
-            className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
-          >
-            + Nouveau Vol
-          </button>
+          
+          {/* BARRE D'ACTIONS : FILTRES + BOUTON NOUVEAU */}
+          <div className="flex gap-4 items-center">
+            <div className="bg-white rounded-2xl p-1 shadow-sm border border-slate-200 flex">
+              <button 
+                onClick={() => setSeasonFilter('ALL')} 
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                Tout
+              </button>
+              <button 
+                onClick={() => setSeasonFilter('SUMMER')} 
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'SUMMER' ? 'bg-amber-100 text-amber-600' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                ☀️ Été
+              </button>
+              <button 
+                onClick={() => setSeasonFilter('WINTER')} 
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'WINTER' ? 'bg-sky-100 text-sky-600' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                ❄️ Hiver
+              </button>
+            </div>
+
+            <button 
+              onClick={startNew}
+              className="bg-sky-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-sky-600 transition-colors"
+            >
+              + Nouveau Vol
+            </button>
+          </div>
         </header>
 
         {loading ? (
@@ -121,7 +157,7 @@ export default function PrestationsPage() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {flights.map((f) => (
+            {filteredFlights.map((f) => (
               <div key={f.id} className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-all group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-20" style={{ backgroundColor: f.color_code }} />
                 <div className="relative z-10">
@@ -129,16 +165,25 @@ export default function PrestationsPage() {
                     <h3 className="text-2xl font-black uppercase italic text-slate-800 leading-none">{f.name}</h3>
                     <span className="bg-slate-900 text-white px-4 py-1 rounded-full font-black text-lg italic">{f.price_cents / 100}€</span>
                   </div>
+                  
                   <div className="space-y-3 mb-8">
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">
                       ⏱️ {f.duration_minutes} min
                     </div>
                     {f.allowed_time_slots && f.allowed_time_slots.length > 0 && (
                       <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">
-                        ✅ {f.allowed_time_slots.length} Créneaux autorisés
+                        ✅ {f.allowed_time_slots.length} Créneaux
                       </div>
                     )}
+                    
+                    {/* BADGE SAISON */}
+                    <div className="flex items-center gap-2 font-bold text-[10px] uppercase">
+                      {f.season === 'SUMMER' && <span className="text-amber-500 bg-amber-50 px-2 py-1 rounded-md">☀️ Exclusif Été</span>}
+                      {f.season === 'WINTER' && <span className="text-sky-500 bg-sky-50 px-2 py-1 rounded-md">❄️ Exclusif Hiver</span>}
+                      {(!f.season || f.season === 'ALL') && <span className="text-slate-400 bg-slate-100 px-2 py-1 rounded-md">🌍 Toute l'année</span>}
+                    </div>
                   </div>
+
                   <div className="flex gap-2">
                     <button onClick={() => startEdit(f)} className="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-slate-200 transition-colors">Modifier</button>
                     <button onClick={() => deleteFlight(f.id)} className="px-4 bg-rose-50 text-rose-400 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-rose-500 hover:text-white transition-all">Suppr.</button>
@@ -168,7 +213,6 @@ export default function PrestationsPage() {
                     <input type="number" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.duration_minutes} 
                       onChange={e => {
                         const newDur = Number(e.target.value);
-                        // Au changement de durée, on recalcule les créneaux compatibles
                         const compSlots = slotDefs
                           .filter(s => s.duration_minutes >= newDur && !s.label?.includes('PAUSE'))
                           .map(s => s.start_time.slice(0,5));
@@ -178,18 +222,33 @@ export default function PrestationsPage() {
                   </div>
                 </div>
 
-                <div>
-                   <label className="text-[10px] font-black text-slate-400 uppercase ml-4">Couleur Planning</label>
-                   <input type="color" className="w-full h-12 rounded-xl mt-1 overflow-hidden" value={formData.color_code} onChange={e => setFormData({...formData, color_code: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Couleur</label>
+                    <input type="color" className="w-full h-12 rounded-xl mt-1 overflow-hidden cursor-pointer" value={formData.color_code} onChange={e => setFormData({...formData, color_code: e.target.value})} />
+                  </div>
+                  <div>
+                    {/* NOUVEAU SÉLECTEUR DE SAISON */}
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Saison</label>
+                    <select 
+                      className="w-full h-12 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 mt-1 font-bold text-xs"
+                      value={formData.season}
+                      onChange={e => setFormData({...formData, season: e.target.value})}
+                    >
+                      <option value="ALL">🌍 Toute l'année</option>
+                      <option value="SUMMER">☀️ Seulement l'Été</option>
+                      <option value="WINTER">❄️ Seulement l'Hiver</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* SÉLECTEUR DE CRÉNEAUX HORAIRES */}
-                <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl">
+                <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl mt-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">
                     Créneaux Compatibles
                   </label>
                   <p className="text-[10px] text-slate-400 mb-3 leading-tight">
-                    Décochez les horaires où ce vol n'est pas autorisé. (Les créneaux trop courts sont grisés).
+                    Décochez les horaires où ce vol n'est pas autorisé.
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {slotDefs.filter(s => !s.label?.includes('PAUSE')).map(slot => {
