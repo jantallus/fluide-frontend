@@ -478,19 +478,8 @@ export default function PlanningAdmin() {
                       onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})}
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
-                    <select 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={moveConfig.monitorId}
-                      onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value, time: ''})}
-                    >
-                      <option value="random">🎲 Aléatoire (Peu importe)</option>
-                      {monitors.map(m => (
-                        <option key={m.id} value={m.id}>{m.title}</option>
-                      ))}
-                    </select>
-                  </div>
+
+                  {/* L'Heure est maintenant AVANT le pilote pour un parcours plus logique */}
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Créneau disponible</label>
                     <select 
@@ -506,6 +495,61 @@ export default function PlanningAdmin() {
                     {availableTimes.length === 0 && moveConfig.date && (
                       <p className="text-[10px] text-rose-500 mt-2 ml-2 font-bold">Aucun créneau compatible trouvé à cette date.</p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
+                    <select 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={moveConfig.monitorId}
+                      onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})} // On ne reset plus l'heure ici !
+                    >
+                      <option value="random">🎲 Aléatoire (Peu importe)</option>
+                      {monitors.map(m => {
+                        let isBusy = false;
+                        let reason = '';
+
+                        // Si on a déjà choisi une date ET une heure, on vérifie si ce pilote précis est dispo
+                        if (moveConfig.date && moveConfig.time) {
+                          const hasSlot = appointments.some(a => {
+                            if (a.monitor_id?.toString() !== m.id.toString()) return false;
+                            if (a.status !== 'available') return false;
+                            if (selectedEvent && a.id === selectedEvent.id) return false;
+                            
+                            const d = new Date(a.start_time);
+                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                            
+                            if (dateStr !== moveConfig.date || timeStr !== moveConfig.time) return false;
+                            
+                            // Vérification si le trou est assez grand pour le vol prévu
+                            if (formData.flight_type_id) {
+                              const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
+                              if (flight) {
+                                const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+                                const flightDur = flight.duration_minutes || flight.duration || 0;
+                                if (flightDur > dur) return false;
+                              }
+                            }
+                            return true;
+                          });
+                          
+                          isBusy = !hasSlot;
+                          if (isBusy) reason = ' (Occupé)';
+                        }
+
+                        return (
+                          <option 
+                            key={m.id} 
+                            value={m.id} 
+                            disabled={isBusy} 
+                            className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                          >
+                            {m.title} {reason}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
 
                   <div className="pt-4 space-y-3">
