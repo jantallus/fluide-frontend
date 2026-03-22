@@ -15,18 +15,12 @@ export default function PlanningAdmin() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
   
-  // État pour la réservation
-  const [formData, setFormData] = useState<{
-  title: string,
-  flight_type_id: string,
-  weight: string | number, // On autorise les deux types ici
-  notes: string
-}>({
-  title: '',
-  flight_type_id: '',
-  weight: '',
-  notes: ''
-});
+  const [formData, setFormData] = useState({
+    title: '',
+    flight_type_id: '',
+    weight: '',
+    notes: ''
+  });
 
   const [genConfig, setGenConfig] = useState({ 
     startDate: '', 
@@ -36,91 +30,83 @@ export default function PlanningAdmin() {
 
   const loadData = async () => {
     try {
-      const [apptsRes, monRes, flightRes] = await Promise.all([
+      const [appRes, monRes, flyRes] = await Promise.all([
         apiFetch('/api/slots'),
-        apiFetch('/api/monitors'),
+        apiFetch('/api/monitors-admin'),
         apiFetch('/api/flight-types')
       ]);
 
-      if (apptsRes.ok) setAppointments(await apptsRes.json());
-      
-      if (monRes.ok) {
-        const mons = await monRes.json();
-        // On force l'ID en string pour correspondre aux UUIDs de la base de données
-        setMonitors(mons.map((m: any) => ({ 
-          id: String(m.id), 
-          title: m.first_name 
-        })));
-      }
-      if (flightRes.ok) setFlightTypes(await flightRes.json());
+      if (appRes.ok) setAppointments(await appRes.json());
+      if (monRes.ok) setMonitors(await monRes.json());
+      if (flyRes.ok) setFlightTypes(await flyRes.json());
       
       setCalendarKey(prev => prev + 1);
-    } catch (err) { console.error("Erreur chargement planning:", err); }
+    } catch (err) {
+      console.error("Erreur chargement planning:", err);
+    }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleEventClick = (info: any) => {
-    const event = info.event;
-    setSelectedEvent({
-      id: event.id,
-      title: event.title,
-      start: event.start,
-      monitor_id: event.getResources()[0]?.id,
-      ...event.extendedProps
-    });
+    const eventData = info.event.extendedProps;
+    setSelectedEvent(eventData);
     setFormData({
-      title: event.title || '',
-      flight_type_id: event.extendedProps.flight_type_id || '',
-      weight: event.extendedProps.weight || '',
-      notes: event.extendedProps.notes || ''
+      title: eventData.title || '',
+      flight_type_id: eventData.flight_type_id?.toString() || '',
+      weight: eventData.weight || '',
+      notes: eventData.notes || ''
     });
     setShowEditModal(true);
   };
 
-  const handleSave = async () => {
+  const handleUpdate = async () => {
     if (!selectedEvent) return;
     try {
       const res = await apiFetch(`/api/slots/${selectedEvent.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           ...formData,
-          status: formData.title ? 'booked' : 'available'
+          status: formData.title.trim() !== "" ? 'booked' : 'available'
         })
       });
       if (res.ok) {
         setShowEditModal(false);
         loadData();
       }
-    } catch (err) { alert("Erreur lors de la sauvegarde"); }
+    } catch (err) {
+      console.error("Erreur update:", err);
+    }
   };
 
   return (
-    <div className="p-4 bg-slate-50 min-h-screen">
-      <header className="flex justify-between items-center mb-8 px-4">
-        <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900">
-            Planning <span className="text-sky-500">Vols</span>
-          </h1>
-        </div>
+    <div className="p-4 h-screen bg-white flex flex-col font-sans">
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-2xl font-black italic uppercase tracking-tighter">Planning <span className="text-sky-500">Pro</span></h1>
         <button 
           onClick={() => setShowGenModal(true)}
-          className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
+          className="bg-slate-900 text-white px-6 py-2 rounded-full font-black uppercase italic text-xs shadow-lg hover:scale-105 transition-transform"
         >
           ⚙️ Générer la semaine
         </button>
-      </header>
+      </div>
 
-      <div className="bg-white rounded-[35px] shadow-2xl border border-slate-200 p-6 overflow-hidden">
+      <div className="flex-1 bg-slate-50 rounded-[30px] overflow-hidden border-4 border-slate-100 shadow-inner p-4">
         <FullCalendar
           key={calendarKey}
           plugins={[resourceTimeGridPlugin, interactionPlugin]}
           initialView="resourceTimeGridDay"
-          resources={monitors}
-          // MODIFIÉ : Mapping complet pour l'affichage
+          locales={[frLocale]}
+          locale="fr"
+          resources={monitors.map(m => ({ 
+            id: m.id?.toString() || Math.random().toString(), 
+            title: m.first_name 
+          }))}
           events={appointments.map(a => ({
-            id: a.id.toString(),
-            resourceId: a.monitor_id.toString(),
+            id: a.id?.toString() || Math.random().toString(),
+            resourceId: a.monitor_id?.toString() || "", // Protection cruciale ici
             start: a.start_time,
             end: a.end_time,
             title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
@@ -129,74 +115,68 @@ export default function PlanningAdmin() {
             borderColor: a.status === 'available' ? '#e2e8f0' : '#0ea5e9',
             extendedProps: { ...a }
           }))}
-          locale={frLocale}
           headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridFourDay' }}
           views={{ resourceTimeGridFourDay: { type: 'resourceTimeGrid', duration: { days: 4 }, buttonText: '4 jours' } }}
           slotMinTime="08:00:00"
           slotMaxTime="20:00:00"
           allDaySlot={false}
-          height="auto"
           eventClick={handleEventClick}
-          slotDuration="00:05:00"        // Grain plus fin pour éviter les chevauchements visuels
-  snapDuration="00:05:00"
-  eventOverlap={false}           // Interdire visuellement la superposition
-  slotEventOverlap={false}       // Forcer les événements à se suivre proprement
-  displayEventTime={true}
-  eventTimeFormat={{
-    hour: '2-digit',
-    minute: '2-digit',
-    meridiem: false,
-    hour12: false
-  }}
-/>
+          height="100%"
+        />
       </div>
 
-      {/* MODALE ÉDITION / RÉSERVATION */}
+      {/* MODALE ÉDITION */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
-            <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Réservation</h2>
+          <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-2xl font-black uppercase italic mb-6 text-slate-900">Réservation</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Client</label>
                 <input 
                   className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                  value={formData.title}
+                  value={formData.title} 
                   onChange={e => setFormData({...formData, title: e.target.value})}
+                  placeholder="Nom du client..."
                 />
               </div>
+              
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prestation</label>
                 <select 
                   className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
                   value={formData.flight_type_id}
                   onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
                 >
                   <option value="">Choisir un vol...</option>
-                  {flightTypes.map(f => <option key={f.id} value={f.id}>{f.name} - {f.price_cents/100}€</option>)}
+                  {flightTypes?.map(f => (
+                    <option key={f.id?.toString()} value={f.id}>
+                      {f.name} - {f.price_cents ? f.price_cents/100 : 0}€
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Poids (kg)</label>
                   <input 
                     type="number"
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                    value={formData.weight} 
-                    onChange={e => {
-                      // Si le champ est vide, on met une chaîne vide, sinon on convertit en nombre
-                      const val = e.target.value === '' ? '' : Number(e.target.value);
-                      setFormData({...formData, weight: val});
-                    }}
+                    value={formData.weight}
+                    onChange={e => setFormData({...formData, weight: e.target.value})}
                   />
                 </div>
               </div>
-              <button onClick={handleSave} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4">
-                Enregistrer
-              </button>
-              <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">
-                Annuler
-              </button>
+
+              <div className="pt-4 space-y-3">
+                <button onClick={handleUpdate} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">
+                  Enregistrer
+                </button>
+                <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -208,8 +188,8 @@ export default function PlanningAdmin() {
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
             <h2 className="text-xl font-black uppercase italic mb-6">Générer les créneaux</h2>
             <div className="space-y-4">
-              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, startDate: e.target.value})} />
-              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, endDate: e.target.value})} />
+              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={e => setGenConfig({...genConfig, startDate: e.target.value})} />
+              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" onChange={e => setGenConfig({...genConfig, endDate: e.target.value})} />
               <button 
                 onClick={async () => {
                   const res = await apiFetch('/api/generate-slots', { 
@@ -222,7 +202,7 @@ export default function PlanningAdmin() {
               >
                 Lancer la génération
               </button>
-              <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Fermer</button>
+              <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
             </div>
           </div>
         </div>
