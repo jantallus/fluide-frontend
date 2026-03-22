@@ -18,6 +18,7 @@ export default function PlanningAdmin() {
   const [activeTab, setActiveTab] = useState<'client' | 'note'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
+  const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
   
   const [formData, setFormData] = useState<{
     title: string,
@@ -41,18 +42,42 @@ export default function PlanningAdmin() {
     try {
       const [apptsRes, monRes, flightRes] = await Promise.all([
         apiFetch('/api/slots'),
-        apiFetch('/api/monitors-admin'),
+        apiFetch('/api/monitors-admin'), // Ou '/api/monitors' selon ta version
         apiFetch('/api/flight-types')
       ]);
 
-      if (apptsRes.ok) setAppointments(await apptsRes.json());
+      if (apptsRes.ok) {
+        const appts = await apptsRes.json();
+        setAppointments(appts);
+
+        // --- NOUVEAU : CALCUL AUTOMATIQUE DES HORAIRES ---
+        if (appts.length > 0) {
+          let minHour = 24;
+          let maxHour = 0;
+          
+          appts.forEach((a: any) => {
+            const start = new Date(a.start_time);
+            const end = new Date(a.end_time);
+            if (start.getHours() < minHour) minHour = start.getHours();
+            // On ajoute 1h pour la fin si les minutes débordent (ex: 17h15 -> 18h00)
+            let endH = end.getHours() + (end.getMinutes() > 0 ? 1 : 0);
+            if (endH > maxHour) maxHour = endH;
+          });
+          
+          // On s'assure de ne pas déborder
+          minHour = Math.max(0, minHour);
+          maxHour = Math.min(24, maxHour);
+
+          setTimeBounds({
+            min: `${String(minHour).padStart(2, '0')}:00:00`,
+            max: `${String(maxHour).padStart(2, '0')}:00:00`
+          });
+        }
+      }
       
       if (monRes.ok) {
         const mons = await monRes.json();
-        setMonitors(mons.map((m: any) => ({ 
-          id: String(m.id), 
-          title: m.first_name 
-        })));
+        setMonitors(mons.map((m: any) => ({ id: String(m.id), title: m.first_name })));
       }
       if (flightRes.ok) setFlightTypes(await flightRes.json());
       
@@ -220,12 +245,12 @@ export default function PlanningAdmin() {
           locale={frLocale}
           headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridFourDay' }}
           views={{ resourceTimeGridFourDay: { type: 'resourceTimeGrid', duration: { days: 4 }, buttonText: '4 jours' } }}
-          slotMinTime="08:00:00"
-          slotMaxTime="20:00:00"
+          slotMinTime={timeBounds.min}
+          slotMaxTime={timeBounds.max}
           allDaySlot={false}
           height="auto"
           eventClick={handleEventClick}
-          slotDuration="00:05:00"
+          slotDuration="00:15:00" // C'est ça qui divise la hauteur par 3 !
           snapDuration="00:05:00"
           eventOverlap={false}
           slotEventOverlap={false}
