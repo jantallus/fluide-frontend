@@ -14,7 +14,7 @@ export default function PlanningAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
-  
+  const [slotDuration, setSlotDuration] = useState<number>(0); // Durée du créneau en minutes
   const [activeTab, setActiveTab] = useState<'client' | 'note'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
@@ -64,6 +64,11 @@ export default function PlanningAdmin() {
 
   const handleEventClick = (info: any) => {
     const event = info.event;
+    const start = new Date(event.start);
+    const end = new Date(event.end);
+    const durationMins = Math.round((end.getTime() - start.getTime()) / 60000);
+    setSlotDuration(durationMins);
+
     setSelectedEvent({
       id: event.id,
       title: event.extendedProps.title, 
@@ -72,7 +77,7 @@ export default function PlanningAdmin() {
       ...event.extendedProps
     });
 
-    // CORRECTION 1 : On ne remplit pas le formulaire si le vrai titre est vide ou s'il s'agit d'une simple NOTE
+        // CORRECTION 1 : On ne remplit pas le formulaire si le vrai titre est vide ou s'il s'agit d'une simple NOTE
     const realTitle = event.extendedProps.title;
     setFormData({
       title: realTitle === 'NOTE' ? '' : (realTitle || ''),
@@ -256,10 +261,20 @@ export default function PlanningAdmin() {
                       onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
                     >
                       <option value="">Choisir un vol...</option>
-                      {flightTypes?.map(f => (
-                        <option key={f.id?.toString()} value={f.id}>
-                          {f.name} - {f.price_cents ? f.price_cents/100 : 0}€
-                        </option>
+                  {flightTypes?.map(f => {
+                    // On récupère la durée du vol (adapte "duration_minutes" selon le nom de ta colonne en BDD)
+                    const flightDuration = f.duration_minutes || f.duration || 0; 
+                    const isTooLong = flightDuration > slotDuration;
+
+                    return (
+                      <option 
+                        key={f.id?.toString()} 
+                        value={f.id} 
+                        disabled={isTooLong} // Désactive le clic si trop long
+                        className={isTooLong ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                      >
+                        {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {isTooLong ? `(Trop long : ${flightDuration} min)` : ''}
+                      </option>
                       ))}
                     </select>
                   </div>
