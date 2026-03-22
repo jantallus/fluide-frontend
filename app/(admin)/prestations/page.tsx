@@ -4,6 +4,7 @@ import { apiFetch } from '../../../lib/api';
 
 export default function PrestationsPage() {
   const [flights, setFlights] = useState<any[]>([]);
+  const [slotDefs, setSlotDefs] = useState<any[]>([]); // Pour charger les créneaux disponibles
   const [loading, setLoading] = useState(true);
   
   // États pour la gestion du formulaire
@@ -15,58 +16,51 @@ export default function PrestationsPage() {
     price_cents: 10000,
     restricted_start_time: '',
     restricted_end_time: '',
-    color_code: '#3b82f6'
+    color_code: '#3b82f6',
+    allowed_time_slots: [] as string[] // Nouveau champ JSON
   });
 
-  const loadFlights = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('/api/flight-types');
-      if (res.ok) setFlights(await res.json());
+      const [flightsRes, slotsRes] = await Promise.all([
+        apiFetch('/api/flight-types'),
+        apiFetch('/api/slot-definitions') // On charge les rotations
+      ]);
+      if (flightsRes.ok) setFlights(await flightsRes.json());
+      if (slotsRes.ok) setSlotDefs(await slotsRes.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadFlights(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   const handleSave = async () => {
-  const method = editingId ? 'PUT' : 'POST';
-  const url = editingId ? `/api/flight-types/${editingId}` : '/api/flight-types';
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/flight-types/${editingId}` : '/api/flight-types';
 
-  // On s'assure que les nombres sont bien des nombres
-  const payload = {
-    ...formData,
-    duration_minutes: Number(formData.duration_minutes),
-    price_cents: Number(formData.price_cents)
+    const payload = {
+      ...formData,
+      duration_minutes: Number(formData.duration_minutes),
+      price_cents: Number(formData.price_cents)
+    };
+
+    const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
+
+    if (res.ok) {
+      setShowModal(false);
+      setEditingId(null);
+      loadData();
+    } else {
+      const errorData = await res.json();
+      alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
+    }
   };
-
-  const res = await apiFetch(url, {
-    method,
-    body: JSON.stringify(payload)
-  });
-
-  if (res.ok) {
-    setShowModal(false);
-    setEditingId(null);
-    setFormData({ 
-      name: '', 
-      duration_minutes: 60, 
-      price_cents: 10000, 
-      restricted_start_time: '', 
-      restricted_end_time: '', 
-      color_code: '#3b82f6' 
-    });
-    loadFlights();
-  } else {
-    const errorData = await res.json();
-    alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
-  }
-};
 
   const deleteFlight = async (id: number) => {
     if (!confirm("Supprimer définitivement ce vol ?")) return;
     const res = await apiFetch(`/api/flight-types/${id}`, { method: 'DELETE' });
-    if (res.ok) loadFlights();
+    if (res.ok) loadData();
   };
 
   const startEdit = (f: any) => {
@@ -77,7 +71,28 @@ export default function PrestationsPage() {
       price_cents: f.price_cents,
       restricted_start_time: f.restricted_start_time || '',
       restricted_end_time: f.restricted_end_time || '',
-      color_code: f.color_code || '#3b82f6'
+      color_code: f.color_code || '#3b82f6',
+      allowed_time_slots: f.allowed_time_slots || [] // On charge les créneaux sauvegardés
+    });
+    setShowModal(true);
+  };
+
+  const startNew = () => {
+    setEditingId(null);
+    // Par défaut, un vol de 60 min prend tous les créneaux >= 60 min
+    const defaultDuration = 60;
+    const compatibleSlots = slotDefs
+      .filter(s => s.duration_minutes >= defaultDuration && !s.label?.includes('PAUSE'))
+      .map(s => s.start_time.slice(0,5));
+
+    setFormData({ 
+      name: '', 
+      duration_minutes: defaultDuration, 
+      price_cents: 10000, 
+      restricted_start_time: '', 
+      restricted_end_time: '', 
+      color_code: '#3b82f6',
+      allowed_time_slots: compatibleSlots
     });
     setShowModal(true);
   };
@@ -93,7 +108,7 @@ export default function PrestationsPage() {
             </h1>
           </div>
           <button 
-            onClick={() => { setEditingId(null); setShowModal(true); }}
+            onClick={startNew}
             className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
           >
             + Nouveau Vol
@@ -115,9 +130,13 @@ export default function PrestationsPage() {
                     <span className="bg-slate-900 text-white px-4 py-1 rounded-full font-black text-lg italic">{f.price_cents / 100}€</span>
                   </div>
                   <div className="space-y-3 mb-8">
-                    <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⏱️ {f.duration_minutes} min</div>
-                    {f.restricted_start_time && (
-                      <div className="flex items-center gap-2 text-amber-600 font-bold text-[10px] uppercase">☀️ {f.restricted_start_time.slice(0,5)} - {f.restricted_end_time.slice(0,5)}</div>
+                    <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">
+                      ⏱️ {f.duration_minutes} min
+                    </div>
+                    {f.allowed_time_slots && f.allowed_time_slots.length > 0 && (
+                      <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">
+                        ✅ {f.allowed_time_slots.length} Créneaux autorisés
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -133,20 +152,80 @@ export default function PrestationsPage() {
         {/* MODALE DE GESTION */}
         {showModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
+            <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-black uppercase italic mb-6">{editingId ? 'Modifier le vol' : 'Nouveau Vol'}</h2>
+              
               <div className="space-y-4">
                 <input type="text" placeholder="Nom du vol (ex: Grand Vol)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Prix (€)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.price_cents / 100} onChange={e => setFormData({...formData, price_cents: Number(e.target.value) * 100})} />
-                  <input type="number" placeholder="Durée (min)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.duration_minutes} onChange={e => setFormData({...formData, duration_minutes: Number(e.target.value)})} />
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Prix (€)</label>
+                    <input type="number" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.price_cents / 100} onChange={e => setFormData({...formData, price_cents: Number(e.target.value) * 100})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Durée (min)</label>
+                    <input type="number" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.duration_minutes} 
+                      onChange={e => {
+                        const newDur = Number(e.target.value);
+                        // Au changement de durée, on recalcule les créneaux compatibles
+                        const compSlots = slotDefs
+                          .filter(s => s.duration_minutes >= newDur && !s.label?.includes('PAUSE'))
+                          .map(s => s.start_time.slice(0,5));
+                        setFormData({...formData, duration_minutes: newDur, allowed_time_slots: compSlots});
+                      }} 
+                    />
+                  </div>
                 </div>
+
                 <div>
                    <label className="text-[10px] font-black text-slate-400 uppercase ml-4">Couleur Planning</label>
                    <input type="color" className="w-full h-12 rounded-xl mt-1 overflow-hidden" value={formData.color_code} onChange={e => setFormData({...formData, color_code: e.target.value})} />
                 </div>
-                <button onClick={handleSave} className="w-full bg-sky-600 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">Enregistrer</button>
-                <button onClick={() => setShowModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+
+                {/* SÉLECTEUR DE CRÉNEAUX HORAIRES */}
+                <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl">
+                  <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">
+                    Créneaux Compatibles
+                  </label>
+                  <p className="text-[10px] text-slate-400 mb-3 leading-tight">
+                    Décochez les horaires où ce vol n'est pas autorisé. (Les créneaux trop courts sont grisés).
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {slotDefs.filter(s => !s.label?.includes('PAUSE')).map(slot => {
+                      const timeStr = slot.start_time.slice(0,5);
+                      const isCompatible = slot.duration_minutes >= formData.duration_minutes;
+                      const isChecked = formData.allowed_time_slots.includes(timeStr);
+
+                      return (
+                        <label key={slot.id} className={`flex items-center justify-center p-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+                          !isCompatible ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed' : 
+                          isChecked ? 'bg-sky-500 text-white cursor-pointer shadow-md' : 'bg-white border-2 border-slate-200 text-slate-500 cursor-pointer hover:border-sky-300'
+                        }`}>
+                          <input 
+                            type="checkbox" 
+                            className="hidden"
+                            disabled={!isCompatible}
+                            checked={isCompatible && isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({...formData, allowed_time_slots: [...formData.allowed_time_slots, timeStr]});
+                              } else {
+                                setFormData({...formData, allowed_time_slots: formData.allowed_time_slots.filter(t => t !== timeStr)});
+                              }
+                            }}
+                          />
+                          {timeStr}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button onClick={handleSave} className="w-full bg-slate-900 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mb-3 hover:scale-[1.02] transition-transform">Enregistrer la prestation</button>
+                  <button onClick={() => setShowModal(false)} className="w-full text-slate-400 font-bold uppercase text-[10px]">Annuler</button>
+                </div>
               </div>
             </div>
           </div>
