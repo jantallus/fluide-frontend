@@ -32,7 +32,7 @@ export default function LoginPage() {
 
         // 2. Redirection dynamique selon le rôle
         if (data.user.role === 'admin') {
-          router.push('/admin/dashboard');
+          router.push('/dashboard');
         } else if (data.user.role === 'monitor') {
           router.push('/planning');
         } else {
