@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../lib/api';
 
 export default function StatsPage() {
   const [stats, setStats] = useState({ 
@@ -14,7 +14,7 @@ export default function StatsPage() {
     setLoading(true);
     try {
       // Appel à la route stats sécurisée de votre index.js
-      const res = await apiFetch('/api/admin/stats');
+      const res = await apiFetch('/api/stats');
       if (res.ok) {
         const data = await res.json();
         setStats(data);

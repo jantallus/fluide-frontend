@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../../lib/api';
 
 export default function ComplementsPage() {
   const [complements, setComplements] = useState<any[]>([]);
@@ -9,7 +9,7 @@ export default function ComplementsPage() {
 
   const loadComplements = async () => {
     try {
-      const res = await apiFetch('/api/admin/complements');
+      const res = await apiFetch('/api/complements');
       if (res.ok) setComplements(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -19,10 +19,10 @@ export default function ComplementsPage() {
 
   const handleAdd = async () => {
     if (!newComp.name) return;
-    const res = await apiFetch('/api/complements', {
-      method: 'POST',
-      body: JSON.stringify(newComp)
-    });
+      const res = await apiFetch('/api/complements', {
+    method: 'POST',
+    body: JSON.stringify(newComp)
+  });
     if (res.ok) {
       setNewComp({ name: '', description: '', price_cents: 2000 });
       loadComplements();

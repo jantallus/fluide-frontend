@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../lib/api';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>({ todaySlots: 0, bookedSlots: 0, revenue: 0 });
@@ -8,7 +8,7 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const res = await apiFetch('/api/admin/dashboard-stats');
+      const res = await apiFetch('/api/dashboard-stats');
       if (res.ok) {
         const data = await res.json();
         setStats(data.summary);

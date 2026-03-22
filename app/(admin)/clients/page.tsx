@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../lib/api';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);

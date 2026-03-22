@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../lib/api';
 
 export default function MonitorsPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -40,7 +40,7 @@ export default function MonitorsPage() {
       return;
     }
 
-    const res = await apiFetch('/api/admin/users', {
+    const res = await apiFetch('/api/users', {
       method: 'POST',
       body: JSON.stringify(newUser)
     });
@@ -59,9 +59,9 @@ export default function MonitorsPage() {
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Supprimer définitivement le compte de ${name} ?`)) return;
 
-    const res = await apiFetch(`/api/admin/users/${id}`, {
-      method: 'DELETE'
-    });
+      const res = await apiFetch(`/api/users/${id}`, {
+        method: 'DELETE'
+      });
 
     if (res.ok) {
       loadUsers();

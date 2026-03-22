@@ -4,7 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '../../../lib/api';
 
 export default function PlanningAdmin() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -212,7 +212,10 @@ export default function PlanningAdmin() {
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, endDate: e.target.value})} />
               <button 
                 onClick={async () => {
-                  const res = await apiFetch('/api/admin/generate-slots', { method: 'POST', body: JSON.stringify(genConfig) });
+                  const res = await apiFetch('/api/generate-slots', { 
+                    method: 'POST', 
+                    body: JSON.stringify(genConfig) 
+                  });
                   if (res.ok) { setShowGenModal(false); loadData(); }
                 }} 
                 className="w-full bg-slate-900 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl"
