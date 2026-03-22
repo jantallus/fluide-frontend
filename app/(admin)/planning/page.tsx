@@ -281,8 +281,29 @@ export default function PlanningAdmin() {
               ) : (
                 <>
                   <div className="flex gap-2">
-                    <button onClick={() => setFormData({...formData, title: '☕ PAUSE'})} className="flex-1 bg-slate-50 p-2 rounded-xl border-2 border-slate-100 font-black text-[10px] uppercase hover:border-amber-200">☕ Pause</button>
-                    <button onClick={() => setFormData({...formData, title: 'NON DISPO'})} className="flex-1 bg-slate-50 p-2 rounded-xl border-2 border-slate-100 font-black text-[10px] uppercase hover:border-rose-200">❌ Non Dispo</button>
+                    <button 
+                      disabled={blockType === 'none'}
+                      onClick={() => setFormData({...formData, title: '☕ PAUSE'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${
+                        blockType === 'none' 
+                          ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' 
+                          : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700 hover:shadow-sm'
+                      }`}
+                    >
+                      ☕ Pause
+                    </button>
+                    
+                    <button 
+                      disabled={blockType === 'none'}
+                      onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${
+                        blockType === 'none' 
+                          ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' 
+                          : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700 hover:shadow-sm'
+                      }`}
+                    >
+                      ❌ Non Dispo
+                    </button>
                   </div>
 
                   <div>
