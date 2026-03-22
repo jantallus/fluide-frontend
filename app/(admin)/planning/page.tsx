@@ -262,19 +262,37 @@ export default function PlanningAdmin() {
                     >
                       <option value="">Choisir un vol...</option>
                       {flightTypes?.map(f => {
+                        // 1. Vérification de la durée
                         const flightDuration = f.duration_minutes || f.duration || 0; 
                         const isTooLong = flightDuration > slotDuration;
+
+                        // 2. Vérification de l'heure exacte (ex: "09:05")
+                        const slotHours = String(selectedEvent?.start?.getHours()).padStart(2, '0');
+                        const slotMins = String(selectedEvent?.start?.getMinutes()).padStart(2, '0');
+                        const slotTimeStr = `${slotHours}:${slotMins}`;
+                        
+                        // On sécurise la lecture du tableau des créneaux autorisés
+                        const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
+                        const isAllowedTime = allowedSlots.includes(slotTimeStr);
+
+                        // 3. Le vol est grisé s'il est trop long OU s'il n'est pas autorisé à cette heure
+                        const isDisabled = isTooLong || !isAllowedTime;
+
+                        // 4. On prépare le petit texte d'explication
+                        let reason = '';
+                        if (isTooLong) reason = `(Trop long : ${flightDuration} min)`;
+                        else if (!isAllowedTime) reason = `(Interdit à ${slotTimeStr})`;
 
                         return (
                           <option 
                             key={f.id?.toString()} 
                             value={f.id} 
-                            disabled={isTooLong}
-                            className={isTooLong ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                            disabled={isDisabled}
+                            className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}
                           >
-                            {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {isTooLong ? `(Trop long : ${flightDuration} min)` : ''}
+                            {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {reason}
                           </option>
-                        ); // <-- C'est ici qu'il manquait la bonne fermeture du return
+                        );
                       })}
                     </select>
                   </div>
