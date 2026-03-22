@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Récupération du nombre de clients (uniquement si admin)
     const fetchCount = async () => {
       try {
-        const res = await apiFetch('/api/admin/clients');
+        const res = await apiFetch('/api/clients');
         if (res.ok) {
           const data = await res.json();
           setClientCount(data.length);
@@ -43,19 +43,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // 2. Configuration du menu avec filtrage par RÔLE
   // On définit quels rôles ont accès à quelle page
   const allMenuItems = [
-    { name: 'Tableau de bord', icon: '📊', path: '/admin/dashboard', roles: ['admin'] },
-    { name: 'Calendrier', icon: '📅', path: '/admin/planning', roles: ['admin', 'permanent'] },
+    { name: 'Tableau de bord', icon: '📊', path: '/dashboard', roles: ['admin'] },
+    { name: 'Calendrier', icon: '📅', path: '/planning', roles: ['admin', 'permanent'] },
     { 
       name: 'Prestations', 
       icon: '🪂', 
-      path: '/admin/prestations',
+      path: '/prestations',
       roles: ['admin'],
-      subItems: [{ name: 'Photos & Vidéos', path: '/admin/prestations/complements' }]
+      subItems: [{ name: 'Photos & Vidéos', path: '/prestations/complements' }]
     },
-    { name: 'Moniteurs', icon: '👥', path: '/admin/monitors', roles: ['admin'] }, // Chemin corrigé /monitors
-    { name: 'Clients', icon: '👤', path: '/admin/clients', badge: clientCount, roles: ['admin'] },
-    { name: 'Bons Cadeaux', icon: '🎁', path: '/admin/gift-cards', roles: ['admin'] },
-    { name: 'Configurations', icon: '⚙️', path: '/admin/config', roles: ['admin'] },
+    { name: 'Moniteurs', icon: '👥', path: '/moniteurs', roles: ['admin'] }, 
+    { name: 'Clients', icon: '👤', path: '/clients', badge: clientCount, roles: ['admin'] },
+    { name: 'Bons Cadeaux', icon: '🎁', path: '/gift-cards', roles: ['admin'] },
+    { name: 'Configurations', icon: '⚙️', path: '/config', roles: ['admin'] },
   ];
 
   // Filtrage effectif
