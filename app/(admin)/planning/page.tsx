@@ -261,21 +261,21 @@ export default function PlanningAdmin() {
                       onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
                     >
                       <option value="">Choisir un vol...</option>
-                  {flightTypes?.map(f => {
-                    // On récupère la durée du vol (adapte "duration_minutes" selon le nom de ta colonne en BDD)
-                    const flightDuration = f.duration_minutes || f.duration || 0; 
-                    const isTooLong = flightDuration > slotDuration;
+                      {flightTypes?.map(f => {
+                        const flightDuration = f.duration_minutes || f.duration || 0; 
+                        const isTooLong = flightDuration > slotDuration;
 
-                    return (
-                      <option 
-                        key={f.id?.toString()} 
-                        value={f.id} 
-                        disabled={isTooLong} // Désactive le clic si trop long
-                        className={isTooLong ? "text-slate-300 bg-slate-100" : "text-slate-900"}
-                      >
-                        {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {isTooLong ? `(Trop long : ${flightDuration} min)` : ''}
-                      </option>
-                      ))}
+                        return (
+                          <option 
+                            key={f.id?.toString()} 
+                            value={f.id} 
+                            disabled={isTooLong}
+                            className={isTooLong ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                          >
+                            {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {isTooLong ? `(Trop long : ${flightDuration} min)` : ''}
+                          </option>
+                        ); // <-- C'est ici qu'il manquait la bonne fermeture du return
+                      })}
                     </select>
                   </div>
                   <div className="flex gap-4">
