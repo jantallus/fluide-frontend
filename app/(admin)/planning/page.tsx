@@ -90,7 +90,7 @@ export default function PlanningAdmin() {
       });
       if (res.ok) {
         setShowEditModal(false);
-        loadData();
+        await loadData(); // Force le rechargement immédiat de la base de données
       }
     } catch (err) { alert("Erreur lors de la sauvegarde"); }
   };
