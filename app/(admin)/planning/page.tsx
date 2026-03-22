@@ -15,12 +15,10 @@ export default function PlanningAdmin() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
   
-  // --- NOUVEAUX ÉTATS POUR LES ONGLETS ET LE BLOCAGE ---
   const [activeTab, setActiveTab] = useState<'client' | 'note'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   
-  // État pour la réservation
   const [formData, setFormData] = useState<{
     title: string,
     flight_type_id: string,
@@ -43,7 +41,7 @@ export default function PlanningAdmin() {
     try {
       const [apptsRes, monRes, flightRes] = await Promise.all([
         apiFetch('/api/slots'),
-        apiFetch('/api/monitors'),
+        apiFetch('/api/monitors-admin'),
         apiFetch('/api/flight-types')
       ]);
 
@@ -68,34 +66,43 @@ export default function PlanningAdmin() {
     const event = info.event;
     setSelectedEvent({
       id: event.id,
-      title: event.title,
+      title: event.extendedProps.title, 
       start: event.start,
       monitor_id: event.getResources()[0]?.id,
       ...event.extendedProps
     });
+
+    // CORRECTION 1 : On ne remplit pas le formulaire si le vrai titre est vide ou s'il s'agit d'une simple NOTE
+    const realTitle = event.extendedProps.title;
     setFormData({
-      title: event.title || '',
+      title: realTitle === 'NOTE' ? '' : (realTitle || ''),
       flight_type_id: event.extendedProps.flight_type_id || '',
       weight: event.extendedProps.weight || '',
       notes: event.extendedProps.notes || ''
     });
-    // On réinitialise les onglets à chaque ouverture de modale
+
     setActiveTab('client');
     setBlockType('none');
     setSelectedMonitors([]);
     setShowEditModal(true);
   };
 
-  // --- NOUVELLE FONCTION DE SAUVEGARDE (INCLUANT LE BLOCAGE) ---
   const handleSaveNote = async () => {
     if (!selectedEvent) return;
     try {
+      // CORRECTION 2 & 3 : On définit le titre intelligemment selon l'action
+      let finalTitle = formData.title;
+      if (activeTab === 'note' && !formData.title.trim()) {
+        if (blockType === 'all' || blockType === 'specific') finalTitle = 'NON DISPO';
+        else if (formData.notes.trim()) finalTitle = 'NOTE';
+      }
+
       if (blockType === 'all') {
         const allSlots = appointments.filter(a => a.start_time === selectedEvent.start_time);
         await Promise.all(allSlots.map(slot => 
           apiFetch(`/api/slots/${slot.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ title: formData.title || '❌ BLOCAGE', notes: formData.notes, status: 'booked' })
+            body: JSON.stringify({ title: finalTitle || 'NON DISPO', notes: formData.notes, status: 'booked' })
           })
         ));
       } else if (blockType === 'specific') {
@@ -105,15 +112,18 @@ export default function PlanningAdmin() {
         await Promise.all(slotsToBlock.map(slot => 
           apiFetch(`/api/slots/${slot.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ title: formData.title || '❌ INDISPO', notes: formData.notes, status: 'booked' })
+            body: JSON.stringify({ title: finalTitle || 'NON DISPO', notes: formData.notes, status: 'booked' })
           })
         ));
       } else {
+        // Simple client ou Note non-bloquante
+        const isNonBlockingNote = (finalTitle === 'NOTE' && activeTab === 'note');
         await apiFetch(`/api/slots/${selectedEvent.id}`, {
           method: 'PATCH',
           body: JSON.stringify({
             ...formData,
-            status: formData.title ? 'booked' : 'available'
+            title: finalTitle,
+            status: isNonBlockingNote ? 'available' : (finalTitle.trim() ? 'booked' : 'available')
           })
         });
       }
@@ -122,7 +132,6 @@ export default function PlanningAdmin() {
     } catch (err) { alert("Erreur lors de la sauvegarde"); }
   };
 
-  // --- NOUVELLE FONCTION POUR LIBÉRER LE CRÉNEAU ---
   const handleRelease = async () => {
     if (!selectedEvent || !confirm("Libérer ce créneau ?")) return;
     try {
@@ -166,11 +175,12 @@ export default function PlanningAdmin() {
           initialView="resourceTimeGridDay"
           resources={monitors}
           events={appointments.map(a => {
-            // 1. On cherche le vol correspondant pour récupérer sa couleur (ou bleu par défaut)
             const flight = flightTypes?.find(f => f.id === a.flight_type_id);
             const flightColor = flight?.color_code || '#0ea5e9'; 
 
-            // 2. On retourne l'événement avec les bonnes couleurs
+            const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
+            const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
+
             return {
               id: a.id?.toString() || Math.random().toString(),
               resourceId: a.monitor_id?.toString() || "",
@@ -178,19 +188,18 @@ export default function PlanningAdmin() {
               end: a.end_time,
               title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
               
-              // --- GESTION DES COULEURS ---
-              backgroundColor: a.title?.includes('☕') ? '#f1f5f9' // Gris clair pour Pause
-                             : a.title?.includes('❌') ? '#fee2e2' // Rouge clair pour Météo/Alerte
-                             : (a.status === 'available' ? '#ffffff' : flightColor), // Couleur du vol !
+              backgroundColor: isPause ? '#f1f5f9'
+                             : isAlert ? '#fee2e2'
+                             : (a.status === 'available' ? '#ffffff' : flightColor),
               
-              textColor: a.status === 'available' ? '#cbd5e1' 
-                       : a.title?.includes('☕') ? '#94a3b8' 
-                       : a.title?.includes('❌') ? '#ef4444' // Texte rouge pour alerte
-                       : '#ffffff', // Texte blanc sur les couleurs de vol
+              textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : '#cbd5e1') 
+                       : isPause ? '#94a3b8' 
+                       : isAlert ? '#ef4444' 
+                       : '#ffffff',
               
-              borderColor: a.status === 'available' ? '#e2e8f0' 
-                         : a.title?.includes('❌') ? '#fca5a5' // Bordure rouge pour alerte
-                         : flightColor, // Bordure de la couleur du vol
+              borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') 
+                         : isAlert ? '#fca5a5' 
+                         : flightColor,
               
               extendedProps: { ...a }
             };
@@ -217,13 +226,11 @@ export default function PlanningAdmin() {
         />
       </div>
 
-      {/* MODALE ÉDITION / RÉSERVATION AVEC ONGLETS */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
             <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
             
-            {/* ONGLETS */}
             <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
               <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
               <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note / Alerte</button>
@@ -238,6 +245,7 @@ export default function PlanningAdmin() {
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
                       value={formData.title}
                       onChange={e => setFormData({...formData, title: e.target.value})}
+                      placeholder="Ex: Jean Dupont"
                     />
                   </div>
                   <div>
@@ -272,13 +280,18 @@ export default function PlanningAdmin() {
                 </>
               ) : (
                 <>
+                  <div className="flex gap-2">
+                    <button onClick={() => setFormData({...formData, title: '☕ PAUSE'})} className="flex-1 bg-slate-50 p-2 rounded-xl border-2 border-slate-100 font-black text-[10px] uppercase hover:border-amber-200">☕ Pause</button>
+                    <button onClick={() => setFormData({...formData, title: 'NON DISPO'})} className="flex-1 bg-slate-50 p-2 rounded-xl border-2 border-slate-100 font-black text-[10px] uppercase hover:border-rose-200">❌ Non Dispo</button>
+                  </div>
+
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Note</label>
                     <textarea 
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24"
                       value={formData.notes}
                       onChange={e => setFormData({...formData, notes: e.target.value})}
-                      placeholder="Infos météo, retard, indispo..."
+                      placeholder="Infos météo, retard..."
                     />
                   </div>
 
@@ -316,7 +329,7 @@ export default function PlanningAdmin() {
               )}
 
               <div className="pt-4 space-y-3">
-                <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4">
+                <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
                   Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
                 </button>
                 {selectedEvent?.title && (
@@ -333,7 +346,6 @@ export default function PlanningAdmin() {
         </div>
       )}
 
-      {/* MODALE GÉNÉRATION */}
       {showGenModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
