@@ -165,17 +165,36 @@ export default function PlanningAdmin() {
           plugins={[resourceTimeGridPlugin, interactionPlugin]}
           initialView="resourceTimeGridDay"
           resources={monitors}
-          events={appointments.map(a => ({
-            id: a.id?.toString() || Math.random().toString(),
-            resourceId: a.monitor_id?.toString() || "",
-            start: a.start_time,
-            end: a.end_time,
-            title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
-            backgroundColor: a.title?.includes('☕') ? '#f1f5f9' : (a.status === 'available' ? '#ffffff' : '#0ea5e9'),
-            textColor: a.status === 'available' ? '#cbd5e1' : (a.title?.includes('☕') ? '#94a3b8' : '#ffffff'),
-            borderColor: a.status === 'available' ? '#e2e8f0' : '#0ea5e9',
-            extendedProps: { ...a }
-          }))}
+          events={appointments.map(a => {
+            // 1. On cherche le vol correspondant pour récupérer sa couleur (ou bleu par défaut)
+            const flight = flightTypes?.find(f => f.id === a.flight_type_id);
+            const flightColor = flight?.color_code || '#0ea5e9'; 
+
+            // 2. On retourne l'événement avec les bonnes couleurs
+            return {
+              id: a.id?.toString() || Math.random().toString(),
+              resourceId: a.monitor_id?.toString() || "",
+              start: a.start_time,
+              end: a.end_time,
+              title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
+              
+              // --- GESTION DES COULEURS ---
+              backgroundColor: a.title?.includes('☕') ? '#f1f5f9' // Gris clair pour Pause
+                             : a.title?.includes('❌') ? '#fee2e2' // Rouge clair pour Météo/Alerte
+                             : (a.status === 'available' ? '#ffffff' : flightColor), // Couleur du vol !
+              
+              textColor: a.status === 'available' ? '#cbd5e1' 
+                       : a.title?.includes('☕') ? '#94a3b8' 
+                       : a.title?.includes('❌') ? '#ef4444' // Texte rouge pour alerte
+                       : '#ffffff', // Texte blanc sur les couleurs de vol
+              
+              borderColor: a.status === 'available' ? '#e2e8f0' 
+                         : a.title?.includes('❌') ? '#fca5a5' // Bordure rouge pour alerte
+                         : flightColor, // Bordure de la couleur du vol
+              
+              extendedProps: { ...a }
+            };
+          })}
           locale={frLocale}
           headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridFourDay' }}
           views={{ resourceTimeGridFourDay: { type: 'resourceTimeGrid', duration: { days: 4 }, buttonText: '4 jours' } }}
