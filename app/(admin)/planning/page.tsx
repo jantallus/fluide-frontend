@@ -186,12 +186,20 @@ export default function PlanningAdmin() {
             const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
             const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
 
+            // --- NOUVEAU : ON AJOUTE LE PICTOGRAMME SI UNE NOTE EXISTE ---
+            let displayTitle = a.title || (a.status === 'available' ? 'LIBRE' : '');
+            
+            // Si le champ note n'est pas vide, on ajoute le petit post-it 📝
+            if (a.notes && a.notes.trim() !== '') {
+              displayTitle += ' 📝'; 
+            }
+
             return {
               id: a.id?.toString() || Math.random().toString(),
               resourceId: a.monitor_id?.toString() || "",
               start: a.start_time,
               end: a.end_time,
-              title: a.title || (a.status === 'available' ? 'LIBRE' : ''),
+              title: displayTitle, // On utilise le titre avec le post-it ici
               
               backgroundColor: isPause ? '#f1f5f9'
                              : isAlert ? '#fee2e2'
@@ -206,7 +214,7 @@ export default function PlanningAdmin() {
                          : isAlert ? '#fca5a5' 
                          : flightColor,
               
-              extendedProps: { ...a }
+              extendedProps: { ...a } // Le formulaire lira toujours les données pures ici !
             };
           })}
           locale={frLocale}
