@@ -19,6 +19,12 @@ export default function PlanningAdmin() {
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
+  const [activeTab, setActiveTab] = useState<'client' | 'note' | 'move'>('client');
+  const [moveConfig, setMoveConfig] = useState({
+    date: '',
+    time: '',
+    monitorId: 'random'
+  });
   
   const [formData, setFormData] = useState<{
     title: string,
@@ -111,6 +117,9 @@ export default function PlanningAdmin() {
       notes: event.extendedProps.notes || ''
     });
 
+    const d = new Date(event.start);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    setMoveConfig({ date: dateStr, time: '', monitorId: 'random' });
     setActiveTab('client');
     setBlockType('none');
     setSelectedMonitors([]);
@@ -176,6 +185,72 @@ export default function PlanningAdmin() {
         })
       });
       if (res.ok) {
+        setShowEditModal(false);
+        await loadData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // --- CALCUL DES CRÉNEAUX DISPONIBLES POUR LE DÉPLACEMENT ---
+  const availableTargetSlots = appointments.filter(a => {
+    if (a.status !== 'available') return false; // Doit être libre
+    if (selectedEvent && a.id === selectedEvent.id) return false; // Pas le créneau actuel
+
+    // Filtre sur la date
+    const d = new Date(a.start_time);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (dateStr !== moveConfig.date) return false;
+
+    // Filtre sur le pilote (si pas aléatoire)
+    if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
+
+    // Filtre sur la compatibilité du vol
+    if (formData.flight_type_id) {
+      const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
+      if (flight) {
+        const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+        const flightDur = flight.duration_minutes || flight.duration || 0;
+        if (flightDur > dur) return false; // Trop court
+
+        const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const allowedSlots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
+        if (allowedSlots.length > 0 && !allowedSlots.includes(timeStr)) return false; // Pas autorisé à cette heure
+      }
+    }
+    return true;
+  });
+
+  // On extrait juste les heures au format "HH:MM" sans doublons
+  const availableTimes = Array.from(new Set(availableTargetSlots.map(a => {
+    const d = new Date(a.start_time);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }))).sort();
+
+  // --- FONCTION DE DÉPLACEMENT EN BDD ---
+  const handleMove = async () => {
+    if (!moveConfig.time || !selectedEvent) return;
+
+    // Retrouver le créneau exact choisi
+    const targetSlot = availableTargetSlots.find(a => {
+      const d = new Date(a.start_time);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` === moveConfig.time;
+    });
+
+    if (!targetSlot) return alert("Erreur: Créneau introuvable.");
+
+    try {
+      // 1. On réserve le nouveau créneau
+      const resBook = await apiFetch(`/api/slots/${targetSlot.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ ...formData, status: 'booked' })
+      });
+
+      if (resBook.ok) {
+        // 2. On libère l'ancien créneau
+        await apiFetch(`/api/slots/${selectedEvent.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available' })
+        });
         setShowEditModal(false);
         await loadData();
       }
@@ -264,18 +339,26 @@ export default function PlanningAdmin() {
         />
       </div>
 
+      {/* MODALE ÉDITION / RÉSERVATION AVEC ONGLETS */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
             <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
             
-            <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
-              <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
-              <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[10px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note / Alerte</button>
+            {/* ONGLETS */}
+            <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
+              <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
+              <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note</button>
+              {/* On affiche l'onglet Déplacer uniquement s'il y a une vraie réservation */}
+              {selectedEvent?.status !== 'available' && (
+                <button onClick={() => setActiveTab('move')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'move' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-400'}`}>🔄 Déplacer</button>
+              )}
             </div>
 
             <div className="space-y-4">
-              {activeTab === 'client' ? (
+              
+              {/* ONGLET 1 : CLIENT */}
+              {activeTab === 'client' && (
                 <>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
@@ -295,34 +378,20 @@ export default function PlanningAdmin() {
                     >
                       <option value="">Choisir un vol...</option>
                       {flightTypes?.map(f => {
-                        // 1. Vérification de la durée
                         const flightDuration = f.duration_minutes || f.duration || 0; 
                         const isTooLong = flightDuration > slotDuration;
-
-                        // 2. Vérification de l'heure exacte (ex: "09:05")
                         const slotHours = String(selectedEvent?.start?.getHours()).padStart(2, '0');
                         const slotMins = String(selectedEvent?.start?.getMinutes()).padStart(2, '0');
                         const slotTimeStr = `${slotHours}:${slotMins}`;
-                        
-                        // On sécurise la lecture du tableau des créneaux autorisés
                         const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
                         const isAllowedTime = allowedSlots.includes(slotTimeStr);
-
-                        // 3. Le vol est grisé s'il est trop long OU s'il n'est pas autorisé à cette heure
                         const isDisabled = isTooLong || !isAllowedTime;
-
-                        // 4. On prépare le petit texte d'explication
                         let reason = '';
                         if (isTooLong) reason = `(Trop long : ${flightDuration} min)`;
                         else if (!isAllowedTime) reason = `(Interdit à ${slotTimeStr})`;
 
                         return (
-                          <option 
-                            key={f.id?.toString()} 
-                            value={f.id} 
-                            disabled={isDisabled}
-                            className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}
-                          >
+                          <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
                             {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {reason}
                           </option>
                         );
@@ -344,34 +413,15 @@ export default function PlanningAdmin() {
                     </div>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* ONGLET 2 : NOTE ET BLOCAGE */}
+              {activeTab === 'note' && (
                 <>
                   <div className="flex gap-2">
-                    <button 
-                      disabled={blockType === 'none'}
-                      onClick={() => setFormData({...formData, title: '☕ PAUSE'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${
-                        blockType === 'none' 
-                          ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' 
-                          : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700 hover:shadow-sm'
-                      }`}
-                    >
-                      ☕ Pause
-                    </button>
-                    
-                    <button 
-                      disabled={blockType === 'none'}
-                      onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${
-                        blockType === 'none' 
-                          ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' 
-                          : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700 hover:shadow-sm'
-                      }`}
-                    >
-                      ❌ Non Dispo
-                    </button>
+                    <button disabled={blockType === 'none'} onClick={() => setFormData({...formData, title: '☕ PAUSE'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${blockType === 'none' ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}>☕ Pause</button>
+                    <button disabled={blockType === 'none'} onClick={() => setFormData({...formData, title: 'NON DISPO'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${blockType === 'none' ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}>❌ Non Dispo</button>
                   </div>
-
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Note</label>
                     <textarea 
@@ -381,31 +431,18 @@ export default function PlanningAdmin() {
                       placeholder="Infos météo, retard..."
                     />
                   </div>
-
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Action sur le planning</label>
-                    <select 
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold"
-                      value={blockType}
-                      onChange={(e: any) => setBlockType(e.target.value)}
-                    >
+                    <select className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold" value={blockType} onChange={(e: any) => setBlockType(e.target.value)}>
                       <option value="none">Simple note (pas de blocage)</option>
                       <option value="all">🚫 Bloquer TOUS les pilotes</option>
                       <option value="specific">👥 Bloquer certains pilotes</option>
                     </select>
-
                     {blockType === 'specific' && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
                           <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={selectedMonitors.includes(m.id.toString())}
-                              onChange={(e) => {
-                                const id = m.id.toString();
-                                setSelectedMonitors(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id));
-                              }}
-                            />
+                            <input type="checkbox" checked={selectedMonitors.includes(m.id.toString())} onChange={(e) => { const id = m.id.toString(); setSelectedMonitors(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id)); }}/>
                             {m.title}
                           </label>
                         ))}
@@ -415,19 +452,76 @@ export default function PlanningAdmin() {
                 </>
               )}
 
-              <div className="pt-4 space-y-3">
-                <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
-                  Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
-                </button>
-                {selectedEvent?.title && (
-                  <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
-                    🗑️ Libérer le créneau
+              {/* BOUTONS PARTAGÉS (CLIENT & NOTE UNIQUEMENT) */}
+              {(activeTab === 'client' || activeTab === 'note') && (
+                <div className="pt-4 space-y-3">
+                  <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
+                    Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
                   </button>
-                )}
-                <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">
-                  Annuler
-                </button>
-              </div>
+                  {selectedEvent?.title && selectedEvent.status !== 'available' && (
+                    <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
+                      🗑️ Libérer le créneau
+                    </button>
+                  )}
+                  <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+                </div>
+              )}
+
+              {/* ONGLET 3 : MOVE (AVEC SES PROPRES BOUTONS) */}
+              {activeTab === 'move' && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Date ciblée</label>
+                    <input 
+                      type="date" 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={moveConfig.date}
+                      onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
+                    <select 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={moveConfig.monitorId}
+                      onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value, time: ''})}
+                    >
+                      <option value="random">🎲 Aléatoire (Peu importe)</option>
+                      {monitors.map(m => (
+                        <option key={m.id} value={m.id}>{m.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Créneau disponible</label>
+                    <select 
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                      value={moveConfig.time}
+                      onChange={e => setMoveConfig({...moveConfig, time: e.target.value})}
+                    >
+                      <option value="">Choisir une heure...</option>
+                      {availableTimes.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    {availableTimes.length === 0 && moveConfig.date && (
+                      <p className="text-[10px] text-rose-500 mt-2 ml-2 font-bold">Aucun créneau compatible trouvé à cette date.</p>
+                    )}
+                  </div>
+
+                  <div className="pt-4 space-y-3">
+                    <button 
+                      onClick={handleMove} 
+                      disabled={!moveConfig.time}
+                      className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${!moveConfig.time ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                    >
+                      Transférer le créneau
+                    </button>
+                    <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+                  </div>
+                </>
+              )}
+
             </div>
           </div>
         </div>
