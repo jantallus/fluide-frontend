@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
 
 // Définition du type pour TypeScript
 interface Vol {
@@ -16,6 +17,7 @@ export default function TarifsPage() {
   const router = useRouter();
 
   useEffect(() => {
+    setLoading(true);
     // Appel à ton API Backend
     apiFetch('/api/vols')
       .then(res => res.json())
@@ -24,7 +26,7 @@ export default function TarifsPage() {
         setLoading(false);
       })
       .catch(err => {
-        console.error("Erreur lors du chargement des vols:", err);
+        console.error("Erreur:", err);
         setLoading(false);
       });
   }, []);
