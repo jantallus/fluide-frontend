@@ -1,159 +1,267 @@
 "use client";
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/api'; // 1. Import ajouté
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../../../lib/api';
 
-function ReserverContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  
-  const [slots, setSlots] = useState<any[]>([]);
+export default function ConfigPage() {
+  const [definitions, setDefinitions] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   
-  // 2. Ajout d'états pour le formulaire (indispensable pour réserver)
-  const [nomClient, setNomClient] = useState('');
-  const [emailClient, setEmailClient] = useState('');
+  // NOUVEAU : État pour gérer les multiples saisons
+  const [seasons, setSeasons] = useState<{id: string, name: string, start: string, end: string}[]>([]);
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [newRotation, setNewRotation] = useState({ start_time: '', duration_minutes: 60, label: 'VOL' });
 
-  const volId = searchParams.get('volId');
-  const volNom = searchParams.get('nom');
-  const volPrix = searchParams.get('prix');
-
-  useEffect(() => {
-    apiFetch('/api/slots')
-      .then(res => res.json())
-      .then(data => {
-        const disponibles = data.filter((s: any) => s.status === 'available');
-        setSlots(disponibles);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Erreur:", err);
-        setLoading(false);
-      });
-  }, []);
-
-  const confirmerReservation = async (slotId: number) => {
-    // Vérification simple
-    if (!nomClient || !emailClient) {
-      alert("Merci de remplir votre nom et votre email avant de choisir un créneau.");
-      return;
-    }
-
+  const loadData = async () => {
+    setLoading(true);
     try {
-      // 3. Correction du 'cconst' et suppression des '...'
-      const res = await apiFetch('/api/bookings', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slotId: slotId, 
-          volId: volId,
-          clientName: nomClient,
-          email: emailClient
-        }),
-      });
-
-      if (res.ok) {
-        alert(`Bravo ! Votre vol "${volNom}" est réservé. À bientôt dans les airs ! 🪂`);
-        router.push('/dashboard'); // Ou une page de confirmation
-      } else {
-        alert("Oups, ce créneau n'est plus disponible.");
+      const [defRes, setRes] = await Promise.all([
+        apiFetch('/api/slot-definitions'),
+        apiFetch('/api/settings')
+      ]);
+      
+      if (defRes.ok) {
+        setDefinitions(await defRes.json());
       }
-    } catch (err) {
-      alert("Impossible de joindre le serveur.");
+      
+      if (setRes.ok) {
+        const s = await setRes.json();
+        const settingsObj = s.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+        setSettings(settingsObj);
+
+        // NOUVEAU : On récupère les périodes si elles existent, sinon on met un tableau vide
+        if (settingsObj.opening_periods) {
+          try {
+            setSeasons(JSON.parse(settingsObj.opening_periods));
+          } catch (e) {
+            setSeasons([]);
+          }
+        }
+      }
+    } catch (err) { 
+      console.error(err); 
+    } finally { 
+      setLoading(false); 
     }
   };
 
+  useEffect(() => { loadData(); }, []);
+
+  // --- GESTION DES ROTATIONS ---
+  const handleSaveRotation = async () => {
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/slot-definitions/${editingId}` : '/api/slot-definitions';
+    
+    try {
+      const res = await apiFetch(url, {
+        method: method,
+        body: JSON.stringify(newRotation)
+      });
+      if (res.ok) {
+        setShowAddModal(false);
+        setEditingId(null);
+        setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL' });
+        loadData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Erreur lors de l'enregistrement");
+      }
+    } catch (err) { alert("Erreur réseau"); }
+  };
+
+  const deleteDef = async (id: number) => {
+    if(!confirm("Supprimer cette rotation ?")) return;
+    await apiFetch(`/api/slot-definitions/${id}`, { method: 'DELETE' });
+    loadData();
+  };
+
+  // --- GESTION DES SAISONS MULTIPLES ---
+  const saveSeasonsToDB = async (updatedSeasons: any[]) => {
+    await apiFetch('/api/settings', {
+      method: 'POST',
+      body: JSON.stringify({ key: 'opening_periods', value: JSON.stringify(updatedSeasons) })
+    });
+  };
+
+  const handleAddSeason = () => {
+    const newSeason = { id: Date.now().toString(), name: '', start: '', end: '' };
+    const updated = [...seasons, newSeason];
+    setSeasons(updated);
+    saveSeasonsToDB(updated);
+  };
+
+  const handleSeasonChange = (id: string, field: string, value: string) => {
+    const updated = seasons.map(s => s.id === id ? { ...s, [field]: value } : s);
+    setSeasons(updated);
+  };
+
+  const handleDeleteSeason = (id: string) => {
+    if(!confirm("Supprimer cette période d'ouverture ?")) return;
+    const updated = seasons.filter(s => s.id !== id);
+    setSeasons(updated);
+    saveSeasonsToDB(updated);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        
-        {/* Formulaire de coordonnées */}
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 mb-8">
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Vos informations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input 
-              type="text" 
-              placeholder="Votre nom complet"
-              className="p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-sky-500 transition-all font-bold"
-              value={nomClient}
-              onChange={(e) => setNomClient(e.target.value)}
-            />
-            <input 
-              type="email" 
-              placeholder="votre@email.com"
-              className="p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-sky-500 transition-all font-bold"
-              value={emailClient}
-              onChange={(e) => setEmailClient(e.target.value)}
-            />
-          </div>
-        </div>
+    <div className="p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-12">
+          <p className="text-indigo-500 font-black uppercase text-xs tracking-widest mb-2">Logistique & Saison</p>
+          <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
+            Configuration <span className="text-indigo-500">Fluide</span>
+          </h1>
+        </header>
 
-        {/* Rappel du choix */}
-        <div className="bg-slate-900 p-6 rounded-[32px] shadow-xl mb-8 flex justify-between items-center text-white">
-          <div>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Formule choisie</p>
-            <h2 className="text-xl font-bold">{volNom}</h2>
+        {/* SECTION 1 : SAISONS MULTIPLES */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📅 Périodes d'ouverture</h2>
+            <button 
+              onClick={handleAddSeason}
+              className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
+            >
+              + Ajouter une période
+            </button>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-sky-400">{Number(volPrix) / 100}€</p>
-          </div>
-        </div>
-
-        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center italic uppercase">
-          <span className="mr-2">📅</span> Choisissez votre créneau
-        </h3>
-
-        {loading ? (
-          <p className="text-center py-10 text-slate-400 animate-pulse font-bold">Recherche des disponibilités...</p>
-        ) : (
+          
           <div className="space-y-4">
-            {slots.length === 0 ? (
-              <div className="bg-white p-10 rounded-[40px] text-center border-2 border-dashed border-slate-200">
-                <p className="text-slate-400 font-bold italic">Aucun créneau libre pour le moment.</p>
+            {seasons.length === 0 && (
+              <div className="text-center p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                <p className="text-slate-400 font-bold italic">Aucune période définie. Créez-en une pour restreindre les réservations.</p>
               </div>
-            ) : (
-              slots.map((slot) => (
-                <div 
-                  key={slot.id} 
-                  className="bg-white p-5 rounded-[28px] shadow-sm border border-slate-100 flex items-center justify-between hover:scale-[1.02] transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-slate-900 text-white w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black">
-                      <span className="text-[10px] uppercase leading-none mb-1 text-sky-400">
-                        {new Date(slot.start_time).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')}
-                      </span>
-                      <span className="text-xl leading-none">{new Date(slot.start_time).getDate()}</span>
-                    </div>
-                    <div>
-                      <p className="font-black text-slate-800 uppercase text-xs tracking-widest">
-                        {new Date(slot.start_time).toLocaleDateString('fr-FR', { weekday: 'long' })}
-                      </p>
-                      <p className="text-slate-400 font-bold">
-                        À <span className="text-slate-900">{new Date(slot.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                      </p>
-                    </div>
-                  </div>
-                  
+            )}
+            
+            {seasons.map((season) => (
+              <div key={season.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-slate-50 p-4 rounded-3xl border border-slate-100 transition-all hover:border-indigo-100">
+                <div className="md:col-span-4">
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Nom de la période</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-indigo-300 transition-colors" 
+                    value={season.name} 
+                    placeholder="Ex: Hiver 2026"
+                    onChange={(e) => handleSeasonChange(season.id, 'name', e.target.value)} 
+                    onBlur={() => saveSeasonsToDB(seasons)}
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Date de début</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-indigo-300 transition-colors text-sm" 
+                    value={season.start} 
+                    onChange={(e) => handleSeasonChange(season.id, 'start', e.target.value)} 
+                    onBlur={() => saveSeasonsToDB(seasons)}
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Date de fin</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-indigo-300 transition-colors text-sm" 
+                    value={season.end} 
+                    onChange={(e) => handleSeasonChange(season.id, 'end', e.target.value)} 
+                    onBlur={() => saveSeasonsToDB(seasons)}
+                  />
+                </div>
+                <div className="md:col-span-2 flex justify-end">
                   <button 
-                    onClick={() => confirmerReservation(slot.id)}
-                    className="bg-sky-100 text-sky-600 px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-sky-600 hover:text-white transition-all shadow-lg shadow-sky-100"
+                    onClick={() => handleDeleteSeason(season.id)}
+                    className="w-full p-4 bg-rose-100 text-rose-500 rounded-2xl font-black uppercase text-[10px] hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
                   >
-                    Réserver
+                    🗑️ <span className="md:hidden">Supprimer</span>
                   </button>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SECTION 2 : ROTATIONS */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">⏱️ Rotations types</h2>
+            <button 
+              onClick={() => {
+                setEditingId(null);
+                setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL' });
+                setShowAddModal(true);
+              }}
+              className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
+            >
+              + Ajouter une rotation
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {definitions.map((def) => (
+              <div 
+                key={def.id} 
+                onClick={() => {
+                   setEditingId(def.id);
+                   setNewRotation({ start_time: def.start_time.slice(0,5), duration_minutes: def.duration_minutes, label: def.label });
+                   setShowAddModal(true);
+                }}
+                className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center gap-6">
+                  <span className="bg-white px-4 py-2 rounded-xl font-black text-indigo-600 shadow-sm">{def.start_time.slice(0, 5)}</span>
+                  <div>
+                    <p className="font-black uppercase text-xs text-slate-800">{def.label}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{def.duration_minutes} min</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); deleteDef(def.id); }} 
+                  className="opacity-0 group-hover:opacity-100 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* MODALE D'AJOUT / MODIF ROTATION */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
+              <h2 className="text-xl font-black uppercase italic mb-6">
+                {editingId ? 'Modifier Rotation' : 'Nouvelle Rotation'}
+              </h2>
+              <div className="space-y-4">
+                <input 
+                  type="time" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.start_time}
+                  onChange={e => setNewRotation({...newRotation, start_time: e.target.value})} 
+                />
+                <input 
+                  type="number" 
+                  placeholder="Durée (min)" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.duration_minutes}
+                  onChange={e => setNewRotation({...newRotation, duration_minutes: parseInt(e.target.value)})} 
+                />
+                <select 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                  value={newRotation.label}
+                  onChange={e => setNewRotation({...newRotation, label: e.target.value})}
+                >
+                  <option value="VOL">VOL</option>
+                  <option value="PAUSE">PAUSE</option>
+                </select>
+                <button onClick={handleSaveRotation} className="w-full bg-indigo-600 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl">
+                   {editingId ? 'Mettre à jour' : 'Enregistrer'}
+                </button>
+                <button onClick={() => setShowAddModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+              </div>
+            </div>
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-export default function ReserverPage() {
-  return (
-    <Suspense fallback={<div className="p-20 text-center font-bold italic">Initialisation du système de réservation...</div>}>
-      <ReserverContent />
-    </Suspense>
   );
 }

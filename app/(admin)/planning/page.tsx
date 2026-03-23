@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -10,10 +10,10 @@ export default function PlanningAdmin() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [monitors, setMonitors] = useState<any[]>([]);
   const [flightTypes, setFlightTypes] = useState<any[]>([]);
+  const [openingPeriods, setOpeningPeriods] = useState<any[]>([]);
   const [showGenModal, setShowGenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [calendarKey, setCalendarKey] = useState(0);
   const [slotDuration, setSlotDuration] = useState<number>(0); 
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
@@ -43,13 +43,27 @@ export default function PlanningAdmin() {
     daysToApply: [1, 2, 3, 4, 5, 6, 0] 
   });
 
+  // NOUVEAU : Référence pour contrôler le calendrier depuis l'extérieur
+  const calendarRef = useRef<FullCalendar>(null);
+  // NOUVEAU : État pour le sélecteur de date rapide
+  const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+
   const loadData = async () => {
     try {
-      const [apptsRes, monRes, flightRes] = await Promise.all([
+      const [apptsRes, monRes, flightRes, settingsRes] = await Promise.all([
         apiFetch('/api/slots'),
         apiFetch('/api/monitors-admin'), 
-        apiFetch('/api/flight-types')
+        apiFetch('/api/flight-types'),
+        apiFetch('/api/settings') 
       ]);
+
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        const periodsSetting = s.find((x: any) => x.key === 'opening_periods');
+        if (periodsSetting && periodsSetting.value) {
+          try { setOpeningPeriods(JSON.parse(periodsSetting.value)); } catch (e) {}
+        }
+      }
 
       if (apptsRes.ok) {
         const appts = await apptsRes.json();
@@ -83,7 +97,7 @@ export default function PlanningAdmin() {
       }
       if (flightRes.ok) setFlightTypes(await flightRes.json());
       
-      setCalendarKey(prev => prev + 1);
+      // On a supprimé le setCalendarKey ici pour éviter le rechargement brutal !
     } catch (err) { console.error("Erreur chargement planning:", err); }
   };
 
@@ -160,12 +174,12 @@ export default function PlanningAdmin() {
         });
       }
       setShowEditModal(false);
-      await loadData();
+      await loadData(); // Va mettre à jour les données sans vous renvoyer à aujourd'hui
     } catch (err) { alert("Erreur lors de la sauvegarde"); }
   };
 
   const handleRelease = async () => {
-    if (!selectedEvent || !confirm("Libérer ce créneau ?")) return;
+    if (!selectedEvent || !confirm("Action irréversible. Confirmer ?")) return;
     try {
       const res = await apiFetch(`/api/slots/${selectedEvent.id}`, {
         method: 'PATCH',
@@ -187,6 +201,17 @@ export default function PlanningAdmin() {
   const availableTargetSlots = appointments.filter(a => {
     if (a.status !== 'available') return false; 
     if (selectedEvent && a.id === selectedEvent.id) return false; 
+
+    if (openingPeriods.length > 0) {
+      const slotDate = new Date(a.start_time);
+      const inSeason = openingPeriods.some((p: any) => {
+        if (!p.start || !p.end) return false;
+        const start = new Date(p.start); start.setHours(0, 0, 0, 0);
+        const end = new Date(p.end); end.setHours(23, 59, 59, 999);
+        return slotDate >= start && slotDate <= end;
+      });
+      if (!inSeason) return false;
+    }
 
     const d = new Date(a.start_time);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -248,6 +273,9 @@ export default function PlanningAdmin() {
     selectedEvent.title?.toUpperCase().includes('NON DISPO')
   );
 
+  const isOutOfSeason = selectedEvent?.isOutOfSeason === true;
+  const isClientLocked = isEventBlocked || isOutOfSeason;
+
   return (
     <div className="p-4 bg-slate-50 min-h-screen">
       <header className="flex justify-between items-center mb-8 px-4">
@@ -256,28 +284,67 @@ export default function PlanningAdmin() {
             Planning <span className="text-sky-500">Vols</span>
           </h1>
         </div>
-        <button 
-          onClick={() => setShowGenModal(true)}
-          className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
-        >
-          ⚙️ Générer la semaine
-        </button>
+        
+        {/* NOUVEAU : Bloc avec Sélecteur de date + Bouton Générer */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-white border-2 border-slate-200 rounded-2xl px-4 py-1 shadow-sm hover:border-sky-300 transition-colors">
+            <span className="text-xl mr-2">📅</span>
+            <input 
+              type="date"
+              className="bg-transparent font-bold text-sm text-slate-700 outline-none cursor-pointer"
+              value={currentDate}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                setCurrentDate(newDate);
+                // On ordonne au calendrier de sauter à cette date instantanément
+                if (calendarRef.current) {
+                  calendarRef.current.getApi().gotoDate(newDate);
+                }
+              }}
+            />
+          </div>
+
+          <button 
+            onClick={() => setShowGenModal(true)}
+            className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
+          >
+            ⚙️ Générer la semaine
+          </button>
+        </div>
       </header>
 
       <div className="bg-white rounded-[35px] shadow-2xl border border-slate-200 p-6 overflow-hidden">
         <FullCalendar
-          key={calendarKey}
+          ref={calendarRef} // NOUVEAU : On relie le calendrier à notre sélecteur
+          schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
           plugins={[resourceTimeGridPlugin, interactionPlugin]}
           initialView="resourceTimeGridDay"
           resources={monitors}
+          // NOUVEAU : On écoute les changements de vue (ex: clic sur "Suivant") pour synchroniser notre sélecteur de date en haut
+          datesSet={(arg) => {
+            setCurrentDate(arg.startStr.split('T')[0]);
+          }}
           events={appointments.map(a => {
             const flight = flightTypes?.find(f => f.id === a.flight_type_id);
             const flightColor = flight?.color_code || '#0ea5e9'; 
 
+            let isSlotOutOfSeason = false;
+            if (openingPeriods.length > 0) {
+              const slotDate = new Date(a.start_time);
+              isSlotOutOfSeason = !openingPeriods.some((p: any) => {
+                if (!p.start || !p.end) return false;
+                const start = new Date(p.start); start.setHours(0, 0, 0, 0);
+                const end = new Date(p.end); end.setHours(23, 59, 59, 999);
+                return slotDate >= start && slotDate <= end;
+              });
+            }
+
             const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
             const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
+            
+            const isEmptyAndOOS = isSlotOutOfSeason && !a.title && !a.notes && a.status === 'available';
 
-            let displayTitle = a.title || (a.status === 'available' ? 'LIBRE' : '');
+            let displayTitle = a.title || (isEmptyAndOOS ? 'HORS SAISON' : (a.status === 'available' ? 'LIBRE' : ''));
             
             if (a.notes && a.notes.trim() !== '') {
               displayTitle += ' 📝'; 
@@ -292,9 +359,10 @@ export default function PlanningAdmin() {
               
               backgroundColor: isPause ? '#f1f5f9'
                              : isAlert ? '#fee2e2'
+                             : isEmptyAndOOS ? '#f8fafc' 
                              : (a.status === 'available' ? '#ffffff' : flightColor),
               
-              textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : '#cbd5e1') 
+              textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) 
                        : isPause ? '#94a3b8' 
                        : isAlert ? '#ef4444' 
                        : '#ffffff',
@@ -303,7 +371,7 @@ export default function PlanningAdmin() {
                          : isAlert ? '#fca5a5' 
                          : flightColor,
               
-              extendedProps: { ...a }
+              extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason }
             };
           })}
           locale={frLocale}
@@ -357,6 +425,20 @@ export default function PlanningAdmin() {
                       className="bg-rose-100 text-rose-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                     >
                       🗑️ Libérer ce créneau
+                    </button>
+                  </div>
+                ) : isOutOfSeason ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                    <span className="text-4xl block mb-2">❄️</span>
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Hors Saison</p>
+                    <p className="text-xs text-slate-500 px-4 font-medium mb-6">
+                      Ce créneau est en dehors de vos périodes d'ouverture. Vous ne pouvez pas y ajouter de réservation.
+                    </p>
+                    <button 
+                      onClick={handleRelease} 
+                      className="bg-slate-200 text-slate-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                    >
+                      🗑️ {(selectedEvent?.title || selectedEvent?.notes) ? 'Effacer la note' : 'Supprimer le créneau'}
                     </button>
                   </div>
                 ) : (
@@ -422,16 +504,16 @@ export default function PlanningAdmin() {
                 <>
                   <div className="flex gap-2">
                     <button 
-                      disabled={blockType === 'none' || isEventBlocked} 
+                      disabled={blockType === 'none' || isClientLocked} 
                       onClick={() => setFormData({...formData, title: '☕ PAUSE'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isEventBlocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isClientLocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}
                     >
                       ☕ Pause
                     </button>
                     <button 
-                      disabled={blockType === 'none' || isEventBlocked} 
+                      disabled={blockType === 'none' || isClientLocked} 
                       onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isEventBlocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isClientLocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}
                     >
                       ❌ Non Dispo
                     </button>
@@ -448,16 +530,16 @@ export default function PlanningAdmin() {
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Action sur le planning</label>
                     <select 
-                      className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isEventBlocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
+                      className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
                       value={blockType} 
                       onChange={(e: any) => setBlockType(e.target.value)}
-                      disabled={isEventBlocked}
+                      disabled={isClientLocked}
                     >
                       <option value="none">Simple note (pas de blocage)</option>
                       <option value="all">🚫 Bloquer TOUS les pilotes</option>
                       <option value="specific">👥 Bloquer certains pilotes</option>
                     </select>
-                    {blockType === 'specific' && !isEventBlocked && (
+                    {blockType === 'specific' && !isClientLocked && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
                           <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer">
@@ -474,14 +556,15 @@ export default function PlanningAdmin() {
               {/* BOUTONS PARTAGÉS (CLIENT & NOTE UNIQUEMENT) */}
               {(activeTab === 'client' || activeTab === 'note') && (
                 <div className="pt-4 space-y-3">
-                  {!(activeTab === 'client' && isEventBlocked) && (
+                  {!(activeTab === 'client' && isClientLocked) && (
                     <>
                       <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
-                        Enregistrer {blockType !== 'none' && !isEventBlocked ? 'et bloquer' : ''}
+                        Enregistrer {blockType !== 'none' && !isClientLocked ? 'et bloquer' : ''}
                       </button>
-                      {selectedEvent?.title && selectedEvent.status !== 'available' && (
+                      
+                      {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
                         <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
-                          🗑️ Libérer le créneau
+                          🗑️ Libérer / Effacer la note
                         </button>
                       )}
                     </>
@@ -492,12 +575,12 @@ export default function PlanningAdmin() {
 
               {/* ONGLET 3 : MOVE */}
               {activeTab === 'move' && (
-                isEventBlocked ? (
+                isClientLocked ? (
                   <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100 mt-4">
                     <span className="text-4xl block mb-2">🔒</span>
                     <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Déplacement bloqué</p>
                     <p className="text-xs text-slate-500 px-4 font-medium mb-6">
-                      Vous ne pouvez pas déplacer une pause ou une indisponibilité. Libérez d'abord le créneau si vous souhaitez le modifier.
+                      Vous ne pouvez pas déplacer un créneau hors saison ou en pause.
                     </p>
                   </div>
                 ) : (
