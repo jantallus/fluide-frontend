@@ -15,7 +15,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await apiFetch('/api/login', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -24,25 +24,30 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // 1. Stockage des informations de session
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userRole', data.user.role);
-        localStorage.setItem('userName', data.user.firstName);
+        // 1. On prépare l'objet utilisateur (rôle en minuscules)
+        const userToStore = {
+          id: data.user.id,
+          role: data.user.role ? data.user.role.toLowerCase() : 'user',
+          first_name: data.user.first_name || data.user.firstName
+        };
 
-        // 2. Redirection dynamique selon le rôle
-        if (data.user.role === 'admin') {
+        // 2. Stockage propre
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(userToStore));
+
+        // 3. Redirection
+        if (userToStore.role === 'admin') {
           router.push('/dashboard');
-        } else if (data.user.role === 'monitor') {
+        } else if (userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
         } else {
-          // Si c'est un client ou un rôle inconnu
           router.push('/');
         }
       } else {
-        setError(data.message || "Identifiants invalides");
+        setError(data.error || data.message || "Identifiants invalides");
       }
     } catch (err) {
+      console.error("Erreur login:", err);
       setError("Impossible de joindre le serveur de vol.");
     } finally {
       setLoading(false);

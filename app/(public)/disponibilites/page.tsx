@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/api'; // On ajoute l'import manquant
 
 export default function PlanningPage() {
   const [slots, setSlots] = useState([]);
@@ -10,24 +11,35 @@ export default function PlanningPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const storedId = localStorage.getItem('userId');
-    const role = localStorage.getItem('userRole');
-    const name = localStorage.getItem('userName');
-
-    if (!storedId || role !== 'monitor') {
+    // On récupère l'objet "user" complet qu'on a stocké au login
+    const userData = localStorage.getItem('user');
+    
+    if (!userData) {
       router.push('/login');
       return;
     }
 
-    setUserName(name || 'Moniteur');
-    fetchSlots(storedId);
-  }, []);
+    const user = JSON.parse(userData);
+    
+    // On autorise les admins, permanents et moniteurs à voir cette page
+    const authorizedRoles = ['admin', 'permanent', 'monitor'];
+    if (!authorizedRoles.includes(user.role)) {
+      router.push('/login');
+      return;
+    }
+
+    setUserName(user.first_name || 'Moniteur');
+    fetchSlots(user.id);
+  }, [router]);
 
   const fetchSlots = async (id: string) => {
     try {
+      // Note: Assure-toi que cette route existe bien dans ton backend
       const res = await apiFetch(`/api/monitor/slots/${id}`);
-      const data = await res.json();
-      setSlots(data);
+      if (res.ok) {
+        const data = await res.json();
+        setSlots(data);
+      }
     } catch (err) {
       console.error("Erreur chargement:", err);
     } finally {
@@ -37,30 +49,44 @@ export default function PlanningPage() {
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    const monitorId = localStorage.getItem('userId');
-    if (!newSlotDate) return;
+    const userData = localStorage.getItem('user');
+    if (!userData || !newSlotDate) return;
+    
+    const user = JSON.parse(userData);
 
-    const res = await apiFetch('/api/slots', { method: 'POST', ... });
+    const res = await apiFetch('/api/slots', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ monitor_id: monitorId, start_time: newSlotDate }),
-    });
+      body: JSON.stringify({ 
+        monitor_id: user.id, 
+        start_time: newSlotDate 
+      }),
+    }); 
 
     if (res.ok) {
       setNewSlotDate('');
-      fetchSlots(monitorId!);
+      fetchSlots(user.id);
     }
   };
 
   const toggleStatus = async (slotId: number, currentStatus: string) => {
     const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
-    const res = await apiFetch(`/api/slots/${slotId}/status`, { method: 'PATCH', ... });
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    if (res.ok) {
-      setSlots((prev: any) => prev.map((s: any) => s.id === slotId ? { ...s, status: newStatus } : s));
+    
+    // CORRECTION : On a nettoyé les "..." et les parenthèses mal placées ici
+    try {
+      const res = await apiFetch(`/api/slots/${slotId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        setSlots((prev: any) => 
+          prev.map((s: any) => s.id === slotId ? { ...s, status: newStatus } : s)
+        );
+      }
+    } catch (err) {
+      console.error("Erreur lors du changement de statut:", err);
     }
   };
 
@@ -70,14 +96,20 @@ export default function PlanningPage() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <header className="max-w-2xl mx-auto mb-10 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Planning : {userName}</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">
+            Planning : {userName}
+          </h1>
           <p className="text-slate-500 font-medium">Gérez vos disponibilités de vol.</p>
         </div>
-        <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="p-3 bg-white rounded-2xl shadow-sm hover:text-rose-500 transition-colors">🚪</button>
+        <button 
+          onClick={() => { localStorage.clear(); router.push('/login'); }} 
+          className="p-3 bg-white rounded-2xl shadow-sm hover:text-rose-500 transition-colors"
+        >
+          🚪
+        </button>
       </header>
 
       <div className="max-w-2xl mx-auto">
-        {/* FORMULAIRE D'AJOUT */}
         <section className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
           <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Ouvrir une nouvelle date</h2>
           <form onSubmit={handleAddSlot} className="flex flex-col md:flex-row gap-3">
@@ -94,7 +126,6 @@ export default function PlanningPage() {
           </form>
         </section>
 
-        {/* LISTE DES CRÉNEAUX */}
         <div className="space-y-4">
           {slots.length === 0 && <p className="text-center text-slate-400 py-10 italic">Aucun créneau créé pour le moment.</p>}
           {slots.map((s: any) => (

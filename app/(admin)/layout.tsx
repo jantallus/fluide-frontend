@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // On définit quels rôles ont accès à quelle page
   const allMenuItems = [
     { name: 'Tableau de bord', icon: '📊', path: '/dashboard', roles: ['admin'] },
-    { name: 'Calendrier', icon: '📅', path: '/planning', roles: ['admin', 'permanent'] },
+    { name: 'Calendrier', icon: '📅', path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
     { 
       name: 'Prestations', 
       icon: '🪂', 
