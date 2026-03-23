@@ -8,7 +8,11 @@ export async function apiFetch(endpoint: string, options: any = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`https://fluide-production.up.railway.app${endpoint}`, {
+  // NOUVEAU : On lit l'adresse depuis le fichier .env
+  // (On met un '|| http://localhost:8080' par sécurité au cas où le .env n'est pas lu)
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
   });

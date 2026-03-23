@@ -25,7 +25,7 @@ export default function PlanningPage() {
 
   const fetchSlots = async (id: string) => {
     try {
-      const res = await fetch(`https://fluide-production.up.railway.app/api/monitor/slots/${id}`);
+      const res = await apiFetch(`/api/monitor/slots/${id}`);
       const data = await res.json();
       setSlots(data);
     } catch (err) {
@@ -40,7 +40,7 @@ export default function PlanningPage() {
     const monitorId = localStorage.getItem('userId');
     if (!newSlotDate) return;
 
-    const res = await fetch('https://fluide-production.up.railway.app/api/slots', {
+    const res = await apiFetch('/api/slots', { method: 'POST', ... });
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ monitor_id: monitorId, start_time: newSlotDate }),
@@ -54,7 +54,7 @@ export default function PlanningPage() {
 
   const toggleStatus = async (slotId: number, currentStatus: string) => {
     const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
-    const res = await fetch(`https://fluide-production.up.railway.app/api/slots/${slotId}/status`, {
+    const res = await apiFetch(`/api/slots/${slotId}/status`, { method: 'PATCH', ... });
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
