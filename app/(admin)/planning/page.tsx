@@ -14,7 +14,7 @@ export default function PlanningAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [calendarKey, setCalendarKey] = useState(0);
-  const [slotDuration, setSlotDuration] = useState<number>(0); // Durée du créneau en minutes
+  const [slotDuration, setSlotDuration] = useState<number>(0); 
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
@@ -47,7 +47,7 @@ export default function PlanningAdmin() {
     try {
       const [apptsRes, monRes, flightRes] = await Promise.all([
         apiFetch('/api/slots'),
-        apiFetch('/api/monitors-admin'), // Ou '/api/monitors' selon ta version
+        apiFetch('/api/monitors-admin'), 
         apiFetch('/api/flight-types')
       ]);
 
@@ -55,7 +55,6 @@ export default function PlanningAdmin() {
         const appts = await apptsRes.json();
         setAppointments(appts);
 
-        // --- NOUVEAU : CALCUL AUTOMATIQUE DES HORAIRES ---
         if (appts.length > 0) {
           let minHour = 24;
           let maxHour = 0;
@@ -64,12 +63,10 @@ export default function PlanningAdmin() {
             const start = new Date(a.start_time);
             const end = new Date(a.end_time);
             if (start.getHours() < minHour) minHour = start.getHours();
-            // On ajoute 1h pour la fin si les minutes débordent (ex: 17h15 -> 18h00)
             let endH = end.getHours() + (end.getMinutes() > 0 ? 1 : 0);
             if (endH > maxHour) maxHour = endH;
           });
           
-          // On s'assure de ne pas déborder
           minHour = Math.max(0, minHour);
           maxHour = Math.min(24, maxHour);
 
@@ -107,7 +104,6 @@ export default function PlanningAdmin() {
       ...event.extendedProps
     });
 
-        // CORRECTION 1 : On ne remplit pas le formulaire si le vrai titre est vide ou s'il s'agit d'une simple NOTE
     const realTitle = event.extendedProps.title;
     setFormData({
       title: realTitle === 'NOTE' ? '' : (realTitle || ''),
@@ -128,7 +124,6 @@ export default function PlanningAdmin() {
   const handleSaveNote = async () => {
     if (!selectedEvent) return;
     try {
-      // CORRECTION 2 & 3 : On définit le titre intelligemment selon l'action
       let finalTitle = formData.title;
       if (activeTab === 'note' && !formData.title.trim()) {
         if (blockType === 'all' || blockType === 'specific') finalTitle = 'NON DISPO';
@@ -154,7 +149,6 @@ export default function PlanningAdmin() {
           })
         ));
       } else {
-        // Simple client ou Note non-bloquante
         const isNonBlockingNote = (finalTitle === 'NOTE' && activeTab === 'note');
         await apiFetch(`/api/slots/${selectedEvent.id}`, {
           method: 'PATCH',
@@ -190,46 +184,39 @@ export default function PlanningAdmin() {
     } catch (err) { console.error(err); }
   };
 
-  // --- CALCUL DES CRÉNEAUX DISPONIBLES POUR LE DÉPLACEMENT ---
   const availableTargetSlots = appointments.filter(a => {
-    if (a.status !== 'available') return false; // Doit être libre
-    if (selectedEvent && a.id === selectedEvent.id) return false; // Pas le créneau actuel
+    if (a.status !== 'available') return false; 
+    if (selectedEvent && a.id === selectedEvent.id) return false; 
 
-    // Filtre sur la date
     const d = new Date(a.start_time);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (dateStr !== moveConfig.date) return false;
 
-    // Filtre sur le pilote (si pas aléatoire)
     if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
 
-    // Filtre sur la compatibilité du vol
     if (formData.flight_type_id) {
       const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
       if (flight) {
         const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
         const flightDur = flight.duration_minutes || flight.duration || 0;
-        if (flightDur > dur) return false; // Trop court
+        if (flightDur > dur) return false; 
 
         const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         const allowedSlots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
-        if (allowedSlots.length > 0 && !allowedSlots.includes(timeStr)) return false; // Pas autorisé à cette heure
+        if (allowedSlots.length > 0 && !allowedSlots.includes(timeStr)) return false; 
       }
     }
     return true;
   });
 
-  // On extrait juste les heures au format "HH:MM" sans doublons
   const availableTimes = Array.from(new Set(availableTargetSlots.map(a => {
     const d = new Date(a.start_time);
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }))).sort();
 
-  // --- FONCTION DE DÉPLACEMENT EN BDD ---
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
 
-    // Retrouver le créneau exact choisi
     const targetSlot = availableTargetSlots.find(a => {
       const d = new Date(a.start_time);
       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` === moveConfig.time;
@@ -238,14 +225,12 @@ export default function PlanningAdmin() {
     if (!targetSlot) return alert("Erreur: Créneau introuvable.");
 
     try {
-      // 1. On réserve le nouveau créneau
       const resBook = await apiFetch(`/api/slots/${targetSlot.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ ...formData, status: 'booked' })
       });
 
       if (resBook.ok) {
-        // 2. On libère l'ancien créneau
         await apiFetch(`/api/slots/${selectedEvent.id}`, {
           method: 'PATCH',
           body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available' })
@@ -255,6 +240,13 @@ export default function PlanningAdmin() {
       }
     } catch (err) { console.error(err); }
   };
+
+  const isEventBlocked = selectedEvent && (
+    selectedEvent.title?.includes('☕') || 
+    selectedEvent.title?.toUpperCase().includes('PAUSE') || 
+    selectedEvent.title?.includes('❌') || 
+    selectedEvent.title?.toUpperCase().includes('NON DISPO')
+  );
 
   return (
     <div className="p-4 bg-slate-50 min-h-screen">
@@ -285,10 +277,8 @@ export default function PlanningAdmin() {
             const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
             const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
 
-            // --- NOUVEAU : ON AJOUTE LE PICTOGRAMME SI UNE NOTE EXISTE ---
             let displayTitle = a.title || (a.status === 'available' ? 'LIBRE' : '');
             
-            // Si le champ note n'est pas vide, on ajoute le petit post-it 📝
             if (a.notes && a.notes.trim() !== '') {
               displayTitle += ' 📝'; 
             }
@@ -298,7 +288,7 @@ export default function PlanningAdmin() {
               resourceId: a.monitor_id?.toString() || "",
               start: a.start_time,
               end: a.end_time,
-              title: displayTitle, // On utilise le titre avec le post-it ici
+              title: displayTitle,
               
               backgroundColor: isPause ? '#f1f5f9'
                              : isAlert ? '#fee2e2'
@@ -313,7 +303,7 @@ export default function PlanningAdmin() {
                          : isAlert ? '#fca5a5' 
                          : flightColor,
               
-              extendedProps: { ...a } // Le formulaire lira toujours les données pures ici !
+              extendedProps: { ...a }
             };
           })}
           locale={frLocale}
@@ -324,7 +314,7 @@ export default function PlanningAdmin() {
           allDaySlot={false}
           height="auto"
           eventClick={handleEventClick}
-          slotDuration="00:15:00" // C'est ça qui divise la hauteur par 3 !
+          slotDuration="00:15:00" 
           snapDuration="00:05:00"
           eventOverlap={false}
           slotEventOverlap={false}
@@ -338,17 +328,14 @@ export default function PlanningAdmin() {
         />
       </div>
 
-      {/* MODALE ÉDITION / RÉSERVATION AVEC ONGLETS */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
             <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
             
-            {/* ONGLETS */}
             <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
               <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
               <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note</button>
-              {/* On affiche l'onglet Déplacer uniquement s'il y a une vraie réservation */}
               {selectedEvent?.status !== 'available' && (
                 <button onClick={() => setActiveTab('move')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'move' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-400'}`}>🔄 Déplacer</button>
               )}
@@ -358,68 +345,96 @@ export default function PlanningAdmin() {
               
               {/* ONGLET 1 : CLIENT */}
               {activeTab === 'client' && (
-                <>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
-                    <input 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={formData.title}
-                      onChange={e => setFormData({...formData, title: e.target.value})}
-                      placeholder="Ex: Jean Dupont"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
-                    <select 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={formData.flight_type_id}
-                      onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
+                isEventBlocked ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                    <span className="text-4xl block mb-2">🔒</span>
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Créneau Verrouillé</p>
+                    <p className="text-xs text-slate-500 px-4 font-medium mb-6">
+                      Ce créneau est bloqué ou en pause. Pour y ajouter un client, vous devez d'abord le libérer.
+                    </p>
+                    <button 
+                      onClick={handleRelease} 
+                      className="bg-rose-100 text-rose-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                     >
-                      <option value="">Choisir un vol...</option>
-                      {flightTypes?.map(f => {
-                        const flightDuration = f.duration_minutes || f.duration || 0; 
-                        const isTooLong = flightDuration > slotDuration;
-                        const slotHours = String(selectedEvent?.start?.getHours()).padStart(2, '0');
-                        const slotMins = String(selectedEvent?.start?.getMinutes()).padStart(2, '0');
-                        const slotTimeStr = `${slotHours}:${slotMins}`;
-                        const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
-                        const isAllowedTime = allowedSlots.includes(slotTimeStr);
-                        const isDisabled = isTooLong || !isAllowedTime;
-                        let reason = '';
-                        if (isTooLong) reason = `(Trop long : ${flightDuration} min)`;
-                        else if (!isAllowedTime) reason = `(Interdit à ${slotTimeStr})`;
-
-                        return (
-                          <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
-                            {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {reason}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      🗑️ Libérer ce créneau
+                    </button>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
                       <input 
-                        type="number"
                         className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                        value={formData.weight} 
-                        onChange={e => {
-                          const val = e.target.value === '' ? '' : Number(e.target.value);
-                          setFormData({...formData, weight: val});
-                        }}
+                        value={formData.title}
+                        onChange={e => setFormData({...formData, title: e.target.value})}
+                        placeholder="Ex: Jean Dupont"
                       />
                     </div>
-                  </div>
-                </>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
+                      <select 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                        value={formData.flight_type_id}
+                        onChange={e => setFormData({...formData, flight_type_id: e.target.value})}
+                      >
+                        <option value="">Choisir un vol...</option>
+                        {flightTypes?.map(f => {
+                          const flightDuration = f.duration_minutes || f.duration || 0; 
+                          const isTooLong = flightDuration > slotDuration;
+                          const slotHours = String(selectedEvent?.start?.getHours()).padStart(2, '0');
+                          const slotMins = String(selectedEvent?.start?.getMinutes()).padStart(2, '0');
+                          const slotTimeStr = `${slotHours}:${slotMins}`;
+                          const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
+                          const isAllowedTime = allowedSlots.includes(slotTimeStr);
+                          const isDisabled = isTooLong || !isAllowedTime;
+                          let reason = '';
+                          if (isTooLong) reason = `(Trop long : ${flightDuration} min)`;
+                          else if (!isAllowedTime) reason = `(Interdit à ${slotTimeStr})`;
+
+                          return (
+                            <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
+                              {f.name} - {f.price_cents ? f.price_cents/100 : 0}€ {reason}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Poids (kg)</label>
+                        <input 
+                          type="number"
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                          value={formData.weight} 
+                          onChange={e => {
+                            const val = e.target.value === '' ? '' : Number(e.target.value);
+                            setFormData({...formData, weight: val});
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )
               )}
 
               {/* ONGLET 2 : NOTE ET BLOCAGE */}
               {activeTab === 'note' && (
                 <>
                   <div className="flex gap-2">
-                    <button disabled={blockType === 'none'} onClick={() => setFormData({...formData, title: '☕ PAUSE'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${blockType === 'none' ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}>☕ Pause</button>
-                    <button disabled={blockType === 'none'} onClick={() => setFormData({...formData, title: 'NON DISPO'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${blockType === 'none' ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}>❌ Non Dispo</button>
+                    <button 
+                      disabled={blockType === 'none' || isEventBlocked} 
+                      onClick={() => setFormData({...formData, title: '☕ PAUSE'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isEventBlocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}
+                    >
+                      ☕ Pause
+                    </button>
+                    <button 
+                      disabled={blockType === 'none' || isEventBlocked} 
+                      onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isEventBlocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}
+                    >
+                      ❌ Non Dispo
+                    </button>
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Note</label>
@@ -432,12 +447,17 @@ export default function PlanningAdmin() {
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Action sur le planning</label>
-                    <select className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold" value={blockType} onChange={(e: any) => setBlockType(e.target.value)}>
+                    <select 
+                      className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isEventBlocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
+                      value={blockType} 
+                      onChange={(e: any) => setBlockType(e.target.value)}
+                      disabled={isEventBlocked}
+                    >
                       <option value="none">Simple note (pas de blocage)</option>
                       <option value="all">🚫 Bloquer TOUS les pilotes</option>
                       <option value="specific">👥 Bloquer certains pilotes</option>
                     </select>
-                    {blockType === 'specific' && (
+                    {blockType === 'specific' && !isEventBlocked && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
                           <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer">
@@ -454,115 +474,126 @@ export default function PlanningAdmin() {
               {/* BOUTONS PARTAGÉS (CLIENT & NOTE UNIQUEMENT) */}
               {(activeTab === 'client' || activeTab === 'note') && (
                 <div className="pt-4 space-y-3">
-                  <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
-                    Enregistrer {blockType !== 'none' ? 'et bloquer' : ''}
-                  </button>
-                  {selectedEvent?.title && selectedEvent.status !== 'available' && (
-                    <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
-                      🗑️ Libérer le créneau
-                    </button>
+                  {!(activeTab === 'client' && isEventBlocked) && (
+                    <>
+                      <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl mt-4 hover:bg-sky-600 transition-colors">
+                        Enregistrer {blockType !== 'none' && !isEventBlocked ? 'et bloquer' : ''}
+                      </button>
+                      {selectedEvent?.title && selectedEvent.status !== 'available' && (
+                        <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2">
+                          🗑️ Libérer le créneau
+                        </button>
+                      )}
+                    </>
                   )}
-                  <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+                  <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px] hover:text-slate-600">Annuler</button>
                 </div>
               )}
 
-              {/* ONGLET 3 : MOVE (AVEC SES PROPRES BOUTONS) */}
+              {/* ONGLET 3 : MOVE */}
               {activeTab === 'move' && (
-                <>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Date ciblée</label>
-                    <input 
-                      type="date" 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={moveConfig.date}
-                      onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})}
-                    />
+                isEventBlocked ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100 mt-4">
+                    <span className="text-4xl block mb-2">🔒</span>
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Déplacement bloqué</p>
+                    <p className="text-xs text-slate-500 px-4 font-medium mb-6">
+                      Vous ne pouvez pas déplacer une pause ou une indisponibilité. Libérez d'abord le créneau si vous souhaitez le modifier.
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Date ciblée</label>
+                      <input 
+                        type="date" 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                        value={moveConfig.date}
+                        onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})}
+                      />
+                    </div>
 
-                  {/* L'Heure est maintenant AVANT le pilote pour un parcours plus logique */}
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Créneau disponible</label>
-                    <select 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={moveConfig.time}
-                      onChange={e => setMoveConfig({...moveConfig, time: e.target.value})}
-                    >
-                      <option value="">Choisir une heure...</option>
-                      {availableTimes.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    {availableTimes.length === 0 && moveConfig.date && (
-                      <p className="text-[10px] text-rose-500 mt-2 ml-2 font-bold">Aucun créneau compatible trouvé à cette date.</p>
-                    )}
-                  </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Créneau disponible</label>
+                      <select 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                        value={moveConfig.time}
+                        onChange={e => setMoveConfig({...moveConfig, time: e.target.value})}
+                      >
+                        <option value="">Choisir une heure...</option>
+                        {availableTimes.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      {availableTimes.length === 0 && moveConfig.date && (
+                        <p className="text-[10px] text-rose-500 mt-2 ml-2 font-bold">Aucun créneau compatible trouvé à cette date.</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
-                    <select 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
-                      value={moveConfig.monitorId}
-                      onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})} // On ne reset plus l'heure ici !
-                    >
-                      <option value="random">🎲 Aléatoire (Peu importe)</option>
-                      {monitors.map(m => {
-                        let isBusy = false;
-                        let reason = '';
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
+                      <select 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold"
+                        value={moveConfig.monitorId}
+                        onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})} 
+                      >
+                        <option value="random">🎲 Aléatoire (Peu importe)</option>
+                        {monitors.map(m => {
+                          let isBusy = false;
+                          let reason = '';
 
-                        // Si on a déjà choisi une date ET une heure, on vérifie si ce pilote précis est dispo
-                        if (moveConfig.date && moveConfig.time) {
-                          const hasSlot = appointments.some(a => {
-                            if (a.monitor_id?.toString() !== m.id.toString()) return false;
-                            if (a.status !== 'available') return false;
-                            if (selectedEvent && a.id === selectedEvent.id) return false;
-                            
-                            const d = new Date(a.start_time);
-                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                            const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                            
-                            if (dateStr !== moveConfig.date || timeStr !== moveConfig.time) return false;
-                            
-                            // Vérification si le trou est assez grand pour le vol prévu
-                            if (formData.flight_type_id) {
-                              const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
-                              if (flight) {
-                                const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
-                                const flightDur = flight.duration_minutes || flight.duration || 0;
-                                if (flightDur > dur) return false;
+                          if (moveConfig.date && moveConfig.time) {
+                            const hasSlot = appointments.some(a => {
+                              if (a.monitor_id?.toString() !== m.id.toString()) return false;
+                              if (a.status !== 'available') return false;
+                              if (selectedEvent && a.id === selectedEvent.id) return false;
+                              
+                              const d = new Date(a.start_time);
+                              const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                              const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                              
+                              if (dateStr !== moveConfig.date || timeStr !== moveConfig.time) return false;
+                              
+                              if (formData.flight_type_id) {
+                                const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
+                                if (flight) {
+                                  const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+                                  const flightDur = flight.duration_minutes || flight.duration || 0;
+                                  if (flightDur > dur) return false;
+                                }
                               }
-                            }
-                            return true;
-                          });
-                          
-                          isBusy = !hasSlot;
-                          if (isBusy) reason = ' (Occupé)';
-                        }
+                              return true;
+                            });
+                            
+                            isBusy = !hasSlot;
+                            if (isBusy) reason = ' (Occupé)';
+                          }
 
-                        return (
-                          <option 
-                            key={m.id} 
-                            value={m.id} 
-                            disabled={isBusy} 
-                            className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
-                          >
-                            {m.title} {reason}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
+                          return (
+                            <option 
+                              key={m.id} 
+                              value={m.id} 
+                              disabled={isBusy} 
+                              className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                            >
+                              {m.title} {reason}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
 
-                  <div className="pt-4 space-y-3">
-                    <button 
-                      onClick={handleMove} 
-                      disabled={!moveConfig.time}
-                      className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${!moveConfig.time ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
-                    >
-                      Transférer le créneau
-                    </button>
-                    <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
-                  </div>
-                </>
+                    <div className="pt-4 space-y-3">
+                      <button 
+                        onClick={handleMove} 
+                        disabled={!moveConfig.time}
+                        className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${!moveConfig.time ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                      >
+                        Transférer le créneau
+                      </button>
+                      <button onClick={() => setShowEditModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
+                    </div>
+                  </>
+                )
               )}
 
             </div>
