@@ -59,7 +59,7 @@ export default function ConfigPage() {
       
       if (res.ok) {
         // On vide le formulaire après succès
-        setNewRotation({ start_time: '', duration_minutes: 0, label: 'VOL' });
+        setNewRotation({ start_time: '', duration_minutes: 0, label: 'VOL', plan_name: activePlan });
         loadData();
       } else {
         alert("Erreur lors de l'enregistrement");
