@@ -24,11 +24,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // 1. On prépare l'objet utilisateur (rôle en minuscules)
+        // 1. On prépare l'objet utilisateur de manière BLINDÉE
+        const userFirst = data.user.first_name || data.user.firstName;
+        const userEmail = data.user.email || email; // On récupère l'email tapé
+        
         const userToStore = {
           id: data.user.id,
           role: data.user.role ? data.user.role.toLowerCase() : 'user',
-          first_name: data.user.first_name || data.user.firstName
+          email: userEmail,
+          // Si pas de prénom, on coupe l'email avant le @ (ex: leo@fluide.fr -> leo)
+          first_name: userFirst || userEmail.split('@')[0] 
         };
 
         // 2. Stockage propre

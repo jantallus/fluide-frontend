@@ -21,7 +21,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const userData = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
-    // S'il manque le token, on jette dehors !
     if (!userData || !token) {
       router.push('/login');
       return; 
@@ -31,15 +30,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const role = parsed.role;
     setUserRole(role);
 
-    // 🛑 LE VRAI BLOCAGE FRONTEND EST ICI :
-    // Si l'utilisateur n'est PAS admin, il n'a le droit de voir QUE le planning
+    // --- LA SOLUTION INFAILLIBLE : LECTURE DU TOKEN ---
+    try {
+      // On décrypte le token envoyé par le serveur pour y lire l'email
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userEmail = payload.email; 
+      
+      // On cherche le prénom, sinon on coupe l'email lu dans le token
+      let finalName = parsed.first_name || parsed.firstName;
+      if (!finalName && userEmail) {
+        finalName = userEmail.split('@')[0];
+      }
+      
+      // On met une majuscule à la première lettre pour faire propre
+      if (finalName) {
+        finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
+      }
+      
+      setUserName(finalName || 'Utilisateur');
+    } catch (e) {
+      setUserName('Utilisateur');
+    }
+    // --------------------------------------------------
+
     if (role !== 'admin' && !pathname.startsWith('/planning')) {
-      console.warn("⛔ Tentative d'accès non autorisé bloquée");
-      router.push('/planning'); // On le renvoie de force au travail !
-      return; // On stoppe l'affichage de la page interdite
+      router.push('/planning'); 
+      return; 
     }
 
-    // Si on arrive là, c'est que l'accès est légitime
     setIsAuthorized(true); 
 
     // Récupération du nombre de clients (uniquement si admin)
