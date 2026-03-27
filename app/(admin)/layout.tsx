@@ -8,32 +8,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
+  
+  // NOUVEAU : L'état qui bloque l'affichage tant qu'on n'est pas sûr
+  const [isAuthorized, setIsAuthorized] = useState(false); 
+  
   const router = useRouter();
   const pathname = usePathname();
 
-  // 1. Récupération du rôle et du compteur
+  // 1. VÉRIFICATION DE SÉCURITÉ ET RÉCUPÉRATION DES DONNÉES
   useEffect(() => {
-    // Récupération du rôle
     const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      setUserRole(parsed.role);
+    const token = localStorage.getItem('token');
+
+    // LE VIGILE : S'il manque le token ou les infos, on jette dehors !
+    if (!userData || !token) {
+      router.push('/login');
+      return; // On arrête tout ici
     }
 
+    // Si on arrive là, c'est qu'on a le droit d'entrer
+    const parsed = JSON.parse(userData);
+    setUserRole(parsed.role);
+    setIsAuthorized(true); // On ouvre le rideau
+
     // Récupération du nombre de clients (uniquement si admin)
-    const fetchCount = async () => {
-      try {
-        const res = await apiFetch('/api/clients');
-        if (res.ok) {
-          const data = await res.json();
-          setClientCount(data.length);
+    if (parsed.role === 'admin') {
+      const fetchCount = async () => {
+        try {
+          const res = await apiFetch('/api/clients');
+          if (res.ok) {
+            const data = await res.json();
+            setClientCount(data.length);
+          }
+        } catch (err) {
+          console.error("Erreur compteur:", err);
         }
-      } catch (err) {
-        console.error("Erreur compteur:", err);
-      }
-    };
-    fetchCount();
-  }, [pathname]);
+      };
+      fetchCount();
+    }
+  }, [pathname, router]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -41,7 +54,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   // 2. Configuration du menu avec filtrage par RÔLE
-  // On définit quels rôles ont accès à quelle page
   const allMenuItems = [
     { name: 'Tableau de bord', icon: '📊', path: '/dashboard', roles: ['admin'] },
     { name: 'Calendrier', icon: '📅', path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
@@ -58,15 +70,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Configurations', icon: '⚙️', path: '/config', roles: ['admin'] },
   ];
 
-  // Filtrage effectif
   const authorizedMenus = allMenuItems.filter(item => 
     userRole && item.roles.includes(userRole)
   );
 
+  // ÉCRAN D'ATTENTE PENDANT LA VÉRIFICATION DU VIGILE
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+        <span className="text-4xl block mb-4 animate-bounce">🔒</span>
+        <p className="text-sky-400 font-bold uppercase tracking-widest animate-pulse text-xs">Vérification de l'accréditation...</p>
+      </div>
+    );
+  }
+
+  // SI ON EST LÀ, C'EST QU'ON EST CONNECTÉ (Affichage normal)
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
       
-      {/* SIDEBAR GAUCHE (Style conservé) */}
+      {/* SIDEBAR GAUCHE */}
       <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-900 text-white transition-all duration-300 flex flex-col shadow-2xl z-20`}>
         <div className="p-6 flex justify-between items-center border-b border-slate-800 h-20">
           {!isCollapsed && (

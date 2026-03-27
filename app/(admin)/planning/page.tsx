@@ -15,10 +15,12 @@ export default function PlanningAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [slotDuration, setSlotDuration] = useState<number>(0); 
+  const [availablePlans, setAvailablePlans] = useState<string[]>(['Standard']);
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
   const [activeTab, setActiveTab] = useState<'client' | 'note' | 'move'>('client');
+  const [isGenerating, setIsGenerating] = useState(false);
   const [moveConfig, setMoveConfig] = useState({
     date: '',
     time: '',
@@ -40,7 +42,8 @@ export default function PlanningAdmin() {
   const [genConfig, setGenConfig] = useState({ 
     startDate: '', 
     endDate: '', 
-    daysToApply: [1, 2, 3, 4, 5, 6, 0] 
+    daysToApply: [1, 2, 3, 4, 5, 6, 0],
+    plan_name: 'Standard' // NOUVEAU : On déclare le champ pour TypeScript
   });
 
   // NOUVEAU : Référence pour contrôler le calendrier depuis l'extérieur
@@ -50,12 +53,19 @@ export default function PlanningAdmin() {
 
   const loadData = async () => {
     try {
-      const [apptsRes, monRes, flightRes, settingsRes] = await Promise.all([
+      const [apptsRes, monRes, flightRes, settingsRes, defsRes] = await Promise.all([
         apiFetch('/api/slots'),
         apiFetch('/api/monitors-admin'), 
         apiFetch('/api/flight-types'),
-        apiFetch('/api/settings') 
+        apiFetch('/api/settings'),
+        apiFetch('/api/slot-definitions')
       ]);
+
+      if (defsRes.ok) {
+        const defs = await defsRes.json();
+        const plans = Array.from(new Set(defs.map((d: any) => d.plan_name || 'Standard'))) as string[];
+        setAvailablePlans(plans.length > 0 ? plans : ['Standard']);
+      }
 
       if (settingsRes.ok) {
         const s = await settingsRes.json();
@@ -105,6 +115,10 @@ export default function PlanningAdmin() {
 
   const handleEventClick = (info: any) => {
     const event = info.event;
+    if (event.extendedProps.title?.startsWith('↪️ Suite')) {
+      alert("⚠️ Pour modifier, déplacer ou supprimer ce vol, veuillez cliquer sur son premier créneau (celui contenant le nom du client).");
+      return; // On bloque l'ouverture de la fenêtre
+    }
     const start = new Date(event.start);
     const end = new Date(event.end);
     const durationMins = Math.round((end.getTime() - start.getTime()) / 60000);
@@ -152,26 +166,56 @@ export default function PlanningAdmin() {
             body: JSON.stringify({ title: finalTitle || 'NON DISPO', notes: formData.notes, status: 'booked' })
           })
         ));
-      } else if (blockType === 'specific') {
-        const slotsToBlock = appointments.filter(a => 
-          a.start_time === selectedEvent.start_time && selectedMonitors.includes(a.monitor_id?.toString() || "")
-        );
-        await Promise.all(slotsToBlock.map(slot => 
-          apiFetch(`/api/slots/${slot.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ title: finalTitle || 'NON DISPO', notes: formData.notes, status: 'booked' })
-          })
-        ));
       } else {
         const isNonBlockingNote = (finalTitle === 'NOTE' && activeTab === 'note');
-        await apiFetch(`/api/slots/${selectedEvent.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            ...formData,
-            title: finalTitle,
-            status: isNonBlockingNote ? 'available' : (finalTitle.trim() ? 'booked' : 'available')
-          })
-        });
+        const selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
+        const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
+        
+        // On calcule les créneaux nécessaires si l'option est activée
+        const slotsNeeded = (activeTab === 'client' && selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) 
+          ? Math.ceil(flightDuration / slotDuration) 
+          : 1;
+
+        if (slotsNeeded > 1) {
+          // 1. Sauvegarde du créneau principal
+          await apiFetch(`/api/slots/${selectedEvent.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ ...formData, title: finalTitle, status: 'booked' })
+          });
+
+          // 2. Blocage des suivants
+          const startMs = new Date(selectedEvent.start).getTime();
+          for (let i = 1; i < slotsNeeded; i++) {
+            const nextMs = startMs + (i * slotDuration * 60000);
+            const nextSlot = appointments.find(a =>
+              a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+              new Date(a.start_time).getTime() === nextMs &&
+              a.status === 'available'
+            );
+            
+            if (nextSlot) {
+              await apiFetch(`/api/slots/${nextSlot.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  title: `↪️ Suite ${finalTitle || 'Vol'}`,
+                  flight_type_id: formData.flight_type_id,
+                  status: 'booked',
+                  notes: 'Extension auto'
+                })
+              });
+            }
+          }
+        } else {
+          // Logique classique
+          await apiFetch(`/api/slots/${selectedEvent.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              ...formData,
+              title: finalTitle,
+              status: isNonBlockingNote ? 'available' : (finalTitle.trim() ? 'booked' : 'available')
+            })
+          });
+        }
       }
       setShowEditModal(false);
       await loadData(); // Va mettre à jour les données sans vous renvoyer à aujourd'hui
@@ -181,26 +225,59 @@ export default function PlanningAdmin() {
   const handleRelease = async () => {
     if (!selectedEvent || !confirm("Action irréversible. Confirmer ?")) return;
     try {
-      const res = await apiFetch(`/api/slots/${selectedEvent.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          title: '',
-          flight_type_id: null,
-          weight: null,
-          notes: '',
-          status: 'available'
-        })
-      });
-      if (res.ok) {
-        setShowEditModal(false);
-        await loadData();
+      const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+      const flightDur = flight?.duration_minutes || flight?.duration || 0;
+      const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration)
+        ? Math.ceil(flightDur / slotDuration) : 1;
+
+      const startMs = new Date(selectedEvent.start).getTime();
+      
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = startMs + (i * slotDuration * 60000);
+        const slotToFree = appointments.find(a =>
+           a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+           new Date(a.start_time).getTime() === ms &&
+           (i === 0 || a.title?.startsWith('↪️ Suite'))
+        );
+        
+        if (slotToFree) {
+          await apiFetch(`/api/slots/${slotToFree.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available' })
+          });
+        }
       }
+      
+      setShowEditModal(false);
+      await loadData();
     } catch (err) { console.error(err); }
   };
 
+  const currentBookingSlotIds = (() => {
+    if (!selectedEvent) return [];
+    const flight = flightTypes.find(f => f.id?.toString() === selectedEvent.flight_type_id?.toString());
+    const flightDur = flight?.duration_minutes || flight?.duration || 0;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration)
+      ? Math.ceil(flightDur / slotDuration) : 1;
+
+    const startMs = new Date(selectedEvent.start).getTime();
+    const ids = [selectedEvent.id];
+
+    for (let i = 1; i < slotsNeeded; i++) {
+      const ms = startMs + (i * slotDuration * 60000);
+      const slot = appointments.find(a =>
+         a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+         new Date(a.start_time).getTime() === ms &&
+         a.title?.startsWith('↪️ Suite')
+      );
+      if (slot) ids.push(slot.id);
+    }
+    return ids;
+  })();
+
   const availableTargetSlots = appointments.filter(a => {
-    if (a.status !== 'available') return false; 
-    if (selectedEvent && a.id === selectedEvent.id) return false; 
+    // MAGIE ICI : On ignore si c'est occupé, SI ça appartient à notre propre vol !
+    if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false; 
 
     if (openingPeriods.length > 0) {
       const slotDate = new Date(a.start_time);
@@ -220,11 +297,27 @@ export default function PlanningAdmin() {
     if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
 
     if (formData.flight_type_id) {
-      const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
+      const flight = flightTypes?.find(f => f.id?.toString() === formData.flight_type_id?.toString());
       if (flight) {
-        const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
         const flightDur = flight.duration_minutes || flight.duration || 0;
-        if (flightDur > dur) return false; 
+        const isMultiSlotAllowed = flight.allow_multi_slots === true;
+        const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+        if (slotsNeeded > 1) {
+          const startMs = new Date(a.start_time).getTime();
+          for (let i = 1; i < slotsNeeded; i++) {
+            const nextMs = startMs + (i * slotDuration * 60000);
+            const nextSlot = appointments.find(appt =>
+              appt.monitor_id?.toString() === a.monitor_id?.toString() &&
+              new Date(appt.start_time).getTime() === nextMs &&
+              (appt.status === 'available' || currentBookingSlotIds.includes(appt.id)) // MAGIE ICI AUSSI
+            );
+            if (!nextSlot) return false;
+          }
+        } else {
+          const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+          if (flightDur > dur) return false;
+        }
 
         const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         const allowedSlots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
@@ -249,20 +342,52 @@ export default function PlanningAdmin() {
 
     if (!targetSlot) return alert("Erreur: Créneau introuvable.");
 
-    try {
-      const resBook = await apiFetch(`/api/slots/${targetSlot.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ ...formData, status: 'booked' })
-      });
+    const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+    const flightDur = flight?.duration_minutes || flight?.duration || 0;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration)
+      ? Math.ceil(flightDur / slotDuration) : 1;
 
-      if (resBook.ok) {
-        await apiFetch(`/api/slots/${selectedEvent.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available' })
-        });
-        setShowEditModal(false);
-        await loadData();
+    try {
+      // 1. Libérer les anciens créneaux (le principal + les suites)
+      const oldStartMs = new Date(selectedEvent.start).getTime();
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = oldStartMs + (i * slotDuration * 60000);
+        const slotToFree = appointments.find(a =>
+           a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+           new Date(a.start_time).getTime() === ms &&
+           (i === 0 || a.title?.startsWith('↪️ Suite'))
+        );
+        if (slotToFree) {
+           await apiFetch(`/api/slots/${slotToFree.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available' })
+           });
+        }
       }
+
+      // 2. Réserver les nouveaux créneaux
+      const newStartMs = new Date(targetSlot.start_time).getTime();
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = newStartMs + (i * slotDuration * 60000);
+        const slotToBook = appointments.find(a =>
+           a.monitor_id?.toString() === targetSlot.monitor_id?.toString() &&
+           new Date(a.start_time).getTime() === ms
+        );
+        if (slotToBook) {
+           await apiFetch(`/api/slots/${slotToBook.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                 ...formData,
+                 title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`,
+                 status: 'booked',
+                 notes: i === 0 ? formData.notes : 'Extension auto'
+              })
+           });
+        }
+      }
+
+      setShowEditModal(false);
+      await loadData();
     } catch (err) { console.error(err); }
   };
 
@@ -462,16 +587,42 @@ export default function PlanningAdmin() {
                         <option value="">Choisir un vol...</option>
                         {flightTypes?.map(f => {
                           const flightDuration = f.duration_minutes || f.duration || 0; 
-                          const isTooLong = flightDuration > slotDuration;
+                          const isMultiSlotAllowed = f.allow_multi_slots === true;
+                          const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDuration > slotDuration) 
+                            ? Math.ceil(flightDuration / slotDuration) 
+                            : 1;
+                          
+                          let canFit = true;
+                          let reason = '';
+
+                          if (isMultiSlotAllowed && slotsNeeded > 1) {
+                            const startMs = new Date(selectedEvent?.start).getTime();
+                            for (let i = 1; i < slotsNeeded; i++) {
+                              const nextMs = startMs + (i * slotDuration * 60000);
+                              const nextSlot = appointments.find(a =>
+                                a.monitor_id?.toString() === selectedEvent?.monitor_id?.toString() &&
+                                new Date(a.start_time).getTime() === nextMs &&
+                                a.status === 'available'
+                              );
+                              if (!nextSlot) {
+                                canFit = false;
+                                reason = `(Bloqué : nécessite ${slotsNeeded} créneaux libres)`;
+                                break;
+                              }
+                            }
+                          } else if (!isMultiSlotAllowed && flightDuration > slotDuration) {
+                             canFit = false;
+                             reason = `(Trop long : ${flightDuration} min)`;
+                          }
+
                           const slotHours = String(selectedEvent?.start?.getHours()).padStart(2, '0');
                           const slotMins = String(selectedEvent?.start?.getMinutes()).padStart(2, '0');
                           const slotTimeStr = `${slotHours}:${slotMins}`;
                           const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
                           const isAllowedTime = allowedSlots.includes(slotTimeStr);
-                          const isDisabled = isTooLong || !isAllowedTime;
-                          let reason = '';
-                          if (isTooLong) reason = `(Trop long : ${flightDuration} min)`;
-                          else if (!isAllowedTime) reason = `(Interdit à ${slotTimeStr})`;
+                          
+                          const isDisabled = !canFit || !isAllowedTime;
+                          if (!isAllowedTime && canFit) reason = `(Interdit à ${slotTimeStr})`;
 
                           return (
                             <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
@@ -627,8 +778,9 @@ export default function PlanningAdmin() {
                           if (moveConfig.date && moveConfig.time) {
                             const hasSlot = appointments.some(a => {
                               if (a.monitor_id?.toString() !== m.id.toString()) return false;
-                              if (a.status !== 'available') return false;
-                              if (selectedEvent && a.id === selectedEvent.id) return false;
+                              
+                              // On laisse passer si c'est un créneau de notre propre vol
+                              if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false;
                               
                               const d = new Date(a.start_time);
                               const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -637,11 +789,27 @@ export default function PlanningAdmin() {
                               if (dateStr !== moveConfig.date || timeStr !== moveConfig.time) return false;
                               
                               if (formData.flight_type_id) {
-                                const flight = flightTypes?.find(f => f.id === formData.flight_type_id);
+                                const flight = flightTypes?.find(f => f.id?.toString() === formData.flight_type_id?.toString());
                                 if (flight) {
-                                  const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
                                   const flightDur = flight.duration_minutes || flight.duration || 0;
-                                  if (flightDur > dur) return false;
+                                  const isMultiSlotAllowed = flight.allow_multi_slots === true;
+                                  const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+                                  if (slotsNeeded > 1) {
+                                    const startMs = new Date(a.start_time).getTime();
+                                    for (let i = 1; i < slotsNeeded; i++) {
+                                      const nextMs = startMs + (i * slotDuration * 60000);
+                                      const nextSlot = appointments.find(appt =>
+                                        appt.monitor_id?.toString() === a.monitor_id?.toString() &&
+                                        new Date(appt.start_time).getTime() === nextMs &&
+                                        (appt.status === 'available' || currentBookingSlotIds.includes(appt.id))
+                                      );
+                                      if (!nextSlot) return false;
+                                    }
+                                  } else {
+                                    const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+                                    if (flightDur > dur) return false;
+                                  }
                                 }
                               }
                               return true;
@@ -691,17 +859,43 @@ export default function PlanningAdmin() {
             <div className="space-y-4">
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, startDate: e.target.value})} />
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, endDate: e.target.value})} />
-              <button 
-                onClick={async () => {
-                  const res = await apiFetch('/api/generate-slots', { 
-                    method: 'POST', 
-                    body: JSON.stringify(genConfig) 
-                  });
-                  if (res.ok) { setShowGenModal(false); loadData(); }
-                }} 
-                className="w-full bg-slate-900 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl"
+              
+              {/* NOUVEAU : Choix du Plan à générer */}
+              <select 
+                className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
+                value={genConfig.plan_name}
+                onChange={e => setGenConfig({...genConfig, plan_name: e.target.value})}
               >
-                Lancer la génération
+                <option value="" disabled>-- Choisir le Modèle --</option>
+                {availablePlans.map(plan => (
+                   <option key={plan} value={plan}>{plan}</option>
+                ))}
+              </select>
+              <button 
+                disabled={isGenerating}
+                onClick={async () => {
+                  setIsGenerating(true); // On bloque le bouton
+                  try {
+                    const res = await apiFetch('/api/generate-slots', { 
+                      method: 'POST', 
+                      body: JSON.stringify(genConfig) 
+                    });
+                    if (res.ok) { 
+                      setShowGenModal(false); 
+                      await loadData(); 
+                    } else {
+                      const data = await res.json();
+                      alert("Erreur : " + data.error);
+                    }
+                  } catch (err) {
+                    alert("Erreur de connexion au serveur.");
+                  } finally {
+                    setIsGenerating(false); // On débloque le bouton quoi qu'il arrive
+                  }
+                }} 
+                className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}
+              >
+                {isGenerating ? '⏳ Génération en cours...' : '🚀 Lancer la génération'}
               </button>
               <button onClick={() => setShowGenModal(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Fermer</button>
             </div>

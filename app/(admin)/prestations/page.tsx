@@ -7,8 +7,8 @@ export default function PrestationsPage() {
   const [slotDefs, setSlotDefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Nouveau state pour le filtre d'affichage (ALL, SUMMER, WINTER)
-  const [seasonFilter, setSeasonFilter] = useState<'ALL' | 'SUMMER' | 'WINTER'>('ALL');
+  // Le filtre affiche par défaut "ALL" (Tous les vols)
+  const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
   
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -20,7 +20,8 @@ export default function PrestationsPage() {
     restricted_end_time: '',
     color_code: '#3b82f6',
     allowed_time_slots: [] as string[],
-    season: 'ALL' // Nouveau champ
+    season: 'Standard',
+    allow_multi_slots: false
   });
 
   const loadData = async () => {
@@ -38,26 +39,20 @@ export default function PrestationsPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  // On liste tous les plans dynamiques qui ont été créés
+  const uniquePlans = Array.from(new Set(slotDefs.map(d => d.plan_name || 'Standard')));
+
   const handleSave = async () => {
     const method = editingId ? 'PUT' : 'POST';
     const url = editingId ? `/api/flight-types/${editingId}` : '/api/flight-types';
-
     const payload = {
       ...formData,
       duration_minutes: Number(formData.duration_minutes),
       price_cents: Number(formData.price_cents)
     };
-
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
-
-    if (res.ok) {
-      setShowModal(false);
-      setEditingId(null);
-      loadData();
-    } else {
-      const errorData = await res.json();
-      alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
-    }
+    if (res.ok) { setShowModal(false); setEditingId(null); loadData(); } 
+    else { const errorData = await res.json(); alert("Erreur : " + (errorData.error || "Problème d'enregistrement")); }
   };
 
   const deleteFlight = async (id: number) => {
@@ -76,36 +71,31 @@ export default function PrestationsPage() {
       restricted_end_time: f.restricted_end_time || '',
       color_code: f.color_code || '#3b82f6',
       allowed_time_slots: f.allowed_time_slots || [],
-      season: f.season || 'ALL'
+      allow_multi_slots: f.allow_multi_slots || false,
+      season: f.season || 'Standard'
     });
     setShowModal(true);
   };
 
   const startNew = () => {
     setEditingId(null);
-    const defaultDuration = 60;
-    const compatibleSlots = slotDefs
-      .filter(s => s.duration_minutes >= defaultDuration && !s.label?.includes('PAUSE'))
-      .map(s => s.start_time.slice(0,5));
-
     setFormData({ 
       name: '', 
-      duration_minutes: defaultDuration, 
+      duration_minutes: 60, 
       price_cents: 10000, 
       restricted_start_time: '', 
       restricted_end_time: '', 
-      color_code: '#3b82f6',
-      allowed_time_slots: compatibleSlots,
-      season: 'ALL'
+      color_code: '#3b82f6', 
+      allowed_time_slots: [], 
+      season: 'Standard',
+      allow_multi_slots: false // <-- C'EST ICI QU'IL DOIT ÊTRE !
     });
     setShowModal(true);
   };
 
-  // Filtrage des vols selon le bouton sélectionné
   const filteredFlights = flights.filter(f => {
     if (seasonFilter === 'ALL') return true;
-    // Si on filtre sur "SUMMER", on affiche les vols "SUMMER" ET les vols "ALL" (toute l'année)
-    return f.season === seasonFilter || f.season === 'ALL';
+    return f.season === seasonFilter;
   });
 
   return (
@@ -119,33 +109,15 @@ export default function PrestationsPage() {
             </h1>
           </div>
           
-          {/* BARRE D'ACTIONS : FILTRES + BOUTON NOUVEAU */}
           <div className="flex gap-4 items-center">
-            <div className="bg-white rounded-2xl p-1 shadow-sm border border-slate-200 flex">
-              <button 
-                onClick={() => setSeasonFilter('ALL')} 
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-900'}`}
-              >
-                Tout
-              </button>
-              <button 
-                onClick={() => setSeasonFilter('SUMMER')} 
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'SUMMER' ? 'bg-amber-100 text-amber-600' : 'text-slate-400 hover:text-slate-900'}`}
-              >
-                ☀️ Été
-              </button>
-              <button 
-                onClick={() => setSeasonFilter('WINTER')} 
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${seasonFilter === 'WINTER' ? 'bg-sky-100 text-sky-600' : 'text-slate-400 hover:text-slate-900'}`}
-              >
-                ❄️ Hiver
-              </button>
+            <div className="bg-white rounded-2xl p-1 shadow-sm border border-slate-200 flex overflow-x-auto max-w-sm">
+              <button onClick={() => setSeasonFilter('ALL')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${seasonFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-900'}`}>Tout</button>
+              {uniquePlans.map(plan => (
+                <button key={plan} onClick={() => setSeasonFilter(plan)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${seasonFilter === plan ? 'bg-sky-100 text-sky-600' : 'text-slate-400 hover:text-slate-900'}`}>{plan}</button>
+              ))}
             </div>
 
-            <button 
-              onClick={startNew}
-              className="bg-sky-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-sky-600 transition-colors"
-            >
+            <button onClick={startNew} className="bg-sky-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-sky-600 transition-colors whitespace-nowrap">
               + Nouveau Vol
             </button>
           </div>
@@ -167,20 +139,13 @@ export default function PrestationsPage() {
                   </div>
                   
                   <div className="space-y-3 mb-8">
-                    <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">
-                      ⏱️ {f.duration_minutes} min
-                    </div>
+                    <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⏱️ {f.duration_minutes} min</div>
                     {f.allowed_time_slots && f.allowed_time_slots.length > 0 && (
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">
-                        ✅ {f.allowed_time_slots.length} Créneaux
-                      </div>
+                      <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">✅ {f.allowed_time_slots.length} Créneaux</div>
                     )}
                     
-                    {/* BADGE SAISON */}
-                    <div className="flex items-center gap-2 font-bold text-[10px] uppercase">
-                      {f.season === 'SUMMER' && <span className="text-amber-500 bg-amber-50 px-2 py-1 rounded-md">☀️ Exclusif Été</span>}
-                      {f.season === 'WINTER' && <span className="text-sky-500 bg-sky-50 px-2 py-1 rounded-md">❄️ Exclusif Hiver</span>}
-                      {(!f.season || f.season === 'ALL') && <span className="text-slate-400 bg-slate-100 px-2 py-1 rounded-md">🌍 Toute l'année</span>}
+                    <div className="flex items-center gap-2 font-bold text-[10px] uppercase mt-2">
+                      <span className="text-sky-600 bg-sky-50 px-3 py-1 rounded-lg border border-sky-100">📌 Plan: {f.season || 'Standard'}</span>
                     </div>
                   </div>
 
@@ -194,7 +159,6 @@ export default function PrestationsPage() {
           </div>
         )}
 
-        {/* MODALE DE GESTION */}
         {showModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -213,70 +177,82 @@ export default function PrestationsPage() {
                     <input type="number" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.duration_minutes} 
                       onChange={e => {
                         const newDur = Number(e.target.value);
-                        const compSlots = slotDefs
-                          .filter(s => s.duration_minutes >= newDur && !s.label?.includes('PAUSE'))
-                          .map(s => s.start_time.slice(0,5));
-                        setFormData({...formData, duration_minutes: newDur, allowed_time_slots: compSlots});
+                        setFormData({...formData, duration_minutes: newDur, allowed_time_slots: []});
                       }} 
                     />
                   </div>
                 </div>
 
+                <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl">
+                  <input 
+                    type="checkbox" 
+                    id="allow_multi"
+                    className="w-5 h-5 rounded border-slate-300 text-sky-500"
+                    checked={formData.allow_multi_slots}
+                    onChange={e => setFormData({...formData, allow_multi_slots: e.target.checked})}
+                  />
+                  <label htmlFor="allow_multi" className="text-[10px] font-black uppercase text-slate-500 cursor-pointer">
+                    Autoriser ce vol à utiliser plusieurs créneaux consécutifs
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Couleur</label>
                     <input type="color" className="w-full h-12 rounded-xl mt-1 overflow-hidden cursor-pointer" value={formData.color_code} onChange={e => setFormData({...formData, color_code: e.target.value})} />
                   </div>
                   <div>
-                    {/* NOUVEAU SÉLECTEUR DE SAISON */}
-                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Saison</label>
+                    {/* LE CŒUR DE LA MAGIE : Le choix du plan filtre instantanément les créneaux */}
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Lier au Plan de Rotation</label>
                     <select 
                       className="w-full h-12 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 mt-1 font-bold text-xs"
                       value={formData.season}
-                      onChange={e => setFormData({...formData, season: e.target.value})}
+                      onChange={e => setFormData({...formData, season: e.target.value, allowed_time_slots: []})} // On vide les horaires si on change de plan
                     >
-                      <option value="ALL">🌍 Toute l'année</option>
-                      <option value="SUMMER">☀️ Seulement l'Été</option>
-                      <option value="WINTER">❄️ Seulement l'Hiver</option>
+                      {uniquePlans.map(plan => (
+                        <option key={plan} value={plan}>{plan}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                {/* SÉLECTEUR DE CRÉNEAUX HORAIRES */}
+                {/* SÉLECTEUR DE CRÉNEAUX : Affiche uniquement ceux du plan choisi */}
                 <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl mt-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase block mb-2">
-                    Créneaux Compatibles
+                    Créneaux Compatibles ({formData.season})
                   </label>
                   <p className="text-[10px] text-slate-400 mb-3 leading-tight">
-                    Décochez les horaires où ce vol n'est pas autorisé.
+                    Cochez les horaires où ce vol est autorisé pour ce plan.
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {slotDefs.filter(s => !s.label?.includes('PAUSE')).map(slot => {
-                      const timeStr = slot.start_time.slice(0,5);
-                      const isCompatible = slot.duration_minutes >= formData.duration_minutes;
-                      const isChecked = formData.allowed_time_slots.includes(timeStr);
+                    {slotDefs
+                      .filter(s => (s.plan_name || 'Standard') === formData.season && !s.label?.includes('PAUSE'))
+                      .map(slot => {
+                        const timeStr = slot.start_time.slice(0,5);
+                        // Si le multi-créneaux est coché, on autorise, sinon on garde l'ancienne règle
+                        const isCompatible = formData.allow_multi_slots ? true : (slot.duration_minutes >= formData.duration_minutes);
+                        const isChecked = formData.allowed_time_slots.includes(timeStr);
 
-                      return (
-                        <label key={slot.id} className={`flex items-center justify-center p-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                          !isCompatible ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed' : 
-                          isChecked ? 'bg-sky-500 text-white cursor-pointer shadow-md' : 'bg-white border-2 border-slate-200 text-slate-500 cursor-pointer hover:border-sky-300'
-                        }`}>
-                          <input 
-                            type="checkbox" 
-                            className="hidden"
-                            disabled={!isCompatible}
-                            checked={isCompatible && isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({...formData, allowed_time_slots: [...formData.allowed_time_slots, timeStr]});
-                              } else {
-                                setFormData({...formData, allowed_time_slots: formData.allowed_time_slots.filter(t => t !== timeStr)});
-                              }
-                            }}
-                          />
-                          {timeStr}
-                        </label>
-                      );
+                        return (
+                          <label key={slot.id} className={`flex items-center justify-center p-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+                            !isCompatible ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed' : 
+                            isChecked ? 'bg-sky-500 text-white cursor-pointer shadow-md' : 'bg-white border-2 border-slate-200 text-slate-500 cursor-pointer hover:border-sky-300'
+                          }`}>
+                            <input 
+                              type="checkbox" 
+                              className="hidden"
+                              disabled={!isCompatible}
+                              checked={isCompatible && isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({...formData, allowed_time_slots: [...formData.allowed_time_slots, timeStr]});
+                                } else {
+                                  setFormData({...formData, allowed_time_slots: formData.allowed_time_slots.filter(t => t !== timeStr)});
+                                }
+                              }}
+                            />
+                            {timeStr}
+                          </label>
+                        );
                     })}
                   </div>
                 </div>

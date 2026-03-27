@@ -8,9 +8,8 @@ export async function apiFetch(endpoint: string, options: any = {}) {
     ...options.headers,
   };
 
-  // NOUVEAU : On lit l'adresse depuis le fichier .env
-  // (On met un '|| http://localhost:8080' par sécurité au cas où le .env n'est pas lu)
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  // NOUVEAU : On utilise la variable d'environnement, ou localhost par défaut
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
