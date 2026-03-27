@@ -15,13 +15,16 @@ const getDayName = (dateStr: string) => {
 const getMarketingInfo = (flightName: string) => {
   if (!flightName) return '🪂 Vol sensationnel';
   const name = flightName.toLowerCase();
+  
   if (name.includes('loupiot')) return '⏱️ 8 min de vol';
   if (name.includes('découverte') || name.includes('decouverte')) return '⏱️ 15 min de vol';
   if (name.includes('ascendance')) return '⏱️ 30 min de vol';
   if (name.includes('prestige')) return '⏱️ 1h de vol';
+  
   if (name.includes('beauregard')) return '⛰️ 500m de dénivelé';
   if (name.includes('loup')) return '⛰️ 800m de dénivelé';
   if (name.includes('aiguille')) return '⛰️ 1200m de dénivelé';
+
   return '🪂 Vol inoubliable';
 };
 
@@ -84,7 +87,6 @@ export default function ReserverPage() {
     fetchWeekData();
   }, [startDate, selectedFlight]);
 
-  // Synchronisation du panier vers les fiches passagers
   useEffect(() => {
     if (step === 3) {
       const newPassengers: any[] = [];
@@ -95,7 +97,7 @@ export default function ReserverPage() {
         for (let i = 0; i < qty; i++) {
           newPassengers.push({
             id: `${key}-${i}`,
-            flightKey: key, // Clé secrète pour retrouver le vol dans le panier
+            flightKey: key, 
             flightId: fId,
             flightName: flight?.name || 'Vol',
             date: dStr,
@@ -106,15 +108,14 @@ export default function ReserverPage() {
           });
         }
       });
-      setPassengers(prev => newPassengers.map((nP, index) => {
-        const existing = prev[index];
-        if (existing && existing.flightId === nP.flightId) return { ...nP, firstName: existing.firstName, weightChecked: existing.weightChecked };
+      setPassengers(prev => newPassengers.map((nP) => {
+        const existing = prev.find(p => p.id === nP.id);
+        if (existing) return { ...nP, firstName: existing.firstName, weightChecked: existing.weightChecked };
         return nP;
       }));
     }
   }, [step, cart, flights]);
 
-  // Si on coche "Je suis l'un des passagers"
   useEffect(() => {
     if (contact.isPassenger && passengers.length > 0 && contact.firstName) {
       setPassengers(prev => {
@@ -217,7 +218,6 @@ export default function ReserverPage() {
     return grid;
   }, [rawSlots, selectedFlight, cart, startDate, flights]);
 
-  // --- ACTIONS DU PANIER ---
   const handleAdd = (date: string, time: string) => {
     const key = `${selectedFlight.id}|${date}|${time}`;
     setCart(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
@@ -231,18 +231,26 @@ export default function ReserverPage() {
     });
   };
 
-  // --- NOUVEAU : RETIRER UN PASSAGER DEPUIS LE FORMULAIRE ---
-  const handleRemovePassenger = (indexToRemove: number, flightKey: string) => {
-    // 1. On l'enlève de la liste visuelle pour éviter que le prénom de la personne suivante ne glisse
-    setPassengers(prev => prev.filter((_, i) => i !== indexToRemove));
-    
-    // 2. On retire une place du panier
+  const handleDecrementCart = (key: string) => {
     setCart(prev => {
       const newCart = { ...prev };
-      if (newCart[flightKey] > 1) newCart[flightKey]--; 
-      else delete newCart[flightKey];
+      if (newCart[key] > 1) newCart[key]--;
+      else delete newCart[key];
       return newCart;
     });
+  };
+
+  const handleDeleteCartItem = (key: string) => {
+    setCart(prev => {
+      const newCart = { ...prev };
+      delete newCart[key];
+      return newCart;
+    });
+  };
+
+  const handleRemovePassenger = (indexToRemove: number, flightKey: string) => {
+    setPassengers(prev => prev.filter((_, i) => i !== indexToRemove));
+    handleDecrementCart(flightKey);
   };
 
   let totalItems = 0;
@@ -254,11 +262,8 @@ export default function ReserverPage() {
     if (f && f.price_cents) totalPrice += (f.price_cents / 100) * qty;
   });
 
-  // Sécurité anti-panier vide
   useEffect(() => {
-    if (step === 3 && totalItems === 0) {
-      setStep(1); // Retour au catalogue si on supprime tout le monde
-    }
+    if (step === 3 && totalItems === 0) setStep(1);
   }, [totalItems, step]);
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
@@ -282,10 +287,10 @@ export default function ReserverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-32">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-48">
       
-      {/* BANDEAU UNI POUR PROTÉGER LE CONTENU DU MENU DU SITE PRINCIPAL */}
-      <div className="h-20 bg-slate-900 w-full shadow-md sticky top-0 z-40"></div>
+      {/* BANDEAU DÉGRADÉ VIOLET/BLEU (PROTECTION NAVBAR DU SITE PRINCIPAL) */}
+      <div className="h-20 bg-gradient-to-r from-violet-900 to-blue-800 w-full shadow-md sticky top-0 z-40"></div>
 
       <main className="max-w-7xl mx-auto px-4 py-12 relative z-10">
         
@@ -475,7 +480,6 @@ export default function ReserverPage() {
                           </span>
                         </div>
                         
-                        {/* LA PETITE CROIX POUR SUPPRIMER LE PASSAGER */}
                         <button 
                           onClick={() => handleRemovePassenger(index, p.flightKey)}
                           className="flex items-center gap-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors"
@@ -535,13 +539,31 @@ export default function ReserverPage() {
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-50 animate-in slide-in-from-bottom-full">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="hidden md:block">
-              <span className="font-black text-slate-900 uppercase italic text-lg">
+            
+            <div className="flex-1 w-full">
+              <span className="font-black text-slate-900 uppercase italic text-lg block mb-2">
                 {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
               </span>
+              
+              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2">
+                {Object.entries(cart).map(([key, qty]) => {
+                  if (qty === 0) return null;
+                  const [fId, dStr, tStr] = key.split('|');
+                  const f = flights.find(fl => fl.id.toString() === fId);
+                  return (
+                    <div key={key} className="bg-slate-50 rounded-xl pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
+                      <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sky-500 text-sm">{qty}</span></span>
+                      <div className="flex items-center gap-1 ml-2">
+                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-lg flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
+                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
             
-            <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
+            <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
               <div className="text-right">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</p>
                 <p className="text-2xl font-black text-sky-500">{totalPrice} €</p>
@@ -564,6 +586,7 @@ export default function ReserverPage() {
                 </button>
               )}
             </div>
+
           </div>
         </div>
       )}
