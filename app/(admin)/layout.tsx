@@ -8,6 +8,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
   
   // NOUVEAU : L'état qui bloque l'affichage tant qu'on n'est pas sûr
   const [isAuthorized, setIsAuthorized] = useState(false); 
@@ -29,6 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Si on arrive là, c'est qu'on a le droit d'entrer
     const parsed = JSON.parse(userData);
     setUserRole(parsed.role);
+    setUserName(parsed.first_name || 'Utilisateur');
     setIsAuthorized(true); // On ouvre le rideau
 
     // Récupération du nombre de clients (uniquement si admin)
@@ -178,13 +180,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900">
-                {userRole === 'admin' ? 'Ju Admin' : 'Moniteur'}
+              <p className="text-sm font-black text-slate-900 capitalize">
+                {userName}
               </p>
               <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest text-right">En ligne</p>
             </div>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm text-white ${userRole === 'admin' ? 'bg-slate-900' : 'bg-sky-600'}`}>
-              {userRole === 'admin' ? 'J' : 'M'}
+              {userName ? userName.charAt(0).toUpperCase() : 'U'}
             </div>
           </div>
         </header>
