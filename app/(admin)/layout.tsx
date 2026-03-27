@@ -21,20 +21,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const userData = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
-    // LE VIGILE : S'il manque le token ou les infos, on jette dehors !
+    // S'il manque le token, on jette dehors !
     if (!userData || !token) {
       router.push('/login');
-      return; // On arrête tout ici
+      return; 
     }
 
-    // Si on arrive là, c'est qu'on a le droit d'entrer
     const parsed = JSON.parse(userData);
-    setUserRole(parsed.role);
-    setUserName(parsed.first_name || 'Utilisateur');
-    setIsAuthorized(true); // On ouvre le rideau
+    const role = parsed.role;
+    setUserRole(role);
+
+    // 🛑 LE VRAI BLOCAGE FRONTEND EST ICI :
+    // Si l'utilisateur n'est PAS admin, il n'a le droit de voir QUE le planning
+    if (role !== 'admin' && !pathname.startsWith('/planning')) {
+      console.warn("⛔ Tentative d'accès non autorisé bloquée");
+      router.push('/planning'); // On le renvoie de force au travail !
+      return; // On stoppe l'affichage de la page interdite
+    }
+
+    // Si on arrive là, c'est que l'accès est légitime
+    setIsAuthorized(true); 
 
     // Récupération du nombre de clients (uniquement si admin)
-    if (parsed.role === 'admin') {
+    if (role === 'admin') {
       const fetchCount = async () => {
         try {
           const res = await apiFetch('/api/clients');
