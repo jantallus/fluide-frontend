@@ -43,7 +43,8 @@ export default function PlanningAdmin() {
     startDate: '', 
     endDate: '', 
     daysToApply: [1, 2, 3, 4, 5, 6, 0],
-    plan_name: 'Standard' // NOUVEAU : On déclare le champ pour TypeScript
+    plan_name: 'Standard',
+    monitor_id: 'all' // <-- NOUVEAU : 'all' par défaut
   });
 
   // NOUVEAU : Référence pour contrôler le calendrier depuis l'extérieur
@@ -871,28 +872,69 @@ export default function PlanningAdmin() {
                    <option key={plan} value={plan}>{plan}</option>
                 ))}
               </select>
+
+              {/* NOUVEAU : Choix du Pilote cible */}
+              <select 
+                className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
+                value={genConfig.monitor_id}
+                onChange={e => setGenConfig({...genConfig, monitor_id: e.target.value})}
+              >
+                <option value="all">👥 Tous les pilotes</option>
+                <optgroup label="Pilotes spécifiques">
+                  {monitors.map(m => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </optgroup>
+              </select>
+
               <button 
                 disabled={isGenerating}
                 onClick={async () => {
-                  setIsGenerating(true); // On bloque le bouton
-                  try {
-                    const res = await apiFetch('/api/generate-slots', { 
-                      method: 'POST', 
-                      body: JSON.stringify(genConfig) 
-                    });
-                    if (res.ok) { 
-                      setShowGenModal(false); 
-                      await loadData(); 
-                    } else {
-                      const data = await res.json();
-                      alert("Erreur : " + data.error);
-                    }
-                  } catch (err) {
-                    alert("Erreur de connexion au serveur.");
-                  } finally {
-                    setIsGenerating(false); // On débloque le bouton quoi qu'il arrive
+                  if (!genConfig.startDate || !genConfig.endDate) {
+                    return alert("Veuillez sélectionner des dates.");
                   }
-                }} 
+                  
+                  setIsGenerating(true); 
+                  
+                  // Fonction interne pour gérer l'appel
+                  const sendGenerationRequest = async (force = false) => {
+                    try {
+                      const res = await apiFetch('/api/generate-slots', { 
+                        method: 'POST', 
+                        body: JSON.stringify({ ...genConfig, forceOverwrite: force }) 
+                      });
+                      
+                      const data = await res.json();
+
+                      // Si le radar anti-écrasement s'active (Code 409)
+                      if (res.status === 409 && data.warning) {
+                        const userConfirmed = window.confirm(data.message);
+                        if (userConfirmed) {
+                          // On relance la fonction en forçant le passage
+                          return await sendGenerationRequest(true);
+                        } else {
+                           // L'utilisateur annule
+                           setIsGenerating(false);
+                           return;
+                        }
+                      }
+
+                      if (res.ok) { 
+                        alert(`✅ ${data.count || 0} créneaux générés avec succès !`);
+                        setShowGenModal(false); 
+                        await loadData(); 
+                      } else {
+                        alert("Erreur : " + (data.error || "Erreur inconnue"));
+                      }
+                    } catch (err) {
+                      alert("Erreur de connexion au serveur.");
+                    }
+                  };
+
+                  // On lance la première tentative sans forcer
+                  await sendGenerationRequest(false);
+                  setIsGenerating(false); 
+                }}
                 className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}
               >
                 {isGenerating ? '⏳ Génération en cours...' : '🚀 Lancer la génération'}
