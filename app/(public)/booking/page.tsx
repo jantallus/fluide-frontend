@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // --- UTILITAIRES ---
 const getLocalYYYYMMDD = (d: Date) => {
@@ -29,6 +29,7 @@ const getMarketingInfo = (flightName: string) => {
 };
 
 export default function ReserverPage() {
+  const headerScrollRef = useRef<HTMLDivElement>(null);
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -461,48 +462,67 @@ export default function ReserverPage() {
               {isSearchingTimes ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-sky-500"></div></div>
               ) : (
-                <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
-                  {weekDays.map(dateStr => {
-                    const times = Object.keys(gridData[dateStr] || {}).sort();
-                    
-                    return (
-                      <div key={dateStr} className="min-w-[220px] flex-1 bg-slate-50 border border-slate-100 rounded-3xl p-4 snap-start">
-                        <div className="text-center mb-6 pb-4 border-b border-slate-200">
-                          <p className="font-black text-slate-900 capitalize text-lg leading-tight">{getDayName(dateStr)}</p>
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                          {times.length === 0 ? (
-                            <p className="text-center text-slate-400 text-xs font-bold uppercase py-10">Complet</p>
-                          ) : (
-                            times.map(timeStr => {
-                              const capacity = gridData[dateStr][timeStr];
-                              const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
-                              const qtyInCart = cart[currentFlightKey] || 0;
-                              const isSelected = qtyInCart > 0;
-
-                              return (
-                                <div key={timeStr} className={`p-3 rounded-2xl border-2 transition-all ${isSelected ? 'bg-sky-50 border-sky-500 shadow-md' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="font-black text-lg text-slate-900">{timeStr}</span>
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${capacity > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500'}`}>
-                                      {capacity} place{capacity > 1 ? 's' : ''}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="flex items-center justify-between bg-slate-100 rounded-xl p-1">
-                                    <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-slate-700 shadow-sm hover:text-rose-500'}`}>-</button>
-                                    <span className="font-black text-slate-900 text-lg w-8 text-center">{qtyInCart}</span>
-                                    <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-sky-500 shadow-sm hover:bg-sky-500 hover:text-white'}`}>+</button>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
+                <div className="relative">
+                  
+                  {/* 👇 1. LE BANDEAU DES JOURS */}
+                  <div 
+                    ref={headerScrollRef}
+                    className="flex overflow-x-hidden gap-4 sticky top-20 z-30 bg-white pt-2 pb-4 border-b border-slate-100"
+                  >
+                    {weekDays.map(dateStr => (
+                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+                        <p className="font-black text-slate-900 capitalize text-lg leading-tight">{getDayName(dateStr)}</p>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+
+                  {/* 👇 2. LA ZONE DES CRÉNEAUX */}
+                  <div 
+                    className="flex overflow-x-auto gap-4 pb-4 snap-x pt-4"
+                    onScroll={(e) => {
+                      if (headerScrollRef.current) {
+                        headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                      }
+                    }}
+                  >
+                    {weekDays.map(dateStr => {
+                      const times = Object.keys(gridData[dateStr] || {}).sort();
+                      
+                      return (
+                        <div key={dateStr} className="min-w-[220px] flex-1 bg-slate-50 border border-slate-100 rounded-3xl p-4 snap-start h-fit">
+                          <div className="flex flex-col gap-3">
+                            {times.length === 0 ? (
+                              <p className="text-center text-slate-400 text-xs font-bold uppercase py-10">Complet</p>
+                            ) : (
+                              times.map(timeStr => {
+                                const capacity = gridData[dateStr][timeStr];
+                                const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
+                                const qtyInCart = cart[currentFlightKey] || 0;
+                                const isSelected = qtyInCart > 0;
+
+                                return (
+                                  <div key={timeStr} className={`p-3 rounded-2xl border-2 transition-all ${isSelected ? 'bg-sky-50 border-sky-500 shadow-md' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="font-black text-lg text-slate-900">{timeStr}</span>
+                                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${capacity > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500'}`}>
+                                        {capacity} place{capacity > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between bg-slate-100 rounded-xl p-1">
+                                      <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-slate-700 shadow-sm hover:text-rose-500'}`}>-</button>
+                                      <span className="font-black text-slate-900 text-lg w-8 text-center">{qtyInCart}</span>
+                                      <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-sky-500 shadow-sm hover:bg-sky-500 hover:text-white'}`}>+</button>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
