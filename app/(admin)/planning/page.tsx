@@ -571,14 +571,13 @@ export default function PlanningAdmin() {
                           const activePlanTimes = planSchedules[inferredPlan] || new Set();
 
                           return flightTypes?.filter(f => {
-                            const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
-                            
-                            // Si le vol n'a aucune restriction (ex: vol "Toute l'année" avec tous les créneaux décochés), on l'affiche
-                            if (allowed.length === 0) return true;
-                            
-                            // Sinon, on affiche UNIQUEMENT si le vol a au moins UN horaire présent dans le plan du jour !
-                            return allowed.some(t => activePlanTimes.has(t));
-                          });
+                          const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
+                          
+                          if (allowed.length === 0) return true;
+                          
+                          // CORRECTION TYPESCRIPT APPLIQUÉE :
+                          return allowed.some((t: string) => activePlanTimes.has(t));
+                        });
                         })()?.map(f => {
                           const flightDuration = f.duration_minutes || f.duration || 0; 
                           const isMultiSlotAllowed = f.allow_multi_slots === true;
