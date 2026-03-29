@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
-
+import AutoLogout from '@/components/AutoLogout';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
@@ -116,6 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // SI ON EST LÀ, C'EST QU'ON EST CONNECTÉ (Affichage normal)
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+      <AutoLogout />
       
       {/* SIDEBAR GAUCHE */}
       <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-900 text-white transition-all duration-300 flex flex-col shadow-2xl z-20`}>
