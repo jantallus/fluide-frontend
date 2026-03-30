@@ -6,7 +6,7 @@ export default function PrestationsPage() {
   const [flights, setFlights] = useState<any[]>([]);
   const [slotDefs, setSlotDefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false); // 🔒 Le nouveau verrou anti-doublon !
+  const [isSaving, setIsSaving] = useState(false);
   
   const [seasonFilter, setSeasonFilter] = useState<'ALL' | 'SUMMER' | 'WINTER'>('ALL');
   
@@ -24,7 +24,8 @@ export default function PrestationsPage() {
     season: 'ALL',
     weight_min: 20,
     weight_max: 110,
-    allow_multi_slots: false
+    allow_multi_slots: false,
+    booking_delay_hours: 1 // NOUVEAU : Valeur par défaut
   });
 
   const loadData = async () => {
@@ -43,7 +44,7 @@ export default function PrestationsPage() {
   useEffect(() => { loadData(); }, []);
 
   const handleSave = async () => {
-    if (isSaving) return; // 🔒 Si ça sauvegarde déjà, on bloque !
+    if (isSaving) return;
     setIsSaving(true);
 
     const method = editingId ? 'PUT' : 'POST';
@@ -54,7 +55,8 @@ export default function PrestationsPage() {
       duration_minutes: Number(formData.duration_minutes),
       price_cents: Number(formData.price_cents),
       weight_min: Number(formData.weight_min),
-      weight_max: Number(formData.weight_max)
+      weight_max: Number(formData.weight_max),
+      booking_delay_hours: Number(formData.booking_delay_hours) // NOUVEAU : On l'envoie au serveur
     };
 
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
@@ -67,7 +69,7 @@ export default function PrestationsPage() {
       const errorData = await res.json();
       alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
     }
-    setIsSaving(false); // 🔓 On débloque à la fin
+    setIsSaving(false);
   };
 
   const deleteFlight = async (id: number) => {
@@ -94,6 +96,7 @@ export default function PrestationsPage() {
       weight_min: f.weight_min !== undefined && f.weight_min !== null ? f.weight_min : 20,
       weight_max: f.weight_max !== undefined && f.weight_max !== null ? f.weight_max : 110,
       allow_multi_slots: f.allow_multi_slots || false,
+      booking_delay_hours: f.booking_delay_hours !== undefined && f.booking_delay_hours !== null ? f.booking_delay_hours : 1, // NOUVEAU
     });
     setShowModal(true);
   };
@@ -111,7 +114,8 @@ export default function PrestationsPage() {
       season: 'ALL',
       weight_min: 20,
       weight_max: 110,
-      allow_multi_slots: false
+      allow_multi_slots: false,
+      booking_delay_hours: 1 // NOUVEAU
     });
     setShowModal(true);
   };
@@ -175,6 +179,12 @@ export default function PrestationsPage() {
                   <div className="space-y-3 mb-8">
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⏱️ {f.duration_minutes} min</div>
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⚖️ {f.weight_min !== undefined ? f.weight_min : 20} - {f.weight_max !== undefined ? f.weight_max : 110} kg</div>
+                    
+                    {/* NOUVEAU : Affichage du délai de réservation */}
+                    <div className="flex items-center gap-2 text-rose-500 font-bold text-[10px] uppercase">
+                      ⏳ Bloqué {f.booking_delay_hours || 0}h avant
+                    </div>
+
                     {f.allowed_time_slots && f.allowed_time_slots.length > 0 && (
                       <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">✅ {f.allowed_time_slots.length} Créneaux</div>
                     )}
@@ -243,6 +253,18 @@ export default function PrestationsPage() {
                       <option value="WINTER">❄️ Seulement l'Hiver</option>
                     </select>
                   </div>
+                </div>
+
+                {/* NOUVEAU : Champ Délai Limite de Réservation */}
+                <div className="mt-2 bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                  <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Délai limite avant le vol (en heures)</label>
+                  <input 
+                    type="number" 
+                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold mt-1 outline-none focus:border-rose-300" 
+                    value={formData.booking_delay_hours} 
+                    onChange={e => setFormData({...formData, booking_delay_hours: Number(e.target.value)})} 
+                  />
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">Exemple : 1 = Réservation impossible à partir d'une heure avant l'horaire du créneau.</p>
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer bg-violet-50 p-4 rounded-2xl border border-violet-100 hover:border-violet-300 transition-colors mt-2">

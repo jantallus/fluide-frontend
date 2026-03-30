@@ -42,7 +42,11 @@ export default function ReserverPage() {
   const [rawSlots, setRawSlots] = useState<any[]>([]);
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
-
+// --- GESTION DES CODES PROMO / BONS CADEAUX ---
+  const [voucherInput, setVoucherInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
 
@@ -152,6 +156,10 @@ export default function ReserverPage() {
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
 
+    const delayHours = selectedFlight.booking_delay_hours || 0;
+    const now = new Date();
+    const cutoffMs = now.getTime() + (delayHours * 60 * 60 * 1000);
+
     const flightDur = selectedFlight.duration_minutes || 0;
     const allowedSlots = Array.isArray(selectedFlight.allowed_time_slots) ? selectedFlight.allowed_time_slots : [];
     
@@ -231,6 +239,8 @@ export default function ReserverPage() {
         const targetMs = timeToMs[`${dateStr}|${timeStr}`];
         if (!targetMs) return;
 
+        if (targetMs <= cutoffMs) return;
+
         let capacity = 0;
         for (const monId of Object.keys(monSchedules)) {
           let isFree = true;
@@ -287,25 +297,53 @@ export default function ReserverPage() {
   };
 
   let totalItems = 0;
-  let totalPrice = 0;
   
+  // 1. Calcul du prix normal (En séparant vol et options)
+  let flightTotal = 0;
+  let complementsTotal = 0;
+
   Object.entries(cart).forEach(([key, qty]) => {
     totalItems += qty;
     const [fId] = key.split('|');
     const f = flights.find(fl => fl.id.toString() === fId);
-    if (f && f.price_cents) totalPrice += (f.price_cents / 100) * qty;
+    if (f && f.price_cents) flightTotal += (f.price_cents / 100) * qty;
   });
 
   passengers.forEach(p => {
     if (p.selectedComplements && p.selectedComplements.length > 0) {
       p.selectedComplements.forEach((compId: number) => {
         const comp = complementsList.find(c => c.id === compId);
-        if (comp && comp.price_cents) {
-          totalPrice += (comp.price_cents / 100);
-        }
+        if (comp && comp.price_cents) complementsTotal += (comp.price_cents / 100);
       });
     }
   });
+
+  // On crée la variable originalPrice une seule fois, ici !
+  let originalPrice = flightTotal + complementsTotal;
+
+  // 2. Application de la réduction intelligente
+  let discountAmount = 0;
+  if (appliedVoucher) {
+    if (appliedVoucher.type === 'gift_card') {
+      discountAmount = Number(appliedVoucher.price_paid_cents) / 100;
+    } else if (appliedVoucher.type === 'promo') {
+      const discountVal = Number(appliedVoucher.discount_value);
+      const scope = appliedVoucher.discount_scope || 'both';
+      
+      let targetAmount = originalPrice;
+      if (scope === 'flight') targetAmount = flightTotal;
+      if (scope === 'complements') targetAmount = complementsTotal;
+
+      if (appliedVoucher.discount_type === 'fixed') {
+        discountAmount = Math.min(discountVal, targetAmount); 
+      }
+      if (appliedVoucher.discount_type === 'percentage') {
+        discountAmount = targetAmount * (discountVal / 100);
+      }
+    }
+  }
+
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
 
   useEffect(() => {
     if (step === 3 && totalItems === 0) setStep(1);
@@ -334,6 +372,41 @@ export default function ReserverPage() {
   const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email && 
                       passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked);
 
+const handleApplyVoucher = async () => {
+    if (!voucherInput.trim()) return;
+    setIsApplyingVoucher(true);
+    setVoucherError('');
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/gift-cards/check/${voucherInput.trim()}`);
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        setVoucherError(errData.message || "Code invalide ou expiré");
+        setAppliedVoucher(null);
+      } else {
+        const data = await res.json();
+        
+        // SÉCURITÉ : Si le code est lié à un vol spécifique, on vérifie que ce vol est dans le panier
+        if (data.type === 'promo' && data.flight_type_id) {
+          const hasRequiredFlight = Object.keys(cart).some(key => key.startsWith(`${data.flight_type_id}|`));
+          if (!hasRequiredFlight) {
+            setVoucherError(`Ce code n'est valable que pour le vol : ${data.flight_name}`);
+            setAppliedVoucher(null);
+            setIsApplyingVoucher(false);
+            return;
+          }
+        }
+        setAppliedVoucher(data);
+        setVoucherInput(''); // On vide le champ
+      }
+    } catch (err) {
+      setVoucherError("Erreur de connexion.");
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!isFormValid) return;
     setIsCheckingOut(true);
@@ -343,7 +416,11 @@ export default function ReserverPage() {
       const res = await fetch(`${apiUrl}/api/public/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact, passengers })
+        body: JSON.stringify({ 
+          contact, 
+          passengers,
+          voucher_code: appliedVoucher ? appliedVoucher.code : null // 👈 On envoie le code au serveur
+        })
       });
 
       const data = await res.json();
@@ -702,6 +779,54 @@ export default function ReserverPage() {
               </div>
 
             </div>
+            {/* SECTION 3 : CODE PROMO / BON CADEAU */}
+              <div className="mt-12 pt-8 border-t border-slate-100">
+                <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
+                  <span className="bg-amber-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+                  Code Promo ou Bon Cadeau
+                </h3>
+
+                {appliedVoucher ? (
+                  <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-6 flex justify-between items-center">
+                    <div>
+                      <p className="font-black text-emerald-900 uppercase tracking-widest text-sm">
+                        ✅ {appliedVoucher.type === 'promo' ? 'Code Promo appliqué' : 'Bon cadeau appliqué'}
+                      </p>
+                      <p className="text-emerald-700 font-bold mt-1">
+                        Code : <span className="uppercase">{appliedVoucher.code}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-black text-emerald-600">
+                        - {discountAmount.toFixed(2)} €
+                      </p>
+                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-black uppercase text-rose-500 mt-2 hover:underline">
+                        Retirer le code
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
+                        className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold uppercase focus:border-amber-500 outline-none transition-colors"
+                        value={voucherInput}
+                        onChange={e => setVoucherInput(e.target.value.toUpperCase())}
+                      />
+                      <button 
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher || !voucherInput.trim()}
+                        className={`px-8 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'bg-slate-200 text-slate-400' : 'bg-slate-900 text-white hover:bg-amber-500 shadow-md'}`}
+                      >
+                        {isApplyingVoucher ? '...' : 'Appliquer'}
+                      </button>
+                    </div>
+                    {voucherError && <p className="text-rose-500 font-bold text-xs mt-3 ml-2">❌ {voucherError}</p>}
+                  </div>
+                )}
+              </div>
           </div>
         )}
 
@@ -738,7 +863,7 @@ export default function ReserverPage() {
             <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
               <div className="text-right">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</p>
-                <p className="text-2xl font-black text-sky-500">{totalPrice} €</p>
+                <p className="text-2xl font-black text-sky-500">{finalPrice.toFixed(2)} €</p>
               </div>
               
               {step === 3 ? (

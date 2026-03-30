@@ -2,47 +2,38 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../../lib/api';
 
-export default function GiftCardsPage() {
+export default function VouchersPage() {
   const [cards, setCards] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
-  const [complements, setComplements] = useState<any[]>([]); // État pour les compléments
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const toggleCardStatus = async (id: number, currentStatus: string) => {
-  const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
-  const confirmMsg = newStatus === 'valid' 
-    ? "Réactiver ce bon ? Il pourra de nouveau être utilisé sur le planning." 
-    : "Marquer ce bon comme utilisé manuellement ?";
-    
-  if (!confirm(confirmMsg)) return;
+  const [activeTab, setActiveTab] = useState<'gift_card' | 'promo'>('gift_card');
 
-  const res = await apiFetch(`/api/gift-cards/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: newStatus })
-  });
-
-  if (res.ok) loadData();
-};
-  
-  // État du nouveau bon avec support des compléments
-  const [newCard, setNewCard] = useState({ 
-    flight_type_id: '', 
-    buyer_name: '', 
+  const [newVoucher, setNewVoucher] = useState({
+    type: 'gift_card',
+    custom_code: '',
+    buyer_name: '',
     beneficiary_name: '',
-    selectedComplements: [] as number[] 
+    gift_value: '', 
+    flight_type_id: '',
+    discount_type: 'fixed',
+    discount_value: '',
+    discount_scope: 'both',
+    max_uses: '1',
+    is_unlimited: false,
+    valid_from: '',
+    valid_until: ''
   });
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [cRes, fRes, compRes] = await Promise.all([
+      const [cRes, fRes] = await Promise.all([
         apiFetch('/api/gift-cards'),
-        apiFetch('/api/flight-types'),
-        apiFetch('/api/complements') // On récupère tes nouveaux compléments
+        apiFetch('/api/flight-types')
       ]);
       if (cRes.ok) setCards(await cRes.json());
       if (fRes.ok) setFlights(await fRes.json());
-      if (compRes.ok) setComplements(await compRes.json());
     } catch (err) {
       console.error("Erreur chargement données:", err);
     } finally {
@@ -52,50 +43,103 @@ export default function GiftCardsPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  const toggleCardStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
+    if (!confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme utilisé ?")) return;
+
+    const res = await apiFetch(`/api/gift-cards/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) loadData();
+  };
+
+  const deleteCard = async (id: number) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer définitivement ce code/bon ?")) return;
+    const res = await apiFetch(`/api/gift-cards/${id}`, { method: 'DELETE' });
+    if (res.ok) loadData();
+  };
+
   const handleCreate = async () => {
-  if (!newCard.flight_type_id || !newCard.buyer_name || !newCard.beneficiary_name) {
-    alert("Veuillez remplir tous les champs obligatoires");
-    return;
-  }
+    let payload: any = {
+      type: activeTab,
+      custom_code: newVoucher.custom_code.trim()
+    };
 
-  const flight = flights.find(f => f.id === parseInt(newCard.flight_type_id));
-  const selectedCompsData = complements.filter(c => newCard.selectedComplements.includes(c.id));
-  const totalCompsPrice = selectedCompsData.reduce((acc, curr) => acc + curr.price_cents, 0);
-  const totalPrice = (flight?.price_cents || 0) + totalCompsPrice;
+    if (activeTab === 'gift_card') {
+      // --- LOGIQUE POUR LES BONS CADEAUX ---
+      if (!newVoucher.gift_value || !newVoucher.buyer_name || !newVoucher.beneficiary_name) {
+        alert("Veuillez remplir tous les champs obligatoires du bon cadeau.");
+        return;
+      }
+      payload = {
+        ...payload,
+        flight_type_id: null,
+        buyer_name: newVoucher.buyer_name,
+        beneficiary_name: newVoucher.beneficiary_name,
+        price_paid_cents: Math.round(parseFloat(newVoucher.gift_value) * 100),
+        notes: 'Bon cadeau à valeur libre',
+        max_uses: 1,
+        discount_scope: 'both'
+      };
+    } else {
+      // --- LOGIQUE POUR LES CODES PROMO ---
+      if (!newVoucher.discount_value) {
+        alert("Veuillez indiquer la valeur de la réduction.");
+        return;
+      }
+      
+      // SÉCURITÉ : Pas plus de 100% de réduction !
+      if (newVoucher.discount_type === 'percentage' && parseFloat(newVoucher.discount_value) > 100) {
+        alert("Une réduction en pourcentage ne peut pas dépasser 100 % !");
+        return;
+      }
 
-  // On prépare les notes qui seront stockées dans la colonne 'notes' de la table gift_cards
-  const notesString = selectedCompsData.length > 0 
-    ? `Options incluses : ${selectedCompsData.map(c => c.name).join(', ')}`
-    : '';
+      payload = {
+        ...payload,
+        flight_type_id: newVoucher.flight_type_id || null,
+        discount_type: newVoucher.discount_type,
+        discount_value: parseFloat(newVoucher.discount_value),
+        discount_scope: newVoucher.discount_scope, // 👈 LE VOILÀ AU BON ENDROIT !
+        max_uses: newVoucher.is_unlimited ? null : parseInt(newVoucher.max_uses) || 1,
+        valid_from: newVoucher.valid_from || null,
+        valid_until: newVoucher.valid_until || null,
+        notes: newVoucher.flight_type_id ? `Promo spécifique` : `Promo globale`
+      };
+    }
 
-  const res = await apiFetch('/api/gift-cards', {
-    method: 'POST',
-    body: JSON.stringify({ 
-      flight_type_id: newCard.flight_type_id,
-      buyer_name: newCard.buyer_name,
-      beneficiary_name: newCard.beneficiary_name,
-      price_paid_cents: totalPrice,
-      notes: notesString // On envoie la string formatée
-    })
-  });
+    const res = await apiFetch('/api/gift-cards', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
 
-  if (res.ok) {
-    setShowModal(false);
-    setNewCard({ flight_type_id: '', buyer_name: '', beneficiary_name: '', selectedComplements: [] });
-    loadData();
-  } else {
-    const errorMsg = await res.json();
-    alert("Erreur : " + (errorMsg.error || "Problème lors de la création"));
-  }
-};
+    if (res.ok) {
+      setShowModal(false);
+      setNewVoucher({
+        type: 'gift_card', 
+        custom_code: '', 
+        flight_type_id: '', 
+        buyer_name: '', 
+        beneficiary_name: '',
+        gift_value: '', 
+        discount_type: 'fixed', 
+        discount_value: '', 
+        discount_scope: 'both',
+        max_uses: '1', 
+        is_unlimited: false, 
+        valid_from: '', 
+        valid_until: ''
+      });
+      loadData();
+    } else {
+      const errorMsg = await res.json();
+      alert("Erreur : " + (errorMsg.error || "Le code personnalisé est peut-être déjà pris."));
+    }
+  };
 
-  const toggleComplement = (id: number) => {
-    setNewCard(prev => ({
-      ...prev,
-      selectedComplements: prev.selectedComplements.includes(id)
-        ? prev.selectedComplements.filter(cid => cid !== id)
-        : [...prev.selectedComplements, id]
-    }));
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
   return (
@@ -104,121 +148,209 @@ export default function GiftCardsPage() {
         <div>
           <p className="text-indigo-500 font-black uppercase text-xs tracking-widest mb-2">Ventes & Boutique</p>
           <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
-            Bons <span className="text-indigo-500">Cadeaux</span>
+            Codes & <span className="text-indigo-500">Bons</span>
           </h1>
         </div>
-        <button 
-          onClick={() => setShowModal(true)} 
-          className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform"
-        >
-          + Émettre un bon
+        <button onClick={() => setShowModal(true)} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform">
+          + Créer un Code
         </button>
       </header>
 
-      {/* LISTE DES BONS */}
       <div className="grid gap-4">
         {loading ? (
-          <div className="text-center py-12 font-bold text-slate-400 animate-pulse">Chargement des bons...</div>
-        ) : cards.map(c => (
-          <div key={c.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
-            <div className="flex gap-6 items-center">
-              <div className="bg-indigo-50 p-4 rounded-2xl text-center min-w-[100px]">
-                <p className="text-[10px] font-black text-indigo-400 uppercase">Code</p>
-                <p className="font-black text-indigo-600">{c.code}</p>
+          <div className="text-center py-12 font-bold text-slate-400 animate-pulse">Chargement...</div>
+        ) : cards.map(c => {
+          const isPromo = c.type === 'promo';
+          return (
+            <div key={c.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
+              <div className="flex gap-6 items-center">
+                <div className={`p-4 rounded-2xl text-center min-w-[120px] ${isPromo ? 'bg-amber-50' : 'bg-indigo-50'}`}>
+                  <p className={`text-[10px] font-black uppercase ${isPromo ? 'text-amber-400' : 'text-indigo-400'}`}>
+                    {isPromo ? 'Promo' : 'Bon Cadeau'}
+                  </p>
+                  <p className={`font-black ${isPromo ? 'text-amber-600' : 'text-indigo-600'}`}>{c.code}</p>
+                </div>
+                <div>
+                  {isPromo ? (
+                    <>
+                      <h3 className="text-xl font-black uppercase italic text-slate-800">
+                        Réduction de {c.discount_value}{c.discount_type === 'percentage' ? '%' : '€'}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                        {c.flight_name ? `Uniquement sur : ${c.flight_name}` : '✅ Valable sur toutes les prestations'}
+                      </p>
+                      {/* Affichage des limites */}
+                      <div className="flex gap-3 mt-2">
+                        {c.max_uses ? (
+                          <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold">🎯 {c.current_uses || 0} / {c.max_uses} utilisations</span>
+                        ) : (
+                          <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-bold">♾️ Illimité</span>
+                        )}
+                        {(c.valid_from || c.valid_until) && (
+                          <span className="bg-sky-50 text-sky-600 px-2 py-1 rounded-md text-[10px] font-bold">
+                            📅 {c.valid_from ? `Du ${formatDate(c.valid_from)}` : ''} {c.valid_until ? `Au ${formatDate(c.valid_until)}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-black uppercase italic text-slate-800">{c.beneficiary_name}</h3>
+                      <p className="text-sm text-slate-400 font-bold uppercase tracking-tight">
+                        Bon Valeur • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
+                      </p>
+                      <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Acheteur : {c.buyer_name}</p>
+                    </>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black uppercase italic text-slate-800">{c.beneficiary_name}</h3>
-                <p className="text-sm text-slate-400 font-bold uppercase tracking-tight">
-                  {c.flight_name} • <span className="text-slate-500">Payé {c.price_paid_cents / 100}€</span>
-                </p>
-                <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Acheteur : {c.buyer_name}</p>
+              <div className="flex flex-col gap-2 items-end">
+                <button
+                  onClick={() => toggleCardStatus(c.id, c.status)}
+                  className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all shadow-sm ${
+                    c.status === 'valid'
+                      ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105'
+                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
+                </button>
+                <button
+                  onClick={() => deleteCard(c.id)}
+                  className="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors"
+                >
+                  🗑️ Supprimer
+                </button>
               </div>
             </div>
-            <button 
-              onClick={() => toggleCardStatus(c.id, c.status)}
-              className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all hover:scale-105 shadow-sm ${
-                c.status === 'valid' 
-                ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' 
-                : 'bg-rose-100 text-rose-400 hover:bg-rose-200'
-              }`}
-            >
-              {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* MODALE D'ÉMISSION */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 className="text-2xl font-black uppercase italic mb-6">Émettre un bon</h2>
             
-            <div className="space-y-6">
-              {/* Infos de base */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Type de Vol</label>
-                <select 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50"
-                  value={newCard.flight_type_id}
-                  onChange={e => setNewCard({...newCard, flight_type_id: e.target.value})}
-                >
-                  <option value="">Sélectionner une prestation...</option>
-                  {flights.map(f => <option key={f.id} value={f.id}>{f.name} ({f.price_cents/100}€)</option>)}
-                </select>
-              </div>
-
-              {/* Compléments (Les nouvelles options) */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Options supplémentaires (Compléments)</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {complements.map(comp => (
-                    <div 
-                      key={comp.id}
-                      onClick={() => toggleComplement(comp.id)}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex justify-between items-center ${
-                        newCard.selectedComplements.includes(comp.id) 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-slate-100 bg-slate-50'
-                      }`}
-                    >
-                      <span className="font-bold text-sm uppercase">{comp.name}</span>
-                      <span className="font-black text-indigo-600">+{comp.price_cents / 100}€</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>
-                  <input 
-                    type="text" placeholder="Nom" 
-                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
-                    onChange={e => setNewCard({...newCard, buyer_name: e.target.value})} 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Bénéficiaire</label>
-                  <input 
-                    type="text" placeholder="Nom" 
-                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
-                    onChange={e => setNewCard({...newCard, beneficiary_name: e.target.value})} 
-                  />
-                </div>
-              </div>
-
-              <button 
-                onClick={handleCreate} 
-                className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase italic shadow-xl hover:bg-indigo-700 transition-all"
-              >
-                Générer et Enregistrer le bon
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
+              <button onClick={() => setActiveTab('gift_card')} className={`flex-1 py-3 rounded-xl font-black uppercase text-xs transition-all ${activeTab === 'gift_card' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                🎁 Bon Cadeau
               </button>
-              
-              <button 
-                onClick={() => setShowModal(false)} 
-                className="w-full text-slate-300 font-bold uppercase text-[10px] tracking-widest"
-              >
+              <button onClick={() => setActiveTab('promo')} className={`flex-1 py-3 rounded-xl font-black uppercase text-xs transition-all ${activeTab === 'promo' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                ✂️ Code Promo
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex justify-between">Code personnalisé <span>(Optionnel)</span></label>
+                <input type="text" placeholder="Ex: NOEL2024 (Laisser vide pour auto-générer)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-indigo-500 outline-none uppercase" value={newVoucher.custom_code} onChange={e => setNewVoucher({ ...newVoucher, custom_code: e.target.value.toUpperCase() })} />
+              </div>
+
+              {activeTab === 'gift_card' && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Valeur du bon (€)</label>
+                    <input type="number" placeholder="Ex: 100" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none focus:border-indigo-500 text-indigo-600 text-xl" value={newVoucher.gift_value} onChange={e => setNewVoucher({ ...newVoucher, gift_value: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>
+                      <input type="text" placeholder="Nom" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={newVoucher.buyer_name} onChange={e => setNewVoucher({ ...newVoucher, buyer_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Bénéficiaire</label>
+                      <input type="text" placeholder="Nom" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={newVoucher.beneficiary_name} onChange={e => setNewVoucher({ ...newVoucher, beneficiary_name: e.target.value })} />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* FORMULAIRE CODE PROMO */}
+              {activeTab === 'promo' && (
+                <>
+                  {/* 1. LE CHOIX DU VOL (Toutes les prestations ou une seule) */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prestation applicable</label>
+                    <select
+                      className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-amber-50 outline-none text-amber-900"
+                      value={newVoucher.flight_type_id}
+                      onChange={e => setNewVoucher({ ...newVoucher, flight_type_id: e.target.value })}
+                    >
+                      <option value="">✅ Valable sur TOUTES les prestations</option>
+                      {flights.map(f => <option key={f.id} value={f.id}>Uniquement : {f.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* 2. LE CHOIX DE LA CIBLE (Le Vol, les Options, ou Tout) */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">La réduction s'applique sur :</label>
+                    <select
+                      className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-white outline-none"
+                      value={newVoucher.discount_scope}
+                      onChange={e => setNewVoucher({ ...newVoucher, discount_scope: e.target.value })}
+                    >
+                      <option value="both">🌟 Le Vol ET les Options (Totalité du panier)</option>
+                      <option value="flight">🪂 Le Vol uniquement</option>
+                      <option value="complements">📸 Les Options (Photos/Vidéos) uniquement</option>
+                    </select>
+                  </div>
+
+                  {/* 3. VALEUR DE LA RÉDUCTION */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Type de réduction</label>
+                      <select
+                        className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none"
+                        value={newVoucher.discount_type}
+                        onChange={e => setNewVoucher({ ...newVoucher, discount_type: e.target.value })}
+                      >
+                        <option value="fixed">Montant fixe (€)</option>
+                        <option value="percentage">Pourcentage (%)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Valeur</label>
+                      <input
+                        type="number" placeholder={newVoucher.discount_type === 'fixed' ? 'Ex: 15' : 'Ex: 20'}
+                        className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none"
+                        value={newVoucher.discount_value}
+                        onChange={e => setNewVoucher({ ...newVoucher, discount_value: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* NOUVELLE SECTION : LIMITES */}
+                  <div className="p-4 bg-slate-100 rounded-2xl space-y-4 border border-slate-200">
+                    <p className="text-xs font-black uppercase text-slate-500">Limites d'utilisation</p>
+                    
+                    <div>
+                      <label className="flex items-center gap-3 cursor-pointer mb-2">
+                        <input type="checkbox" className="w-4 h-4 accent-amber-500" checked={newVoucher.is_unlimited} onChange={e => setNewVoucher({ ...newVoucher, is_unlimited: e.target.checked })} />
+                        <span className="font-bold text-slate-700 text-sm">Utilisations illimitées</span>
+                      </label>
+                      {!newVoucher.is_unlimited && (
+                        <input type="number" placeholder="Nombre d'utilisations (ex: 1)" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white outline-none" value={newVoucher.max_uses} onChange={e => setNewVoucher({ ...newVoucher, max_uses: e.target.value })} />
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Valable à partir du</label>
+                        <input type="date" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white outline-none" value={newVoucher.valid_from} onChange={e => setNewVoucher({ ...newVoucher, valid_from: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Jusqu'au</label>
+                        <input type="date" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white outline-none" value={newVoucher.valid_until} onChange={e => setNewVoucher({ ...newVoucher, valid_until: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <button onClick={handleCreate} className={`w-full text-white py-5 rounded-3xl font-black uppercase italic shadow-xl transition-all ${activeTab === 'gift_card' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'}`}>
+                Générer le code
+              </button>
+              <button onClick={() => setShowModal(false)} className="w-full text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-slate-600">
                 Annuler
               </button>
             </div>
