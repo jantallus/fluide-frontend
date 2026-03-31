@@ -43,19 +43,44 @@ export default function Navbar() {
             <Link href="/infos" className={`nav-item ${pathname === '/infos' ? 'active' : ''}`}>
               Infos pratiques
             </Link>
-            <Link href="/cadeau" className={`nav-item ${pathname === '/cadeau' ? 'active' : ''}`}>
+            {/* 🚨 CORRECTION : Le bon lien est /bons-cadeaux */}
+            <Link href="/bons-cadeaux" className={`nav-item ${pathname === '/bons-cadeaux' ? 'active' : ''}`}>
               Cartes cadeaux
             </Link>
           </div>
           <Link href="/booking" className="btn-cta">Réserver un vol</Link>
         </div>
 
-        {/* BURGER MOBILE */}
-        <button className={`burger-menu ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+        {/* ACTIONS MOBILE (Icônes + Burger) */}
+        <div className="mobile-actions">
+          {/* 🚨 CORRECTION : Le bon lien est /bons-cadeaux */}
+          <Link href="/bons-cadeaux" className="mobile-icon" onClick={() => setIsOpen(false)} aria-label="Cartes Cadeaux">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 12 20 22 4 22 4 12"></polyline>
+              <rect x="2" y="7" width="20" height="5"></rect>
+              <line x1="12" y1="22" x2="12" y2="7"></line>
+              <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+              <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+            </svg>
+          </Link>
+
+          {/* Icône Planning / Réservation */}
+          <Link href="/booking" className="mobile-icon" onClick={() => setIsOpen(false)} aria-label="Réserver">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </Link>
+
+          {/* Hamburger */}
+          <button className={`burger-menu ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
       </div>
 
       {/* MOBILE NAV */}
@@ -102,7 +127,6 @@ export default function Navbar() {
           line-height: 1;
           letter-spacing: -2px;
           display: inline-block;
-          text-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .l1 { transform: translateY(0px); }
         .l2 { transform: translateY(-4px); }
@@ -121,7 +145,6 @@ export default function Navbar() {
           font-size: 1.05rem; 
           position: relative;
           padding-bottom: 5px;
-          text-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .nav-item::after {
@@ -130,10 +153,7 @@ export default function Navbar() {
           bottom: 0;
           left: 0;
           width: 0;
-          
-          /* --- MODIFICATION ICI : ÉPAISSEUR RÉDUITE À 1.5PX --- */
           height: 1.5px;
-          
           background-color: white;
           transition: width 0.3s ease-in-out;
         }
@@ -154,7 +174,30 @@ export default function Navbar() {
           color: #f026b8 !important; 
         }
 
-        .burger-menu { display: none; flex-direction: column; gap: 6px; background: none; border: none; cursor: pointer; }
+        .mobile-actions {
+          display: none; 
+          align-items: center;
+          gap: 18px; 
+        }
+        
+        .mobile-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          transition: transform 0.2s ease;
+        }
+        .mobile-icon:hover {
+          transform: scale(1.1);
+        }
+        .mobile-icon svg {
+          width: 26px;
+          height: 26px;
+          stroke: white;
+        }
+
+        /* 🚨 CORRECTION : On a remis le 'display: flex;' pour que le burger s'affiche bien ! */
+        .burger-menu { display: flex; flex-direction: column; gap: 6px; background: none; border: none; cursor: pointer; }
         .burger-menu span { width: 35px; height: 3px; background: white; border-radius: 3px; transition: 0.4s; }
         .burger-menu.open span:nth-child(1) { transform: rotate(45deg) translate(7px, 6px); }
         .burger-menu.open span:nth-child(2) { opacity: 0; }
@@ -172,7 +215,7 @@ export default function Navbar() {
 
         @media (max-width: 1250px) {
           .desktop-nav { display: none; }
-          .burger-menu { display: flex; }
+          .mobile-actions { display: flex; } 
         }
       `}} />
     </nav>
