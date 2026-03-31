@@ -90,6 +90,20 @@ export default function ConfigPage() {
   const handleSeasonChange = (id: string, field: string, value: string) => { setSeasons(seasons.map(s => s.id === id ? { ...s, [field]: value } : s)); };
   const handleDeleteSeason = (id: string) => { if(!confirm("Supprimer ?")) return; const updated = seasons.filter(s => s.id !== id); setSeasons(updated); saveSeasonsToDB(updated); };
 
+// --- LOGIQUE EMAILS ---
+  const saveEmailSetting = async (key: string, value: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${apiUrl}/api/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ key, value })
+      });
+      if (res.ok) alert("Message sauvegardé avec succès ! ✅");
+    } catch (err) { console.error(err); }
+  };
+
   // --- LOGIQUE BOUTIQUE BONS CADEAUX ---
   const handleSaveTemplate = async () => {
     if (!newTemplate.title || !newTemplate.price_cents) return alert("Le titre et le prix sont obligatoires.");
@@ -221,6 +235,79 @@ export default function ConfigPage() {
             ))}
           </div>
           <button onClick={() => { setEditingId(null); setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: activePlan }); setShowAddModal(true); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase italic shadow-xl hover:scale-[1.01] transition-transform">+ Ajouter une rotation</button>
+        </section>
+
+{/* SECTION NOUVELLE : EMAILS PERSONNALISÉS */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">💌 Messages Automatiques</h2>
+          </div>
+          <p className="text-slate-500 mb-8 font-medium">Personnalisez les conseils envoyés par email à vos clients après leur achat.</p>
+
+          <div className="space-y-8">
+            {/* BON CADEAU */}
+            <div className="bg-fuchsia-50 p-6 rounded-[30px] border border-fuchsia-100 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-fuchsia-500"></div>
+              <h3 className="font-black text-fuchsia-900 uppercase tracking-widest text-sm mb-4">🎁 Achat d'un Bon Cadeau</h3>
+              <textarea
+                className="w-full bg-white border-2 border-fuchsia-200 rounded-2xl p-4 font-bold outline-none focus:border-fuchsia-500 min-h-[100px] text-slate-700"
+                placeholder="Ex: Merci pour votre achat ! Voici votre bon cadeau prêt à être offert..."
+                value={settings['email_gift_card'] || ''}
+                onChange={(e) => setSettings({...settings, 'email_gift_card': e.target.value})}
+              />
+              <button onClick={() => saveEmailSetting('email_gift_card', settings['email_gift_card'])} className="mt-4 bg-fuchsia-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-700 transition-all shadow-md">
+                Sauvegarder
+              </button>
+            </div>
+
+            {/* VOLS : EMAILS + SMS */}
+          <div>
+            <h3 className="font-black text-sky-900 uppercase tracking-widest text-sm mb-6 border-b-2 border-slate-100 pb-4">
+              🪂 Personnalisation par type de vol
+            </h3>
+            <div className="grid grid-cols-1 gap-8">
+              {flights.map(flight => (
+                <div key={flight.id} className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
+                  <h4 className="font-black text-slate-800 uppercase italic mb-6 text-xl">{flight.name}</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* COLONNE EMAIL */}
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-2 block">📧 Contenu du bloc "Conseils" (Email)</label>
+                      <textarea
+                        className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 text-sm min-h-[120px] text-slate-600"
+                        placeholder="Ex: Prévoyez des chaussures fermées, des lunettes de soleil..."
+                        value={settings[`email_flight_${flight.id}`] || ''}
+                        onChange={(e) => setSettings({...settings, [`email_flight_${flight.id}`]: e.target.value})}
+                      />
+                      <button onClick={() => saveEmailSetting(`email_flight_${flight.id}`, settings[`email_flight_${flight.id}`])} className="mt-3 bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 transition-colors shadow-sm">
+                        Enregistrer l'Email
+                      </button>
+                    </div>
+
+                    {/* COLONNE SMS */}
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-2 block">📱 Message SMS (Court)</label>
+                      <textarea
+                        className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-sm min-h-[120px] text-slate-600"
+                        placeholder="Ex: RDV au Crêt du Loup à 14h. N'oubliez pas vos chaussures fermées !"
+                        maxLength={160}
+                        value={settings[`sms_flight_${flight.id}`] || ''}
+                        onChange={(e) => setSettings({...settings, [`sms_flight_${flight.id}`]: e.target.value})}
+                      />
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="text-[10px] font-bold text-slate-400 ml-2">{(settings[`sms_flight_${flight.id}`] || '').length}/160 caractères</span>
+                        <button onClick={() => saveEmailSetting(`sms_flight_${flight.id}`, settings[`sms_flight_${flight.id}`])} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
+                          Enregistrer le SMS
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          </div>
         </section>
 
         {/* MODALE : MODÈLE BOUTIQUE */}
