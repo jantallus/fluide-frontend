@@ -11,6 +11,27 @@ const getDayName = (dateStr: string) => {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 };
 
+// 🧠 MOTEUR INTELLIGENT DE DATES
+const calculateGridStart = (dateStr: string, count: number) => {
+  const start = new Date(dateStr);
+  start.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (count === 7) {
+    // RÈGLE : 7 jours = On recule au Samedi
+    const day = start.getDay(); // 0=Dimanche, 6=Samedi
+    const diff = day === 6 ? 0 : day + 1; 
+    start.setDate(start.getDate() - diff);
+  } else {
+    // RÈGLE : < 7 jours = On affiche la veille (J-1) sauf si on est sur aujourd'hui
+    if (start > today) {
+      start.setDate(start.getDate() - 1);
+    }
+  }
+  return getLocalYYYYMMDD(start);
+};
+
 // --- FONCTION TEXTE COMMERCIAL ---
 const getMarketingInfo = (flightName: string) => {
   if (!flightName) return '🪂 Vol sensationnel';
@@ -38,7 +59,11 @@ export default function ReserverPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
 
-  const [startDate, setStartDate] = useState<string>(getLocalYYYYMMDD(new Date()));
+  // NOUVEAU : GESTION DES JOURS AFFICHÉS
+  const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
+  const [pickedDate, setPickedDate] = useState<string>(getLocalYYYYMMDD(new Date()));
+  const [gridStartDate, setGridStartDate] = useState<string>(''); 
+
   const [rawSlots, setRawSlots] = useState<any[]>([]);
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -52,9 +77,7 @@ export default function ReserverPage() {
   const [passengers, setPassengers] = useState<any[]>([]);
   
   useEffect(() => {
-    // 🚨 SÉLECTION AUTOMATIQUE DU PLAN SELON LA SAISON (Plan du jour ou saison à venir)
     const currentMonth = new Date().getMonth(); 
-    // De Octobre (9) à Avril (3), on affiche l'Hiver par défaut. Sinon, l'Été.
     let defaultSeason: 'Standard' | 'Hiver' = (currentMonth >= 9 || currentMonth <= 3) ? 'Hiver' : 'Standard';
 
     if (typeof window !== 'undefined') {
@@ -68,13 +91,26 @@ export default function ReserverPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         
-        const [resFlights, resComplements] = await Promise.all([
+        const [resFlights, resComplements, resSettings] = await Promise.all([
           fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' })
+          fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }) // 👈 On charge les settings
         ]);
 
         if (resFlights.ok) setFlights(await resFlights.json());
         if (resComplements.ok) setComplementsList(await resComplements.json());
+
+        let count = 7; // Par défaut
+        if (resSettings.ok) {
+           const s = await resSettings.json();
+           const countSetting = s.find((x: any) => x.key === 'display_days_count');
+           if (countSetting) count = parseInt(countSetting.value);
+        }
+        setDisplayDaysCount(count);
+        
+        const todayStr = getLocalYYYYMMDD(new Date());
+        setPickedDate(todayStr);
+        setGridStartDate(calculateGridStart(todayStr, count));
 
       } catch (err) { 
         console.error("Erreur chargement données", err); 
@@ -86,13 +122,13 @@ export default function ReserverPage() {
   }, []);
 
   useEffect(() => {
-    if (!startDate || !selectedFlight) return;
+    if (!gridStartDate || !selectedFlight) return;
     const fetchWeekData = async () => {
       setIsSearchingTimes(true);
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const daysToFetch = Array.from({ length: 7 }).map((_, i) => {
-          const d = new Date(startDate);
+        const daysToFetch = Array.from({ length: displayDaysCount }).map((_, i) => {
+          const d = new Date(gridStartDate);
           d.setDate(d.getDate() + i);
           return getLocalYYYYMMDD(d);
         });
@@ -106,7 +142,7 @@ export default function ReserverPage() {
       finally { setIsSearchingTimes(false); }
     };
     fetchWeekData();
-  }, [startDate, selectedFlight]);
+  }, [gridStartDate, selectedFlight, displayDaysCount]);
 
   useEffect(() => {
     if (step === 3) {
@@ -140,7 +176,7 @@ export default function ReserverPage() {
           selectedComplements: existing.selectedComplements || []
         };
         return nP;
-      })); // 👈 C'est ici que la parenthèse manquait !
+      }));
     }
   }, [step, cart, flights]);
 
@@ -224,8 +260,8 @@ export default function ReserverPage() {
     });
 
     const grid: Record<string, Record<string, number>> = {};
-    const weekDays = Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(startDate);
+    const weekDays = Array.from({ length: displayDaysCount }).map((_, i) => {
+      const d = new Date(gridStartDate);
       d.setDate(d.getDate() + i);
       return getLocalYYYYMMDD(d);
     });
@@ -259,7 +295,23 @@ export default function ReserverPage() {
     });
 
     return grid;
-  }, [rawSlots, selectedFlight, cart, startDate, flights]);
+  }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
+
+  const handleDatePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPickedDate(val);
+    setGridStartDate(calculateGridStart(val, displayDaysCount));
+  };
+
+  const shiftDays = (offset: number) => {
+    const d = new Date(gridStartDate);
+    d.setDate(d.getDate() + offset);
+    setGridStartDate(getLocalYYYYMMDD(d));
+    
+    const p = new Date(pickedDate);
+    p.setDate(p.getDate() + offset);
+    setPickedDate(getLocalYYYYMMDD(p));
+  };
 
   const handleAdd = (date: string, time: string) => {
     const key = `${selectedFlight.id}|${date}|${time}`;
@@ -345,8 +397,8 @@ export default function ReserverPage() {
     if (step === 3 && totalItems === 0) setStep(1);
   }, [totalItems, step]);
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(startDate);
+  const weekDays = Array.from({ length: displayDaysCount }).map((_, i) => {
+    const d = new Date(gridStartDate);
     d.setDate(d.getDate() + i);
     return getLocalYYYYMMDD(d);
   });
@@ -478,7 +530,7 @@ export default function ReserverPage() {
         }
       `}} />
 
-      {/* --- LE NOUVEAU HERO (Identique à Infos) --- */}
+      {/* --- LE NOUVEAU HERO --- */}
       <section className="hero-gradient-infos">
         <div className="hero-animation-block">
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
@@ -551,7 +603,7 @@ export default function ReserverPage() {
               ← Retour au catalogue
             </button>
             
-            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-10 border border-slate-200">
+            <div className="bg-white rounded-[40px] shadow-sm p-6 md:p-10 border border-slate-200">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
@@ -575,17 +627,54 @@ export default function ReserverPage() {
                   </div>
                   <p className="text-sky-500 font-bold uppercase tracking-widest text-sm mt-3">{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
-                <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
-                  <span className="text-xs font-black uppercase text-slate-400 ml-4 hidden md:inline">Semaine du</span>
-                  <input type="date" className="font-bold bg-white border-none rounded-xl p-3 outline-none cursor-pointer shadow-sm text-slate-700" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                
+                {/* 🎯 NOUVEAU SÉLECTEUR DE DATE AVEC FLÈCHES */}
+                <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
+                  {displayDaysCount < 5 && (
+                    <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">←</button>
+                  )}
+                  <span className="text-xs font-black uppercase text-slate-400 ml-2 hidden md:inline">
+                    {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
+                  </span>
+                  <input 
+                    type="date" 
+                    className="font-bold bg-transparent border-none p-2 outline-none cursor-pointer text-slate-700" 
+                    value={pickedDate} 
+                    onChange={handleDatePick} 
+                  />
+                  {displayDaysCount < 5 && (
+                    <button onClick={() => shiftDays(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">→</button>
+                  )}
                 </div>
               </div>
 
               {isSearchingTimes ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-sky-500"></div></div>
               ) : (
-                <div className="relative">
+                <div className="relative group">
                   
+                  {/* 🎯 ZONE CLICABLE GAUCHE (ENCORE PLUS ÉCARTÉE) */}
+                  <div 
+                    onClick={() => shiftDays(-1)} 
+                    className="hidden md:block absolute inset-y-0 -left-8 lg:-left-16 w-16 lg:w-24 z-50 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-gradient-to-r hover:from-white/90 hover:to-transparent"
+                    title="Jour précédent"
+                  >
+                    <div className="sticky top-[50vh] -translate-y-1/2 w-12 h-12 mx-auto bg-white shadow-[0_10px_30px_-5px_rgba(0,0,0,0.2)] border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-sky-500 hover:scale-110 transition-transform">
+                      <span className="text-2xl font-black -ml-1">←</span>
+                    </div>
+                  </div>
+
+                  {/* 🎯 ZONE CLICABLE DROITE (ENCORE PLUS ÉCARTÉE) */}
+                  <div 
+                    onClick={() => shiftDays(1)} 
+                    className="hidden md:block absolute inset-y-0 -right-8 lg:-right-16 w-16 lg:w-24 z-50 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-gradient-to-l hover:from-white/90 hover:to-transparent"
+                    title="Jour suivant"
+                  >
+                    <div className="sticky top-[50vh] -translate-y-1/2 w-12 h-12 mx-auto bg-white shadow-[0_10px_30px_-5px_rgba(0,0,0,0.2)] border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-sky-500 hover:scale-110 transition-transform">
+                      <span className="text-2xl font-black -mr-1">→</span>
+                    </div>
+                  </div>
+
                   {/* LE BANDEAU DES JOURS (Design Flat) */}
                   <div 
                     ref={headerScrollRef}
@@ -598,7 +687,7 @@ export default function ReserverPage() {
                     ))}
                   </div>
 
-                  {/* LA ZONE DES CRÉNEAUX (Design Flat) */}
+                  {/* LA ZONE DES CRÉNEAUX */}
                   <div 
                     className="flex overflow-x-auto gap-4 pb-4 snap-x pt-6 custom-scrollbar"
                     onScroll={(e) => {

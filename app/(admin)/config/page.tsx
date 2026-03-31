@@ -243,6 +243,38 @@ export default function ConfigPage() {
           <button onClick={() => { setEditingId(null); setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: activePlan }); setShowAddModal(true); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase italic shadow-xl hover:scale-[1.01] transition-transform">+ Ajouter une rotation</button>
         </section>
 
+        {/* SECTION NOUVELLE : AFFICHAGE DU PLANNING CLIENT */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📱 Affichage du Planning</h2>
+          </div>
+          <p className="text-slate-500 mb-6 font-medium">Choisissez le nombre de jours affichés simultanément sur la page de réservation publique.</p>
+
+          <div className="bg-slate-50 p-6 rounded-[30px] border border-slate-100">
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Nombre de colonnes (jours)</label>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <select
+                className="w-full md:w-1/2 bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-indigo-500 text-slate-700"
+                value={settings['display_days_count'] || '7'}
+                onChange={(e) => setSettings({...settings, 'display_days_count': e.target.value})}
+              >
+                <option value="3">3 jours (Idéal sur mobile, navigation par flèches)</option>
+                <option value="4">4 jours (Navigation par flèches)</option>
+                <option value="5">5 jours (Scroll horizontal activé)</option>
+                <option value="6">6 jours (Scroll horizontal activé)</option>
+                <option value="7">7 jours (Semaine complète : du Samedi au Vendredi)</option>
+              </select>
+              {/* Note : On réutilise votre fonction saveEmailSetting qui sauvegarde n'importe quel paramètre */}
+              <button 
+                onClick={() => saveEmailSetting('display_days_count', settings['display_days_count'] || '7')} 
+                className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all shadow-md"
+              >
+                Enregistrer le format
+              </button>
+            </div>
+          </div>
+        </section>
+
 {/* SECTION NOUVELLE : EMAILS PERSONNALISÉS */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
