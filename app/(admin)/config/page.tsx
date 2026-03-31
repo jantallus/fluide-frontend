@@ -90,18 +90,24 @@ export default function ConfigPage() {
   const handleSeasonChange = (id: string, field: string, value: string) => { setSeasons(seasons.map(s => s.id === id ? { ...s, [field]: value } : s)); };
   const handleDeleteSeason = (id: string) => { if(!confirm("Supprimer ?")) return; const updated = seasons.filter(s => s.id !== id); setSeasons(updated); saveSeasonsToDB(updated); };
 
-// --- LOGIQUE EMAILS ---
+  // --- LOGIQUE EMAILS ---
   const saveEmailSetting = async (key: string, value: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${apiUrl}/api/settings`, {
+      // 🚨 CORRECTION : On utilise apiFetch pour être sûr de taper sur la bonne URL (Locale ou Railway)
+      const res = await apiFetch('/api/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ key, value })
       });
-      if (res.ok) alert("Message sauvegardé avec succès ! ✅");
-    } catch (err) { console.error(err); }
+      
+      if (res.ok) {
+        alert("Sauvegardé avec succès ! ✅");
+      } else {
+        alert("❌ Erreur lors de la sauvegarde côté serveur.");
+      }
+    } catch (err) { 
+      console.error(err); 
+      alert("❌ Erreur de connexion avec le serveur.");
+    }
   };
 
   // --- LOGIQUE BOUTIQUE BONS CADEAUX ---
@@ -243,6 +249,23 @@ export default function ConfigPage() {
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">💌 Messages Automatiques</h2>
           </div>
           <p className="text-slate-500 mb-8 font-medium">Personnalisez les conseils envoyés par email à vos clients après leur achat.</p>
+
+{/* NOTIFICATIONS ADMIN */}
+            <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
+              <h3 className="font-black text-emerald-900 uppercase tracking-widest text-sm mb-2">🛎️ Adresses de notification (Nouvelles réservations)</h3>
+              <p className="text-xs text-emerald-600 mb-4 font-bold">Vous recevrez un email ici à chaque fois qu'un client réserve un vol en ligne. Séparez les adresses par une virgule pour en mettre plusieurs.</p>
+              <input
+                type="text"
+                className="w-full bg-white border-2 border-emerald-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-slate-700"
+                placeholder="Ex: contact@fluide-parapente.fr, thomas@gmail.com"
+                value={settings['admin_notification_emails'] || ''}
+                onChange={(e) => setSettings({...settings, 'admin_notification_emails': e.target.value})}
+              />
+              <button onClick={() => saveEmailSetting('admin_notification_emails', settings['admin_notification_emails'])} className="mt-4 bg-emerald-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all shadow-md">
+                Sauvegarder les adresses
+              </button>
+            </div>
 
           <div className="space-y-8">
             {/* BON CADEAU */}
