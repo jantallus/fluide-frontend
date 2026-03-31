@@ -681,8 +681,8 @@ export default function ReserverPage() {
                     className="flex overflow-x-hidden gap-4 sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200"
                   >
                     {weekDays.map(dateStr => (
-                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-slate-50 rounded-lg p-4 text-center">
-                        <p className="font-bold text-slate-700 capitalize text-md leading-tight">{getDayName(dateStr)}</p>
+                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 shadow-md rounded-lg p-4 text-center">
+                        <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                       </div>
                     ))}
                   </div>
