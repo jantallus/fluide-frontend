@@ -655,22 +655,22 @@ export default function ReserverPage() {
               ) : (
                 <div className="relative">
                   
-                  {/* LE BANDEAU DES JOURS AVEC FLÈCHES INTÉGRÉES DANS LES COLONNES */}
+                  {/* LE BANDEAU DES JOURS (Design parfait Desktop + Mobile) */}
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 MODIF : px-[7.5vw] sur mobile pour centrer parfaitement la carte de 85vw */
-                      className="flex overflow-x-hidden gap-4 px-[7.5vw] md:px-0"
+                      /* 🎯 CORRECTION MOBILE : overflow-x-auto pour qu'iOS accepte de faire glisser les dates ! (La barre de scroll est masquée) */
+                      className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isFirst = i === 0;
                         const isLast = i === weekDays.length - 1;
                         
                         return (
-                          /* 🎯 MODIF : min-w-[85vw] sur mobile, flex-1 sur desktop */
-                          <div key={`header-${dateStr}`} className="min-w-[85vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
+                          /* 🎯 DESKTOP : Le conteneur fait exactement la même taille que la colonne en dessous */
+                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
                             
-                            {/* Flèche Gauche (intégrée dans la première colonne) */}
+                            {/* Flèche Gauche (Mange la place du rectangle violet) */}
                             {isFirst && (
                               <button 
                                 onClick={() => shiftDays(-1)} 
@@ -681,12 +681,12 @@ export default function ReserverPage() {
                               </button>
                             )}
 
-                            {/* Le Rectangle du Jour (VIOLET) */}
+                            {/* Rectangle du Jour (Se réduit tout seul si une flèche est là grâce au flex-1) */}
                             <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
                               <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                             </div>
 
-                            {/* Flèche Droite (intégrée dans la dernière colonne) */}
+                            {/* Flèche Droite (Mange la place du rectangle violet) */}
                             {isLast && (
                               <button 
                                 onClick={() => shiftDays(1)} 
