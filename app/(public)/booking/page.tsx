@@ -51,6 +51,7 @@ const getMarketingInfo = (flightName: string) => {
 
 export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -659,7 +660,12 @@ export default function ReserverPage() {
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 CORRECTION MOBILE : overflow-x-auto pour qu'iOS accepte de faire glisser les dates ! (La barre de scroll est masquée) */
+                      /* 🎯 NOUVEAU : Quand on glisse les dates, on fait glisser les créneaux ! */
+                      onScroll={(e) => {
+                        if (bodyScrollRef.current) {
+                          bodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                        }
+                      }}
                       className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
@@ -705,7 +711,8 @@ export default function ReserverPage() {
 
                   {/* LA ZONE DES CRÉNEAUX */}
                   <div 
-                    /* 🎯 MODIF : snap-mandatory sur mobile (aimant fort), snap-proximity sur desktop */
+                    /* 🎯 NOUVEAU : On attache la référence ici */
+                    ref={bodyScrollRef}
                     className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                     onScroll={(e) => {
                       if (headerScrollRef.current) {
