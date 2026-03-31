@@ -482,7 +482,7 @@ export default function ReserverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-clip">
       
       {/* --- STYLES HARMONISÉS DE LA PAGE INFOS --- */}
       <style dangerouslySetInnerHTML={{ __html: `
