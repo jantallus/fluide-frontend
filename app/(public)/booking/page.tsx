@@ -608,10 +608,12 @@ export default function ReserverPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-3xl font-black uppercase italic text-slate-900 leading-tight">Réservation :</h2>
+                    {/* 🎯 CORRECTION : Retrait de 'uppercase' et 'italic' ici */}
+                    <h2 className="text-3xl font-black text-slate-900 leading-tight">Réservation :</h2>
                     <div className="relative">
+                      {/* 🎯 CORRECTION : Retrait de 'uppercase' et 'italic' ici aussi */}
                       <select 
-                        className="text-2xl md:text-3xl font-black uppercase italic text-sky-600 bg-sky-50 border-2 border-sky-100 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer focus:border-sky-300 hover:bg-sky-100 transition-all appearance-none shadow-sm"
+                        className="text-2xl md:text-3xl font-black text-sky-600 bg-sky-50 border-2 border-sky-100 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer focus:border-sky-300 hover:bg-sky-100 transition-all appearance-none shadow-sm"
                         value={selectedFlight.id}
                         onChange={(e) => {
                           const newFlight = flights.find(f => f.id.toString() === e.target.value);
