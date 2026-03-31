@@ -659,14 +659,16 @@ export default function ReserverPage() {
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      className="flex overflow-x-hidden gap-4"
+                      /* 🎯 MODIF : px-[7.5vw] sur mobile pour centrer parfaitement la carte de 85vw */
+                      className="flex overflow-x-hidden gap-4 px-[7.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isFirst = i === 0;
                         const isLast = i === weekDays.length - 1;
                         
                         return (
-                          <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 flex gap-2">
+                          /* 🎯 MODIF : min-w-[85vw] sur mobile, flex-1 sur desktop */
+                          <div key={`header-${dateStr}`} className="min-w-[85vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
                             
                             {/* Flèche Gauche (intégrée dans la première colonne) */}
                             {isFirst && (
@@ -679,7 +681,7 @@ export default function ReserverPage() {
                               </button>
                             )}
 
-                            {/* 🎯 NOUVEAU : Le Rectangle du Jour (VIOLET PLUS FONCÉ) */}
+                            {/* Le Rectangle du Jour (VIOLET) */}
                             <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
                               <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                             </div>
@@ -703,7 +705,8 @@ export default function ReserverPage() {
 
                   {/* LA ZONE DES CRÉNEAUX */}
                   <div 
-                    className="flex overflow-x-auto gap-4 pb-4 snap-x pt-6 custom-scrollbar"
+                    /* 🎯 MODIF : snap-mandatory sur mobile (aimant fort), snap-proximity sur desktop */
+                    className="flex overflow-x-auto gap-4 px-[7.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                     onScroll={(e) => {
                       if (headerScrollRef.current) {
                         headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
@@ -714,7 +717,8 @@ export default function ReserverPage() {
                       const times = Object.keys(gridData[dateStr] || {}).sort();
                       
                       return (
-                        <div key={dateStr} className="min-w-[220px] flex-1 snap-start h-fit">
+                        /* 🎯 MODIF : snap-center sur mobile (s'arrête au milieu), snap-start sur desktop */
+                        <div key={dateStr} className="min-w-[85vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
                           <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
                               <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
