@@ -179,7 +179,15 @@ export default function VouchersPage() {
       <div className="grid gap-4">
         {loading ? (
           <div className="text-center py-12 font-bold text-slate-400 animate-pulse">Chargement...</div>
-        ) : cards.map(c => {
+        ) : [...cards]
+            .sort((a, b) => {
+              // 1. On met les promos en haut
+              if (a.type === 'promo' && b.type !== 'promo') return -1;
+              if (a.type !== 'promo' && b.type === 'promo') return 1;
+              // 2. À l'intérieur du même groupe, on met les plus récents en premier
+              return b.id - a.id;
+            })
+            .map(c => {
           const isPromo = c.type === 'promo';
           return (
             <div key={c.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
