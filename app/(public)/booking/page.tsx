@@ -651,40 +651,52 @@ export default function ReserverPage() {
               {isSearchingTimes ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-sky-500"></div></div>
               ) : (
-                <div className="relative group">
+                <div className="relative">
                   
-                  {/* 🎯 ZONE CLICABLE GAUCHE (ENCORE PLUS ÉCARTÉE) */}
-                  <div 
-                    onClick={() => shiftDays(-1)} 
-                    className="hidden md:block absolute inset-y-0 -left-8 lg:-left-16 w-16 lg:w-24 z-50 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-gradient-to-r hover:from-white/90 hover:to-transparent"
-                    title="Jour précédent"
-                  >
-                    <div className="sticky top-[50vh] -translate-y-1/2 w-12 h-12 mx-auto bg-white shadow-[0_10px_30px_-5px_rgba(0,0,0,0.2)] border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-sky-500 hover:scale-110 transition-transform">
-                      <span className="text-2xl font-black -ml-1">←</span>
-                    </div>
-                  </div>
+                  {/* LE BANDEAU DES JOURS AVEC FLÈCHES INTÉGRÉES DANS LES COLONNES */}
+                  <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
+                    <div 
+                      ref={headerScrollRef}
+                      className="flex overflow-x-hidden gap-4"
+                    >
+                      {weekDays.map((dateStr, i) => {
+                        const isFirst = i === 0;
+                        const isLast = i === weekDays.length - 1;
+                        
+                        return (
+                          <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 flex gap-2">
+                            
+                            {/* Flèche Gauche (intégrée dans la première colonne) */}
+                            {isFirst && (
+                              <button 
+                                onClick={() => shiftDays(-1)} 
+                                className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"
+                                title="Jour précédent"
+                              >
+                                <span className="text-2xl font-black">←</span>
+                              </button>
+                            )}
 
-                  {/* 🎯 ZONE CLICABLE DROITE (ENCORE PLUS ÉCARTÉE) */}
-                  <div 
-                    onClick={() => shiftDays(1)} 
-                    className="hidden md:block absolute inset-y-0 -right-8 lg:-right-16 w-16 lg:w-24 z-50 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-gradient-to-l hover:from-white/90 hover:to-transparent"
-                    title="Jour suivant"
-                  >
-                    <div className="sticky top-[50vh] -translate-y-1/2 w-12 h-12 mx-auto bg-white shadow-[0_10px_30px_-5px_rgba(0,0,0,0.2)] border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-sky-500 hover:scale-110 transition-transform">
-                      <span className="text-2xl font-black -mr-1">→</span>
-                    </div>
-                  </div>
+                            {/* 🎯 NOUVEAU : Le Rectangle du Jour (VIOLET PLUS FONCÉ) */}
+                            <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                              <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
+                            </div>
 
-                  {/* LE BANDEAU DES JOURS (Design Flat) */}
-                  <div 
-                    ref={headerScrollRef}
-                    className="flex overflow-x-hidden gap-4 sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200"
-                  >
-                    {weekDays.map(dateStr => (
-                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 shadow-md rounded-lg p-4 text-center">
-                        <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
-                      </div>
-                    ))}
+                            {/* Flèche Droite (intégrée dans la dernière colonne) */}
+                            {isLast && (
+                              <button 
+                                onClick={() => shiftDays(1)} 
+                                className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"
+                                title="Jour suivant"
+                              >
+                                <span className="text-2xl font-black">→</span>
+                              </button>
+                            )}
+
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* LA ZONE DES CRÉNEAUX */}
