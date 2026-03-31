@@ -42,14 +42,15 @@ export default function ReserverPage() {
   const [rawSlots, setRawSlots] = useState<any[]>([]);
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
-// --- GESTION DES CODES PROMO / BONS CADEAUX ---
+  
+  // --- GESTION DES CODES PROMO / BONS CADEAUX ---
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [voucherError, setVoucherError] = useState('');
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
-
+  
   useEffect(() => {
     // 🚨 SÉLECTION AUTOMATIQUE DU PLAN SELON LA SAISON (Plan du jour ou saison à venir)
     const currentMonth = new Date().getMonth(); 
@@ -139,7 +140,7 @@ export default function ReserverPage() {
           selectedComplements: existing.selectedComplements || []
         };
         return nP;
-      }));
+      })); // 👈 C'est ici que la parenthèse manquait !
     }
   }, [step, cart, flights]);
 
@@ -233,7 +234,6 @@ export default function ReserverPage() {
     weekDays.forEach(dateStr => {
       if (!uniqueTimesByDate[dateStr]) return;
       Array.from(uniqueTimesByDate[dateStr]).forEach(timeStr => {
-        // La versatilité à l'œuvre : le calendrier vérifie que l'heure générée est compatible avec le vol !
         if (allowedSlots.length > 0 && !allowedSlots.includes(timeStr)) return;
         
         const targetMs = timeToMs[`${dateStr}|${timeStr}`];
@@ -297,8 +297,6 @@ export default function ReserverPage() {
   };
 
   let totalItems = 0;
-  
-  // 1. Calcul du prix normal (En séparant vol et options)
   let flightTotal = 0;
   let complementsTotal = 0;
 
@@ -318,11 +316,9 @@ export default function ReserverPage() {
     }
   });
 
-  // On crée la variable originalPrice une seule fois, ici !
   let originalPrice = flightTotal + complementsTotal;
-
-  // 2. Application de la réduction intelligente
   let discountAmount = 0;
+  
   if (appliedVoucher) {
     if (appliedVoucher.type === 'gift_card') {
       discountAmount = Number(appliedVoucher.price_paid_cents) / 100;
@@ -355,11 +351,8 @@ export default function ReserverPage() {
     return getLocalYYYYMMDD(d);
   });
 
-  // --- FILTRE DU CATALOGUE PAR LE SÉLECTEUR ---
   const filteredFlights = flights.filter(f => {
     const flightSeason = String(f.season || 'ALL').toUpperCase().trim(); 
-
-    // Les anciens vols (Standard) sont rangés dans Été par sécurité
     const isLegacy = flightSeason === 'STANDARD' || flightSeason === 'ALL';
 
     if (activeSeason === 'Hiver') {
@@ -372,7 +365,7 @@ export default function ReserverPage() {
   const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email && 
                       passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked);
 
-const handleApplyVoucher = async () => {
+  const handleApplyVoucher = async () => {
     if (!voucherInput.trim()) return;
     setIsApplyingVoucher(true);
     setVoucherError('');
@@ -386,19 +379,17 @@ const handleApplyVoucher = async () => {
         setAppliedVoucher(null);
       } else {
         const data = await res.json();
-        
-        // SÉCURITÉ : Si le code est lié à un vol spécifique, on vérifie que ce vol est dans le panier
-        if (data.type === 'promo' && data.flight_type_id) {
+        if (data.flight_type_id) {
           const hasRequiredFlight = Object.keys(cart).some(key => key.startsWith(`${data.flight_type_id}|`));
           if (!hasRequiredFlight) {
-            setVoucherError(`Ce code n'est valable que pour le vol : ${data.flight_name}`);
+            setVoucherError(`Ce code n'est valable que pour la prestation : ${data.flight_name}`);
             setAppliedVoucher(null);
             setIsApplyingVoucher(false);
             return;
           }
         }
         setAppliedVoucher(data);
-        setVoucherInput(''); // On vide le champ
+        setVoucherInput(''); 
       }
     } catch (err) {
       setVoucherError("Erreur de connexion.");
@@ -419,7 +410,7 @@ const handleApplyVoucher = async () => {
         body: JSON.stringify({ 
           contact, 
           passengers,
-          voucher_code: appliedVoucher ? appliedVoucher.code : null // 👈 On envoie le code au serveur
+          voucher_code: appliedVoucher ? appliedVoucher.code : null
         })
       });
 
@@ -439,57 +430,111 @@ const handleApplyVoucher = async () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-48">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       
-      <div className="h-20 bg-gradient-to-r from-violet-600 to-blue-800 w-full shadow-md sticky top-0 z-40"></div>
+      {/* --- STYLES HARMONISÉS DE LA PAGE INFOS --- */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes ultraSmoothReveal {
+          0% { opacity: 0; transform: translateY(100px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
 
-      <main className="max-w-7xl mx-auto px-4 py-12 relative z-10">
+        .hero-animation-block {
+          will-change: transform, opacity;
+          animation: ultraSmoothReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          position: relative;
+          z-index: 10;
+        }
+
+        .hero-gradient-infos {
+          background: radial-gradient(circle at center, #3b82f6 0%, #1e3a8a 50%, #4c1d95 100%);
+          position: relative;
+          width: 100%;
+          height: 70vh;
+          display: flex;
+          align-items: center;
+          color: white;
+          text-align: left;
+          padding-left: 15vw;
+          overflow: hidden;
+        }
+
+        .mountains-container {
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          width: 100%;
+          z-index: 5;
+          line-height: 0;
+        }
+        .mountains-container img { 
+          width: 100%; 
+          height: auto; 
+          display: block; 
+        }
+
+        @media (max-width: 1024px) {
+          .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
+        }
+      `}} />
+
+      {/* --- LE NOUVEAU HERO (Identique à Infos) --- */}
+      <section className="hero-gradient-infos">
+        <div className="hero-animation-block">
+          <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+            Réservez votre <span style={{ color: '#0ea5e9' }}>Vol</span>
+          </h1>
+          <p style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', opacity: 0.95, fontWeight: 500, maxWidth: '700px' }}>
+            Choisissez votre expérience et préparez-vous au décollage.
+          </p>
+        </div>
+        
+        {/* Les Montagnes SVG */}
+        <div className="mountains-container">
+          <img src="/montagnes.svg" alt="Montagnes Fluide Parapente" />
+        </div>
+      </section>
+
+      {/* --- CONTENEUR PRINCIPAL FLOTTANT --- */}
+      <div className="relative z-20 max-w-7xl mx-auto px-4 -mt-16 md:-mt-32 pb-48">
         
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="text-center mb-10">
-              <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tight text-slate-900 mb-4">
-                Réservez votre <span className="text-sky-500">Vol</span>
-              </h1>
-            </div>
-
             {/* LE SÉLECTEUR DE PLANS */}
             <div className="flex justify-center mb-12">
-              <div className="bg-slate-200/50 p-1.5 rounded-2xl inline-flex shadow-inner">
-                <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-white text-amber-500 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}>☀️ Vols Été</button>
-                <button onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-white text-sky-500 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}>❄️ Vols Hiver</button>
+              <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-lg border border-slate-100">
+                <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
+                <button onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-sky-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>❄️ Vols Hiver</button>
               </div>
             </div>
 
             {isLoading ? (
                <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-sky-500"></div></div>
             ) : filteredFlights.length === 0 ? (
-               <div className="text-center py-20 bg-white rounded-[35px] shadow-xl"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-black uppercase">Aucun vol configuré pour ce plan</h3></div>
+               <div className="text-center py-20 bg-white rounded-[35px] shadow-xl border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-black uppercase text-slate-800">Aucun vol configuré pour cette saison</h3></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredFlights.map((flight) => {
-                  
-                  // BADGE INTELLIGENT DU PLAN
-                  let displayedSeason = "🌍 Inclus dans tous les Plans";
+                  let displayedSeason = "🌍 Inclus dans toutes les saisons";
                   const s = String(flight.season || 'ALL').toUpperCase().trim();
-                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') displayedSeason = "☀️ Uniquement sur le Plan Été";
-                  if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur le Plan Hiver";
+                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') displayedSeason = "☀️ Uniquement sur la saison Été";
+                  if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
 
                   return (
-                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border-2 border-transparent hover:border-sky-300 transition-all cursor-pointer flex flex-col justify-between group" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:border-sky-400 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
                     <div>
-                      <h3 className="text-2xl font-black uppercase italic mb-3">{flight.name}</h3>
-                      <div className="flex gap-3 text-sm font-bold text-slate-400 mb-6">
-                        <span className="bg-slate-50 px-3 py-1 rounded-lg">{getMarketingInfo(flight.name)}</span>
-                        <span className="bg-slate-50 px-3 py-1 rounded-lg">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
+                      <h3 className="text-2xl font-black uppercase italic text-slate-900 mb-3">{flight.name}</h3>
+                      <div className="flex gap-3 text-sm font-bold text-slate-500 mb-6">
+                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{getMarketingInfo(flight.name)}</span>
+                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
-                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-4 bg-slate-50 inline-block px-3 py-1 rounded-lg">
+                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
                         {displayedSeason}
                       </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
-                      <div className="text-4xl font-black text-slate-900">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="text-4xl font-black text-sky-600">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                       <button className="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-sky-500 transition-colors">Choisir ce vol</button>
                     </div>
                   </div>
@@ -501,12 +546,12 @@ const handleApplyVoucher = async () => {
 
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-            <button onClick={() => setStep(1)} className="mb-8 text-slate-400 hover:text-sky-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
+            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
               ← Retour au catalogue
             </button>
             
-            <div className="bg-white rounded-[40px] shadow-2xl p-6 md:p-10 border border-slate-100">
+            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-10 border border-slate-200">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
@@ -532,7 +577,7 @@ const handleApplyVoucher = async () => {
                 </div>
                 <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
                   <span className="text-xs font-black uppercase text-slate-400 ml-4 hidden md:inline">Semaine du</span>
-                  <input type="date" className="font-bold bg-white border-none rounded-xl p-3 outline-none cursor-pointer shadow-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <input type="date" className="font-bold bg-white border-none rounded-xl p-3 outline-none cursor-pointer shadow-sm text-slate-700" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
               </div>
 
@@ -541,21 +586,21 @@ const handleApplyVoucher = async () => {
               ) : (
                 <div className="relative">
                   
-                  {/* 👇 1. LE BANDEAU DES JOURS */}
+                  {/* LE BANDEAU DES JOURS (Design Flat) */}
                   <div 
                     ref={headerScrollRef}
-                    className="flex overflow-x-hidden gap-4 sticky top-20 z-30 bg-white pt-2 pb-4 border-b border-slate-100"
+                    className="flex overflow-x-hidden gap-4 sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200"
                   >
                     {weekDays.map(dateStr => (
-                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-                        <p className="font-black text-slate-900 capitalize text-lg leading-tight">{getDayName(dateStr)}</p>
+                      <div key={`header-${dateStr}`} className="min-w-[220px] flex-1 bg-slate-50 rounded-lg p-4 text-center">
+                        <p className="font-bold text-slate-700 capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                       </div>
                     ))}
                   </div>
 
-                  {/* 👇 2. LA ZONE DES CRÉNEAUX */}
+                  {/* LA ZONE DES CRÉNEAUX (Design Flat) */}
                   <div 
-                    className="flex overflow-x-auto gap-4 pb-4 snap-x pt-4"
+                    className="flex overflow-x-auto gap-4 pb-4 snap-x pt-6 custom-scrollbar"
                     onScroll={(e) => {
                       if (headerScrollRef.current) {
                         headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
@@ -566,10 +611,12 @@ const handleApplyVoucher = async () => {
                       const times = Object.keys(gridData[dateStr] || {}).sort();
                       
                       return (
-                        <div key={dateStr} className="min-w-[220px] flex-1 bg-slate-50 border border-slate-100 rounded-3xl p-4 snap-start h-fit">
-                          <div className="flex flex-col gap-3">
+                        <div key={dateStr} className="min-w-[220px] flex-1 snap-start h-fit">
+                          <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
-                              <p className="text-center text-slate-400 text-xs font-bold uppercase py-10">Complet</p>
+                              <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Complet</p>
+                              </div>
                             ) : (
                               times.map(timeStr => {
                                 const capacity = gridData[dateStr][timeStr];
@@ -578,18 +625,18 @@ const handleApplyVoucher = async () => {
                                 const isSelected = qtyInCart > 0;
 
                                 return (
-                                  <div key={timeStr} className={`p-3 rounded-2xl border-2 transition-all ${isSelected ? 'bg-sky-50 border-sky-500 shadow-md' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
-                                    <div className="flex justify-between items-center mb-2">
-                                      <span className="font-black text-lg text-slate-900">{timeStr}</span>
-                                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${capacity > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500'}`}>
+                                  <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'bg-sky-100 border-sky-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}>
+                                    <div className="flex justify-between items-center mb-4">
+                                      <span className={`font-bold text-lg ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>{timeStr}</span>
+                                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-white shadow-sm border ${capacity > 0 ? 'text-emerald-600 border-emerald-100' : 'text-rose-500 border-rose-100'}`}>
                                         {capacity} place{capacity > 1 ? 's' : ''}
                                       </span>
                                     </div>
                                     
-                                    <div className="flex items-center justify-between bg-slate-100 rounded-xl p-1">
-                                      <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-slate-700 shadow-sm hover:text-rose-500'}`}>-</button>
-                                      <span className="font-black text-slate-900 text-lg w-8 text-center">{qtyInCart}</span>
-                                      <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white text-sky-500 shadow-sm hover:bg-sky-500 hover:text-white'}`}>+</button>
+                                    <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
+                                      <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}>-</button>
+                                      <span className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
+                                      <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'}`}>+</button>
                                     </div>
                                   </div>
                                 );
@@ -608,8 +655,8 @@ const handleApplyVoucher = async () => {
 
         {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto">
-            <button onClick={() => setStep(2)} className="mb-8 text-slate-400 hover:text-sky-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
+            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
               ← Modifier le panier
             </button>
 
@@ -631,26 +678,26 @@ const handleApplyVoucher = async () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none" placeholder="Jean" value={contact.firstName} onChange={e => setContact({...contact, firstName: e.target.value})} />
+                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Jean" value={contact.firstName} onChange={e => setContact({...contact, firstName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none" placeholder="Dupont" value={contact.lastName} onChange={e => setContact({...contact, lastName: e.target.value})} />
+                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Dupont" value={contact.lastName} onChange={e => setContact({...contact, lastName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone (le jour du vol)</label>
-                    <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none" placeholder="06 12 34 56 78" value={contact.phone} onChange={e => setContact({...contact, phone: e.target.value})} />
+                    <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="06 12 34 56 78" value={contact.phone} onChange={e => setContact({...contact, phone: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
-                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none" placeholder="jean@email.com" value={contact.email} onChange={e => setContact({...contact, email: e.target.value})} />
+                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="jean@email.com" value={contact.email} onChange={e => setContact({...contact, email: e.target.value})} />
                   </div>
                 </div>
 
                 <div className="mb-6">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Remarque (Facultatif)</label>
                   <textarea 
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 h-24"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 h-24 text-slate-800"
                     placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème auditif...)"
                     value={contact.notes}
                     onChange={e => setContact({...contact, notes: e.target.value})}
@@ -696,7 +743,7 @@ const handleApplyVoucher = async () => {
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom de la personne qui vole</label>
                         <input 
                           type="text" 
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none" 
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" 
                           placeholder="Prénom du passager" 
                           value={p.firstName}
                           onChange={e => {
@@ -811,7 +858,7 @@ const handleApplyVoucher = async () => {
                       <input 
                         type="text" 
                         placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
-                        className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold uppercase focus:border-amber-500 outline-none transition-colors"
+                        className="flex-1 bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold uppercase text-slate-800 focus:border-amber-500 outline-none transition-colors shadow-sm"
                         value={voucherInput}
                         onChange={e => setVoucherInput(e.target.value.toUpperCase())}
                       />
@@ -829,12 +876,11 @@ const handleApplyVoucher = async () => {
               </div>
           </div>
         )}
-
-      </main>
+      </div>
 
       {/* --- LE PANIER FLOTTANT --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-50 animate-in slide-in-from-bottom-full">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
@@ -842,7 +888,7 @@ const handleApplyVoucher = async () => {
                 {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
               </span>
               
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2">
+              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scrollbar">
                 {Object.entries(cart).map(([key, qty]) => {
                   if (qty === 0) return null;
                   const [fId, dStr, tStr] = key.split('|');

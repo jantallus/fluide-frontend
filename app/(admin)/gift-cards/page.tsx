@@ -8,7 +8,9 @@ export default function VouchersPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'gift_card' | 'promo'>('gift_card');
-
+  const [complements, setComplements] = useState<any[]>([]);
+  const [giftCardMode, setGiftCardMode] = useState<'prestation' | 'value'>('prestation');
+  const [selectedPrestation, setSelectedPrestation] = useState('');
   const [newVoucher, setNewVoucher] = useState({
     type: 'gift_card',
     custom_code: '',
@@ -28,12 +30,14 @@ export default function VouchersPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [cRes, fRes] = await Promise.all([
+      const [cRes, fRes, compRes] = await Promise.all([
         apiFetch('/api/gift-cards'),
-        apiFetch('/api/flight-types')
+        apiFetch('/api/flight-types'),
+        apiFetch('/api/complements') // 👈 On charge les options !
       ]);
       if (cRes.ok) setCards(await cRes.json());
       if (fRes.ok) setFlights(await fRes.json());
+      if (compRes.ok) setComplements(await compRes.json());
     } catch (err) {
       console.error("Erreur chargement données:", err);
     } finally {
@@ -67,22 +71,34 @@ export default function VouchersPage() {
     };
 
     if (activeTab === 'gift_card') {
-      // --- LOGIQUE POUR LES BONS CADEAUX ---
       if (!newVoucher.gift_value || !newVoucher.buyer_name || !newVoucher.beneficiary_name) {
         alert("Veuillez remplir tous les champs obligatoires du bon cadeau.");
         return;
       }
+
+      let finalNotes = 'Avoir libre';
+      if (giftCardMode === 'prestation') {
+         if (selectedPrestation.startsWith('flight|')) {
+            const f = flights.find(fl => fl.id.toString() === selectedPrestation.split('|')[1]);
+            finalNotes = f ? `Vol : ${f.name}` : finalNotes;
+         } else if (selectedPrestation.startsWith('comp|')) {
+            const c = complements.find(co => co.id.toString() === selectedPrestation.split('|')[1]);
+            finalNotes = c ? `Option : ${c.name}` : finalNotes;
+         }
+      }
+
       payload = {
         ...payload,
-        flight_type_id: null,
+        flight_type_id: (giftCardMode === 'prestation' && selectedPrestation.startsWith('flight|')) ? newVoucher.flight_type_id : null,
         buyer_name: newVoucher.buyer_name,
         beneficiary_name: newVoucher.beneficiary_name,
         price_paid_cents: Math.round(parseFloat(newVoucher.gift_value) * 100),
-        notes: 'Bon cadeau à valeur libre',
+        notes: finalNotes,
         max_uses: 1,
-        discount_scope: 'both'
+        discount_scope: 'both' // Un bon cadeau se comporte comme de l'argent liquide sur le total
       };
     } else {
+  
       // --- LOGIQUE POUR LES CODES PROMO ---
       if (!newVoucher.discount_value) {
         alert("Veuillez indiquer la valeur de la réduction.");
@@ -130,6 +146,10 @@ export default function VouchersPage() {
         valid_from: '', 
         valid_until: ''
       });
+      
+      setSelectedPrestation(''); 
+      setGiftCardMode('prestation');
+
       loadData();
     } else {
       const errorMsg = await res.json();
@@ -197,7 +217,7 @@ export default function VouchersPage() {
                     <>
                       <h3 className="text-xl font-black uppercase italic text-slate-800">{c.beneficiary_name}</h3>
                       <p className="text-sm text-slate-400 font-bold uppercase tracking-tight">
-                        Bon Valeur • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
+                        {c.notes && c.notes !== 'Avoir libre' ? c.notes : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
                       </p>
                       <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Acheteur : {c.buyer_name}</p>
                     </>
@@ -248,10 +268,51 @@ export default function VouchersPage() {
 
               {activeTab === 'gift_card' && (
                 <>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Valeur du bon (€)</label>
-                    <input type="number" placeholder="Ex: 100" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none focus:border-indigo-500 text-indigo-600 text-xl" value={newVoucher.gift_value} onChange={e => setNewVoucher({ ...newVoucher, gift_value: e.target.value })} />
+                  <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
+                    <button onClick={() => setGiftCardMode('prestation')} className={`flex-1 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${giftCardMode === 'prestation' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                      🎯 Prestation précise
+                    </button>
+                    <button onClick={() => setGiftCardMode('value')} className={`flex-1 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${giftCardMode === 'value' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                      💶 Avoir (Valeur libre)
+                    </button>
                   </div>
+
+                  {giftCardMode === 'prestation' ? (
+                    <div className="mb-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prestation offerte</label>
+                      <select
+                        className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none focus:border-indigo-500"
+                        value={selectedPrestation}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setSelectedPrestation(val);
+                          if (val.startsWith('flight|')) {
+                            const f = flights.find(fl => fl.id.toString() === val.split('|')[1]);
+                            setNewVoucher({ ...newVoucher, flight_type_id: val.split('|')[1], gift_value: f ? (f.price_cents / 100).toString() : '' });
+                          } else if (val.startsWith('comp|')) {
+                            const c = complements.find(co => co.id.toString() === val.split('|')[1]);
+                            setNewVoucher({ ...newVoucher, flight_type_id: '', gift_value: c ? (c.price_cents / 100).toString() : '' });
+                          } else {
+                            setNewVoucher({ ...newVoucher, flight_type_id: '', gift_value: '' });
+                          }
+                        }}
+                      >
+                        <option value="">-- Choisir ce que vous offrez --</option>
+                        <optgroup label="🪂 Les Vols">
+                          {flights.map(f => <option key={`f-${f.id}`} value={`flight|${f.id}`}>{f.name} ({f.price_cents / 100}€)</option>)}
+                        </optgroup>
+                        <optgroup label="📸 Les Options">
+                          {complements.map(c => <option key={`c-${c.id}`} value={`comp|${c.id}`}>{c.name} ({c.price_cents / 100}€)</option>)}
+                        </optgroup>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Valeur de l'avoir (€)</label>
+                      <input type="number" placeholder="Ex: 90" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none focus:border-indigo-500 text-indigo-600 text-xl" value={newVoucher.gift_value} onChange={e => setNewVoucher({ ...newVoucher, gift_value: e.target.value })} />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>

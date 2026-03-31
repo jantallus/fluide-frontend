@@ -63,7 +63,7 @@ export default function Navbar() {
         <Link href="/hiver" onClick={() => setIsOpen(false)}>Biplace l'hiver</Link>
         <Link href="/ete" onClick={() => setIsOpen(false)}>Biplace l'été</Link>
         <Link href="/infos" onClick={() => setIsOpen(false)}>Infos pratiques</Link>
-        <Link href="/cadeau" onClick={() => setIsOpen(false)}>Cartes cadeaux</Link>
+        <Link href="/bons-cadeaux" onClick={() => setIsOpen(false)}>Cartes cadeaux</Link>
         <Link href="/booking" className="cta-mobile" onClick={() => setIsOpen(false)}>Réserver mon vol</Link>
       </div>
 
