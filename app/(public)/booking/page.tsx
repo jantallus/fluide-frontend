@@ -706,7 +706,7 @@ export default function ReserverPage() {
                   {/* LA ZONE DES CRÉNEAUX */}
                   <div 
                     /* 🎯 MODIF : snap-mandatory sur mobile (aimant fort), snap-proximity sur desktop */
-                    className="flex overflow-x-auto gap-4 px-[7.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
+                    className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                     onScroll={(e) => {
                       if (headerScrollRef.current) {
                         headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
@@ -718,7 +718,7 @@ export default function ReserverPage() {
                       
                       return (
                         /* 🎯 MODIF : snap-center sur mobile (s'arrête au milieu), snap-start sur desktop */
-                        <div key={dateStr} className="min-w-[85vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
+                        <div key={dateStr} className="min-w-[75vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
                           <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
                               <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
