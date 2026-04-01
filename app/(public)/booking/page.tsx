@@ -53,6 +53,7 @@ export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
   const activeScroll = useRef<'header' | 'body' | null>(null);
+  const scrollTimeout = useRef<any>(null);
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -661,23 +662,25 @@ export default function ReserverPage() {
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 NOUVEAU : On déclare au survol/toucher que c'est le HAUT qui commande */
-                      onMouseEnter={() => activeScroll.current = 'header'}
-                      onTouchStart={() => activeScroll.current = 'header'}
+                      /* 🎯 NOUVEAU : Synchronisation auto-verrouillée avec minuteur */
                       onScroll={(e) => {
-                        if (activeScroll.current !== 'header') return; // Si ce n'est pas lui le chef, il se tait !
-                        if (bodyScrollRef.current) {
-                          bodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                        }
+                        if (activeScroll.current === 'body') return; // Si le bas bouge, le haut se tait
+                        activeScroll.current = 'header';
+                        if (bodyScrollRef.current) bodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                        
+                        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                        scrollTimeout.current = setTimeout(() => { activeScroll.current = null; }, 50);
                       }}
-                      className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 px-[12.5vw] md:px-0"
+                      /* 🎯 NOUVEAU : On ajoute l'aimant "snap-x" au bandeau aussi ! */
+                      className="flex overflow-x-auto snap-x snap-mandatory md:snap-proximity [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isFirst = i === 0;
                         const isLast = i === weekDays.length - 1;
                         
                         return (
-                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
+                          /* 🎯 NOUVEAU : On ajoute snap-center ici */
+                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 snap-center md:snap-start">
                             
                             {isFirst && (
                               <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
@@ -704,14 +707,14 @@ export default function ReserverPage() {
                   {/* LA ZONE DES CRÉNEAUX */}
                   <div 
                     ref={bodyScrollRef}
-                    /* 🎯 NOUVEAU : On déclare au survol/toucher que c'est le BAS qui commande */
-                    onMouseEnter={() => activeScroll.current = 'body'}
-                    onTouchStart={() => activeScroll.current = 'body'}
+                    /* 🎯 NOUVEAU : Synchronisation auto-verrouillée avec minuteur */
                     onScroll={(e) => {
-                      if (activeScroll.current !== 'body') return; // Si ce n'est pas lui le chef, il se tait !
-                      if (headerScrollRef.current) {
-                        headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                      }
+                      if (activeScroll.current === 'header') return; // Si le haut bouge, le bas se tait
+                      activeScroll.current = 'body';
+                      if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                      
+                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                      scrollTimeout.current = setTimeout(() => { activeScroll.current = null; }, 50);
                     }}
                     className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                   >
@@ -719,8 +722,8 @@ export default function ReserverPage() {
                       const times = Object.keys(gridData[dateStr] || {}).sort();
                       
                       return (
-                        /* 🎯 MODIF : snap-center sur mobile (s'arrête au milieu), snap-start sur desktop */
-                        <div key={dateStr} className="min-w-[75vw] max-w-[85vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
+                        /* 🎯 CORRECTION : Le max-w est bien redevenu 75vw (au lieu de 85vw) pour aligner mathématiquement avec le bandeau ! */
+                        <div key={dateStr} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
                           <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
                               <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
