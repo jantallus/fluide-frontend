@@ -19,12 +19,10 @@ const calculateGridStart = (dateStr: string, count: number) => {
   today.setHours(0, 0, 0, 0);
 
   if (count === 7) {
-    // RÈGLE : 7 jours = On recule au Samedi
-    const day = start.getDay(); // 0=Dimanche, 6=Samedi
+    const day = start.getDay(); 
     const diff = day === 6 ? 0 : day + 1; 
     start.setDate(start.getDate() - diff);
   } else {
-    // RÈGLE : < 7 jours = On affiche la veille (J-1) sauf si on est sur aujourd'hui
     if (start > today) {
       start.setDate(start.getDate() - 1);
     }
@@ -52,8 +50,7 @@ const getMarketingInfo = (flightName: string) => {
 export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
-  const activeScroll = useRef<'header' | 'body' | null>(null);
-  const scrollTimeout = useRef<any>(null);
+  
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -62,7 +59,6 @@ export default function ReserverPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
 
-  // NOUVEAU : GESTION DES JOURS AFFICHÉS
   const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
   const [pickedDate, setPickedDate] = useState<string>(getLocalYYYYMMDD(new Date()));
   const [gridStartDate, setGridStartDate] = useState<string>(''); 
@@ -71,7 +67,6 @@ export default function ReserverPage() {
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
   
-  // --- GESTION DES CODES PROMO / BONS CADEAUX ---
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [voucherError, setVoucherError] = useState('');
@@ -97,13 +92,13 @@ export default function ReserverPage() {
         const [resFlights, resComplements, resSettings] = await Promise.all([
           fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
           fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }) // 👈 On charge les settings
+          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' })
         ]);
 
         if (resFlights.ok) setFlights(await resFlights.json());
         if (resComplements.ok) setComplementsList(await resComplements.json());
 
-        let count = 7; // Par défaut
+        let count = 7; 
         if (resSettings.ok) {
            const s = await resSettings.json();
            const countSetting = s.find((x: any) => x.key === 'display_days_count');
@@ -127,20 +122,20 @@ export default function ReserverPage() {
   useEffect(() => {
     if (!gridStartDate || !selectedFlight) return;
     const fetchWeekData = async () => {
-        setIsSearchingTimes(true);
-        try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-          
-          // 🎯 NOUVEAU : On pré-charge toujours au moins 21 jours pour le "scroll infini" mobile !
-          const totalDaysToLoad = Math.max(displayDaysCount, 21);
-          
-          const daysToFetch = Array.from({ length: totalDaysToLoad }).map((_, i) => {
-            const d = new Date(gridStartDate);
-            d.setDate(d.getDate() + i);
-            return getLocalYYYYMMDD(d);
-          });
-          
-          const promises = daysToFetch.map(d =>
+      setIsSearchingTimes(true);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        // 🎯 1. ON PRÉCHARGE TOUJOURS 21 JOURS
+        const totalDaysToLoad = Math.max(displayDaysCount, 21);
+        
+        const daysToFetch = Array.from({ length: totalDaysToLoad }).map((_, i) => {
+          const d = new Date(gridStartDate);
+          d.setDate(d.getDate() + i);
+          return getLocalYYYYMMDD(d);
+        });
+        
+        const promises = daysToFetch.map(d => 
           fetch(`${apiUrl}/api/public/availabilities?date=${d}&t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json())
         );
         const results = await Promise.all(promises);
@@ -268,7 +263,7 @@ export default function ReserverPage() {
 
     const grid: Record<string, Record<string, number>> = {};
     
-    // 🎯 NOUVEAU : Le moteur calcule aussi les places pour les 21 jours
+    // 🎯 2. LE MOTEUR CONSTRUIT 21 JOURS
     const totalDaysToLoad = Math.max(displayDaysCount, 21);
     const weekDays = Array.from({ length: totalDaysToLoad }).map((_, i) => {
       const d = new Date(gridStartDate);
@@ -407,7 +402,9 @@ export default function ReserverPage() {
     if (step === 3 && totalItems === 0) setStep(1);
   }, [totalItems, step]);
 
-  const weekDays = Array.from({ length: displayDaysCount }).map((_, i) => {
+  // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (21 JOURS)
+  const totalDaysToLoad = Math.max(displayDaysCount, 21);
+  const weekDays = Array.from({ length: totalDaysToLoad }).map((_, i) => {
     const d = new Date(gridStartDate);
     d.setDate(d.getDate() + i);
     return getLocalYYYYMMDD(d);
@@ -494,20 +491,17 @@ export default function ReserverPage() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-clip">
       
-      {/* --- STYLES HARMONISÉS DE LA PAGE INFOS --- */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal {
           0% { opacity: 0; transform: translateY(100px); }
           100% { opacity: 1; transform: translateY(0); }
         }
-
         .hero-animation-block {
           will-change: transform, opacity;
           animation: ultraSmoothReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           position: relative;
           z-index: 10;
         }
-
         .hero-gradient-infos {
           background: radial-gradient(circle at center, #3b82f6 0%, #1e3a8a 50%, #4c1d95 100%);
           position: relative;
@@ -520,7 +514,6 @@ export default function ReserverPage() {
           padding-left: 15vw;
           overflow: hidden;
         }
-
         .mountains-container {
           position: absolute;
           bottom: -5px;
@@ -534,13 +527,11 @@ export default function ReserverPage() {
           height: auto; 
           display: block; 
         }
-
         @media (max-width: 1024px) {
           .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
         }
       `}} />
 
-      {/* --- LE NOUVEAU HERO --- */}
       <section className="hero-gradient-infos">
         <div className="hero-animation-block">
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
@@ -550,20 +541,16 @@ export default function ReserverPage() {
             Choisissez votre expérience et préparez-vous au décollage.
           </p>
         </div>
-        
-        {/* Les Montagnes SVG */}
         <div className="mountains-container">
           <img src="/montagnes.svg" alt="Montagnes Fluide Parapente" />
         </div>
       </section>
 
-      {/* --- CONTENEUR PRINCIPAL FLOTTANT --- */}
       <div className="relative z-20 max-w-7xl mx-auto px-4 -mt-16 md:-mt-32 pb-48">
         
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* LE SÉLECTEUR DE PLANS */}
             <div className="flex justify-center mb-12">
               <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-lg border border-slate-100">
                 <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
@@ -618,10 +605,8 @@ export default function ReserverPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    {/* 🎯 CORRECTION : Retrait de 'uppercase' et 'italic' ici */}
                     <h2 className="text-3xl font-black text-slate-900 leading-tight">Réservation :</h2>
                     <div className="relative">
-                      {/* 🎯 CORRECTION : Retrait de 'uppercase' et 'italic' ici aussi */}
                       <select 
                         className="text-2xl md:text-3xl font-black text-sky-600 bg-sky-50 border-2 border-sky-100 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer focus:border-sky-300 hover:bg-sky-100 transition-all appearance-none shadow-sm"
                         value={selectedFlight.id}
@@ -640,7 +625,6 @@ export default function ReserverPage() {
                   <p className="text-sky-500 font-bold uppercase tracking-widest text-sm mt-3">{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
-                {/* 🎯 NOUVEAU SÉLECTEUR DE DATE AVEC FLÈCHES */}
                 <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
                   {displayDaysCount < 5 && (
                     <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">←</button>
@@ -665,20 +649,19 @@ export default function ReserverPage() {
               ) : (
                 <div className="relative">
                   
-                  {/* LE BANDEAU DES JOURS (Esclave - Suit parfaitement les créneaux) */}
+                  {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 CORRECTION : overflow-hidden ! Le haut ne se glisse plus au doigt, il obéit uniquement au bas. */
                       className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isFirst = i === 0;
-                        const isLast = i === weekDays.length - 1;
+                        const isLastDesktop = i === displayDaysCount - 1; // Flèche PC
+                        const isHiddenOnDesktop = i >= displayDaysCount;  // Jours cachés sur PC
                         
                         return (
-                          /* 🎯 CORRECTION : On a retiré le "snap" ici pour qu'il glisse librement avec le bas */
-                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
+                          <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                             
                             {isFirst && (
                               <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
@@ -690,7 +673,7 @@ export default function ReserverPage() {
                               <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                             </div>
 
-                            {isLast && (
+                            {isLastDesktop && (
                               <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour suivant">
                                 <span className="text-2xl font-black">→</span>
                               </button>
@@ -702,10 +685,9 @@ export default function ReserverPage() {
                     </div>
                   </div>
 
-                  {/* LA ZONE DES CRÉNEAUX (Maître - Pilote le bandeau) */}
+                  {/* 🎯 LA ZONE DES CRÉNEAUX (Maître - Scroll Infini sur mobile) */}
                   <div 
                     ref={bodyScrollRef}
-                    /* 🎯 CORRECTION : Un seul onScroll simple. Le bas dicte sa position au haut. */
                     onScroll={(e) => {
                       if (headerScrollRef.current) {
                         headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
@@ -713,12 +695,12 @@ export default function ReserverPage() {
                     }}
                     className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                   >
-                    {weekDays.map(dateStr => {
+                    {weekDays.map((dateStr, i) => {
+                      const isHiddenOnDesktop = i >= displayDaysCount;
                       const times = Object.keys(gridData[dateStr] || {}).sort();
                       
                       return (
-                        /* 🎯 CORRECTION : Le max-w est bien redevenu 75vw (au lieu de 85vw) pour aligner mathématiquement avec le bandeau ! */
-                        <div key={dateStr} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit">
+                        <div key={dateStr} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                           <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
                               <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
