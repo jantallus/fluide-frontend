@@ -52,6 +52,7 @@ const getMarketingInfo = (flightName: string) => {
 export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
+  const activeScroll = useRef<'header' | 'body' | null>(null);
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -660,8 +661,11 @@ export default function ReserverPage() {
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 NOUVEAU : Quand on glisse les dates, on fait glisser les créneaux ! */
+                      /* 🎯 NOUVEAU : On déclare au survol/toucher que c'est le HAUT qui commande */
+                      onMouseEnter={() => activeScroll.current = 'header'}
+                      onTouchStart={() => activeScroll.current = 'header'}
                       onScroll={(e) => {
+                        if (activeScroll.current !== 'header') return; // Si ce n'est pas lui le chef, il se tait !
                         if (bodyScrollRef.current) {
                           bodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
                         }
@@ -673,32 +677,20 @@ export default function ReserverPage() {
                         const isLast = i === weekDays.length - 1;
                         
                         return (
-                          /* 🎯 DESKTOP : Le conteneur fait exactement la même taille que la colonne en dessous */
                           <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
                             
-                            {/* Flèche Gauche (Mange la place du rectangle violet) */}
                             {isFirst && (
-                              <button 
-                                onClick={() => shiftDays(-1)} 
-                                className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"
-                                title="Jour précédent"
-                              >
+                              <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
                                 <span className="text-2xl font-black">←</span>
                               </button>
                             )}
 
-                            {/* Rectangle du Jour (Se réduit tout seul si une flèche est là grâce au flex-1) */}
                             <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
                               <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                             </div>
 
-                            {/* Flèche Droite (Mange la place du rectangle violet) */}
                             {isLast && (
-                              <button 
-                                onClick={() => shiftDays(1)} 
-                                className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"
-                                title="Jour suivant"
-                              >
+                              <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour suivant">
                                 <span className="text-2xl font-black">→</span>
                               </button>
                             )}
@@ -711,14 +703,17 @@ export default function ReserverPage() {
 
                   {/* LA ZONE DES CRÉNEAUX */}
                   <div 
-                    /* 🎯 NOUVEAU : On attache la référence ici */
                     ref={bodyScrollRef}
-                    className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
+                    /* 🎯 NOUVEAU : On déclare au survol/toucher que c'est le BAS qui commande */
+                    onMouseEnter={() => activeScroll.current = 'body'}
+                    onTouchStart={() => activeScroll.current = 'body'}
                     onScroll={(e) => {
+                      if (activeScroll.current !== 'body') return; // Si ce n'est pas lui le chef, il se tait !
                       if (headerScrollRef.current) {
                         headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
                       }
                     }}
+                    className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                   >
                     {weekDays.map(dateStr => {
                       const times = Object.keys(gridData[dateStr] || {}).sort();
