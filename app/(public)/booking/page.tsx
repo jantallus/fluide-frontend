@@ -658,29 +658,20 @@ export default function ReserverPage() {
               ) : (
                 <div className="relative">
                   
-                  {/* LE BANDEAU DES JOURS (Design parfait Desktop + Mobile) */}
+                  {/* LE BANDEAU DES JOURS (Esclave - Suit parfaitement les créneaux) */}
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
                       ref={headerScrollRef}
-                      /* 🎯 NOUVEAU : Synchronisation auto-verrouillée avec minuteur */
-                      onScroll={(e) => {
-                        if (activeScroll.current === 'body') return; // Si le bas bouge, le haut se tait
-                        activeScroll.current = 'header';
-                        if (bodyScrollRef.current) bodyScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                        
-                        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-                        scrollTimeout.current = setTimeout(() => { activeScroll.current = null; }, 50);
-                      }}
-                      /* 🎯 NOUVEAU : On ajoute l'aimant "snap-x" au bandeau aussi ! */
-                      className="flex overflow-x-auto snap-x snap-mandatory md:snap-proximity [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 px-[12.5vw] md:px-0"
+                      /* 🎯 CORRECTION : overflow-hidden ! Le haut ne se glisse plus au doigt, il obéit uniquement au bas. */
+                      className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isFirst = i === 0;
                         const isLast = i === weekDays.length - 1;
                         
                         return (
-                          /* 🎯 NOUVEAU : On ajoute snap-center ici */
-                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 snap-center md:snap-start">
+                          /* 🎯 CORRECTION : On a retiré le "snap" ici pour qu'il glisse librement avec le bas */
+                          <div key={`header-${dateStr}`} className="min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2">
                             
                             {isFirst && (
                               <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
@@ -704,17 +695,14 @@ export default function ReserverPage() {
                     </div>
                   </div>
 
-                  {/* LA ZONE DES CRÉNEAUX */}
+                  {/* LA ZONE DES CRÉNEAUX (Maître - Pilote le bandeau) */}
                   <div 
                     ref={bodyScrollRef}
-                    /* 🎯 NOUVEAU : Synchronisation auto-verrouillée avec minuteur */
+                    /* 🎯 CORRECTION : Un seul onScroll simple. Le bas dicte sa position au haut. */
                     onScroll={(e) => {
-                      if (activeScroll.current === 'header') return; // Si le haut bouge, le bas se tait
-                      activeScroll.current = 'body';
-                      if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                      
-                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-                      scrollTimeout.current = setTimeout(() => { activeScroll.current = null; }, 50);
+                      if (headerScrollRef.current) {
+                        headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                      }
                     }}
                     className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                   >
