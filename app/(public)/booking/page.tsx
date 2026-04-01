@@ -127,16 +127,20 @@ export default function ReserverPage() {
   useEffect(() => {
     if (!gridStartDate || !selectedFlight) return;
     const fetchWeekData = async () => {
-      setIsSearchingTimes(true);
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const daysToFetch = Array.from({ length: displayDaysCount }).map((_, i) => {
-          const d = new Date(gridStartDate);
-          d.setDate(d.getDate() + i);
-          return getLocalYYYYMMDD(d);
-        });
-        
-        const promises = daysToFetch.map(d => 
+        setIsSearchingTimes(true);
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          
+          // 🎯 NOUVEAU : On pré-charge toujours au moins 21 jours pour le "scroll infini" mobile !
+          const totalDaysToLoad = Math.max(displayDaysCount, 21);
+          
+          const daysToFetch = Array.from({ length: totalDaysToLoad }).map((_, i) => {
+            const d = new Date(gridStartDate);
+            d.setDate(d.getDate() + i);
+            return getLocalYYYYMMDD(d);
+          });
+          
+          const promises = daysToFetch.map(d =>
           fetch(`${apiUrl}/api/public/availabilities?date=${d}&t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json())
         );
         const results = await Promise.all(promises);
