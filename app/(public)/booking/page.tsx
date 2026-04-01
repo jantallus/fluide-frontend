@@ -267,7 +267,10 @@ export default function ReserverPage() {
     });
 
     const grid: Record<string, Record<string, number>> = {};
-    const weekDays = Array.from({ length: displayDaysCount }).map((_, i) => {
+    
+    // 🎯 NOUVEAU : Le moteur calcule aussi les places pour les 21 jours
+    const totalDaysToLoad = Math.max(displayDaysCount, 21);
+    const weekDays = Array.from({ length: totalDaysToLoad }).map((_, i) => {
       const d = new Date(gridStartDate);
       d.setDate(d.getDate() + i);
       return getLocalYYYYMMDD(d);
