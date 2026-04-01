@@ -126,12 +126,10 @@ export default function ReserverPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         
-        // 🎯 1. ON PRÉCHARGE TOUJOURS 21 JOURS
-        const totalDaysToLoad = Math.max(displayDaysCount, 21);
-        
-        const daysToFetch = Array.from({ length: totalDaysToLoad }).map((_, i) => {
+        // 🎯 1. ON PRÉCHARGE 21 JOURS (-10 à +10)
+        const daysToFetch = Array.from({ length: 21 }).map((_, i) => {
           const d = new Date(gridStartDate);
-          d.setDate(d.getDate() + i);
+          d.setDate(d.getDate() - 10 + i);
           return getLocalYYYYMMDD(d);
         });
         
@@ -191,6 +189,21 @@ export default function ReserverPage() {
       });
     }
   }, [contact.isPassenger, contact.firstName]);
+
+  // 🎯 NOUVEAU : Auto-centrage sur mobile au chargement
+  useEffect(() => {
+    if (!isSearchingTimes && window.innerWidth < 768 && bodyScrollRef.current) {
+      setTimeout(() => {
+        const centerEl = document.getElementById(`mobile-col-${gridStartDate}`);
+        const container = bodyScrollRef.current;
+        if (centerEl && container) {
+          // Calcul mathématique pour centrer la colonne active
+          const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
+          container.scrollLeft = scrollPos;
+        }
+      }, 50);
+    }
+  }, [gridStartDate, isSearchingTimes]);
 
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
@@ -263,11 +276,10 @@ export default function ReserverPage() {
 
     const grid: Record<string, Record<string, number>> = {};
     
-    // 🎯 2. LE MOTEUR CONSTRUIT 21 JOURS
-    const totalDaysToLoad = Math.max(displayDaysCount, 21);
-    const weekDays = Array.from({ length: totalDaysToLoad }).map((_, i) => {
+    // 🎯 2. LE MOTEUR CONSTRUIT 21 JOURS (-10 à +10)
+    const weekDays = Array.from({ length: 21 }).map((_, i) => {
       const d = new Date(gridStartDate);
-      d.setDate(d.getDate() + i);
+      d.setDate(d.getDate() - 10 + i);
       return getLocalYYYYMMDD(d);
     });
     weekDays.forEach(d => grid[d] = {});
@@ -403,10 +415,9 @@ export default function ReserverPage() {
   }, [totalItems, step]);
 
   // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (21 JOURS)
-  const totalDaysToLoad = Math.max(displayDaysCount, 21);
-  const weekDays = Array.from({ length: totalDaysToLoad }).map((_, i) => {
+  const weekDays = Array.from({ length: 21 }).map((_, i) => {
     const d = new Date(gridStartDate);
-    d.setDate(d.getDate() + i);
+    d.setDate(d.getDate() - 10 + i);
     return getLocalYYYYMMDD(d);
   });
 
@@ -649,6 +660,13 @@ export default function ReserverPage() {
               ) : (
                 <div className="relative">
                   
+                  {/* 🎯 NOUVEAU : ASTUCE VISUELLE POUR LE MOBILE */}
+                  <div className="md:hidden flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-transparent via-sky-50 to-transparent border-b border-sky-100/50">
+                    <span className="text-sky-500 animate-pulse text-lg">👈</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-sky-700 opacity-80">Faites glisser pour changer de jour</span>
+                    <span className="text-sky-500 animate-pulse text-lg">👉</span>
+                  </div>
+
                   {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                     <div 
@@ -656,14 +674,14 @@ export default function ReserverPage() {
                       className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
                     >
                       {weekDays.map((dateStr, i) => {
-                        const isFirst = i === 0;
-                        const isLastDesktop = i === displayDaysCount - 1; // Flèche PC
-                        const isHiddenOnDesktop = i >= displayDaysCount;  // Jours cachés sur PC
+                        const isFirstDesktop = i === 10; // Flèche gauche PC (vu qu'on a 10 jours avant)
+                        const isLastDesktop = i === 10 + displayDaysCount - 1; // Flèche droite PC
+                        const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;  // On cache les jours bonus sur PC
                         
                         return (
                           <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                             
-                            {isFirst && (
+                            {isFirstDesktop && (
                               <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
                                 <span className="text-2xl font-black">←</span>
                               </button>
@@ -685,7 +703,7 @@ export default function ReserverPage() {
                     </div>
                   </div>
 
-                  {/* 🎯 LA ZONE DES CRÉNEAUX (Maître - Scroll Infini sur mobile) */}
+                  {/* 🎯 LA ZONE DES CRÉNEAUX (Maître) */}
                   <div 
                     ref={bodyScrollRef}
                     onScroll={(e) => {
@@ -696,11 +714,12 @@ export default function ReserverPage() {
                     className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                   >
                     {weekDays.map((dateStr, i) => {
-                      const isHiddenOnDesktop = i >= displayDaysCount;
+                      const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount; // 🎯 Masquage PC
                       const times = Object.keys(gridData[dateStr] || {}).sort();
                       
                       return (
-                        <div key={dateStr} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
+                        /* 🎯 NOUVEAU : Ajout de l'ID "mobile-col-..." pour l'auto-centrage */
+                        <div id={`mobile-col-${dateStr}`} key={dateStr} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                           <div className="flex flex-col gap-2">
                             {times.length === 0 ? (
                               <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
@@ -736,7 +755,7 @@ export default function ReserverPage() {
                       );
                     })}
                   </div>
-                </div>
+                  </div>
               )}
             </div>
           </div>
