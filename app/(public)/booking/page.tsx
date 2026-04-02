@@ -47,6 +47,7 @@ const getMarketingInfo = (flightName: string) => {
 export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
+  const hasAnimatedIntro = useRef(false); // 🎯 NOUVEAU : Mémoire pour l'intro
   
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
@@ -195,20 +196,46 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 CORRECTION : Auto-centrage sur mobile au chargement
+  // 🎯 NOUVEAU : Animation d'intro (Aujourd'hui -> Demain) + Auto-centrage
   useEffect(() => {
     if (!isSearchingTimes && window.innerWidth < 768 && bodyScrollRef.current) {
-      setTimeout(() => {
-        // 🎯 C'est "pickedDate" qu'on doit chercher, pas "gridStartDate" !
-        const centerEl = document.getElementById(`mobile-col-${pickedDate}`);
-        const container = bodyScrollRef.current;
-        if (centerEl && container) {
-          const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
-          container.scrollLeft = scrollPos;
-        }
-      }, 50);
+      const container = bodyScrollRef.current;
+
+      if (!hasAnimatedIntro.current) {
+        // 🎬 SCÉNARIO D'OUVERTURE (Joué 1 seule fois)
+        hasAnimatedIntro.current = true; 
+
+        setTimeout(() => {
+          const todayStr = getLocalYYYYMMDD(new Date());
+          const todayEl = document.getElementById(`mobile-col-${todayStr}`);
+          const tomorrowEl = document.getElementById(`mobile-col-${pickedDate}`);
+
+          if (todayEl && tomorrowEl && container) {
+            // 1. On fige la vue sur "Aujourd'hui" de manière invisible
+            const todayPos = todayEl.offsetLeft - (container.clientWidth / 2) + (todayEl.clientWidth / 2);
+            container.scrollLeft = todayPos;
+
+            // 2. On attend 800ms, puis on glisse tout en douceur vers "Demain"
+            setTimeout(() => {
+              const tomorrowPos = tomorrowEl.offsetLeft - (container.clientWidth / 2) + (tomorrowEl.clientWidth / 2);
+              container.scrollTo({ left: tomorrowPos, behavior: 'smooth' });
+            }, 800);
+          }
+        }, 100);
+
+      } else {
+        // 🧭 NAVIGATION CLASSIQUE (Quand le client clique sur le calendrier)
+        setTimeout(() => {
+          const centerEl = document.getElementById(`mobile-col-${pickedDate}`);
+          if (centerEl && container) {
+            const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
+            // On utilise aussi le glissement doux ("smooth") ici pour que ça reste premium !
+            container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+          }
+        }, 50);
+      }
     }
-  }, [pickedDate, isSearchingTimes]); // 🎯 On écoute pickedDate ici aussi
+  }, [pickedDate, isSearchingTimes]);
 
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
@@ -668,10 +695,6 @@ export default function ReserverPage() {
                   {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
                   <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200 relative">
                     
-                    {/* 🎯 NOUVELLE ASTUCE VISUELLE : Dégradés d'estompement sur les bords (Mobile uniquement) */}
-                    <div className="md:hidden pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-50"></div>
-                    <div className="md:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-50"></div>
-
                     <div 
                       ref={headerScrollRef}
                       className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
