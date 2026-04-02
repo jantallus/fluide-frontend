@@ -342,10 +342,20 @@ export default function ConfigPage() {
 
                     {/* COLONNE SMS */}
                     <div>
-                      <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-2 block">📱 Message SMS (Court)</label>
+                      <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-1 block">📱 Message SMS (Court)</label>
+                      
+                      {/* 🎯 NOUVEAU : Explication des variables dynamiques */}
+                      <p className="text-[10px] text-slate-500 font-bold ml-4 mb-3 leading-tight">
+                        Mots magiques (remplacés auto) : <br/>
+                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">[PRENOM]</code> 
+                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 ml-1">[DATE]</code> 
+                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 ml-1">[HEURE]</code>
+                      </p>
+
                       <textarea
                         className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-sm min-h-[120px] text-slate-600"
-                        placeholder="Ex: RDV au Crêt du Loup à 14h. N'oubliez pas vos chaussures fermées !"
+                        /* 🎯 NOUVEAU : Placeholder mis à jour avec les variables */
+                        placeholder="Ex: Bonjour [PRENOM], RDV le [DATE] à [HEURE] au Crêt du Loup. N'oubliez pas vos chaussures fermées !"
                         maxLength={160}
                         value={settings[`sms_flight_${flight.id}`] || ''}
                         onChange={(e) => setSettings({...settings, [`sms_flight_${flight.id}`]: e.target.value})}
