@@ -57,7 +57,15 @@ export default function HomePage() {
           transform: translateY(-5px);
           box-shadow: 0 15px 30px rgba(30, 64, 175, 0.4);
         }
-      `}} />
+      /* --- GESTION DU LOGO (BUREAU vs MOBILE) --- */
+        @media (max-width: 768px) {
+          .logo-desktop { display: none !important; }
+          .logo-mobile { display: block !important; }
+        }
+        @media (min-width: 769px) {
+          .logo-mobile { display: none !important; }
+        }
+        `}} />
 
       {/* --- HERO SECTION --- */}
       <section style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden' }}>
@@ -68,10 +76,16 @@ export default function HomePage() {
 
         <div style={{ position: 'relative', zIndex: 10 }}>
           <span style={{ color: 'white', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.8em', display: 'block', marginBottom: '40px' }}>Volez</span>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '-0.06em' }}>
+          {/* LOGO VERSION ORDINATEUR (Penché et décalé) */}
+          <div className="logo-desktop" style={{ display: 'flex', alignItems: 'flex-end', gap: '-0.06em' }}>
             {logoText.map((char, i) => (
               <span key={i} style={{ display: 'inline-block', color: '#f026b8', fontWeight: 900, fontSize: '11vw', transform: `translateY(${-i * 15}px)`, textShadow: '2px 4px 15px rgba(0,0,0,0.3)' }}>{char}</span>
             ))}
+          </div>
+
+          {/* LOGO VERSION MOBILE (Droit et propre) */}
+          <div className="logo-mobile" style={{ color: '#f026b8', fontWeight: 900, fontSize: '18vw', textShadow: '2px 4px 15px rgba(0,0,0,0.3)', marginTop: '20px' }}>
+            fluide
           </div>
           <p style={{ color: 'white', fontSize: '1.6rem', fontWeight: 900, textTransform: 'uppercase', fontStyle: 'italic', marginTop: '80px' }}>"naturellement parapente"</p>
           
