@@ -12,21 +12,18 @@ const getDayName = (dateStr: string) => {
 };
 
 // 🧠 MOTEUR INTELLIGENT DE DATES
+// 🧠 MOTEUR INTELLIGENT DE DATES
 const calculateGridStart = (dateStr: string, count: number) => {
   const start = new Date(dateStr);
   start.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   if (count === 7) {
     const day = start.getDay(); 
     const diff = day === 6 ? 0 : day + 1; 
     start.setDate(start.getDate() - diff);
-  } else {
-    if (start > today) {
-      start.setDate(start.getDate() - 1);
-    }
   }
+  // 🎯 CORRECTION : On a supprimé la règle qui forçait un recul de "-1 jour" !
+  
   return getLocalYYYYMMDD(start);
 };
 
@@ -198,20 +195,20 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Auto-centrage sur mobile au chargement
+  // 🎯 CORRECTION : Auto-centrage sur mobile au chargement
   useEffect(() => {
     if (!isSearchingTimes && window.innerWidth < 768 && bodyScrollRef.current) {
       setTimeout(() => {
-        const centerEl = document.getElementById(`mobile-col-${gridStartDate}`);
+        // 🎯 C'est "pickedDate" qu'on doit chercher, pas "gridStartDate" !
+        const centerEl = document.getElementById(`mobile-col-${pickedDate}`);
         const container = bodyScrollRef.current;
         if (centerEl && container) {
-          // Calcul mathématique pour centrer la colonne active
           const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
           container.scrollLeft = scrollPos;
         }
       }, 50);
     }
-  }, [gridStartDate, isSearchingTimes]);
+  }, [pickedDate, isSearchingTimes]); // 🎯 On écoute pickedDate ici aussi
 
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
@@ -667,16 +664,14 @@ export default function ReserverPage() {
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-sky-500"></div></div>
               ) : (
                 <div className="relative">
-                  
-                  {/* 🎯 NOUVEAU : ASTUCE VISUELLE POUR LE MOBILE */}
-                  <div className="md:hidden flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-transparent via-sky-50 to-transparent border-b border-sky-100/50">
-                    <span className="text-sky-500 animate-pulse text-lg">👈</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-sky-700 opacity-80">Faites glisser pour changer de jour</span>
-                    <span className="text-sky-500 animate-pulse text-lg">👉</span>
-                  </div>
 
                   {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                  <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
+                  <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200 relative">
+                    
+                    {/* 🎯 NOUVELLE ASTUCE VISUELLE : Dégradés d'estompement sur les bords (Mobile uniquement) */}
+                    <div className="md:hidden pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-50"></div>
+                    <div className="md:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-50"></div>
+
                     <div 
                       ref={headerScrollRef}
                       className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
