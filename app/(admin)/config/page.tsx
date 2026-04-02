@@ -328,10 +328,19 @@ export default function ConfigPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* COLONNE EMAIL */}
                     <div>
-                      <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-2 block">📧 Contenu du bloc "Conseils" (Email)</label>
+                      <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-1 block">📧 Contenu du bloc "Conseils" (Email)</label>
+                      
+                      {/* 🎯 NOUVEAU : Explication des variables pour l'email */}
+                      <p className="text-[10px] text-slate-500 font-bold ml-4 mb-3 leading-tight">
+                        Mots magiques (remplacés auto) : <br/>
+                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100">[PRENOM]</code> 
+                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 ml-1">[DATE]</code> 
+                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 ml-1">[HEURE]</code>
+                      </p>
+
                       <textarea
                         className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 text-sm min-h-[120px] text-slate-600"
-                        placeholder="Ex: Prévoyez des chaussures fermées, des lunettes de soleil..."
+                        placeholder="Ex: Bonjour [PRENOM], pour votre vol du [DATE] à [HEURE], prévoyez des chaussures fermées..."
                         value={settings[`email_flight_${flight.id}`] || ''}
                         onChange={(e) => setSettings({...settings, [`email_flight_${flight.id}`]: e.target.value})}
                       />
