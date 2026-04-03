@@ -200,7 +200,7 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro (Aujourd'hui -> Demain) + Auto-centrage
+  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent
   useEffect(() => {
     if (!isSearchingTimes && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
@@ -210,19 +210,23 @@ export default function ReserverPage() {
         hasAnimatedIntro.current = true; 
 
         setTimeout(() => {
-          const todayStr = getLocalYYYYMMDD(new Date());
-          const todayEl = document.getElementById(`mobile-col-${todayStr}`);
-          const tomorrowEl = document.getElementById(`mobile-col-${pickedDate}`);
+          // 🎯 NOUVEAU : On calcule la "veille" de la date ciblée pour forcer un mouvement
+          const startAnimDate = new Date(pickedDate);
+          startAnimDate.setDate(startAnimDate.getDate() - 1);
+          const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
-          if (todayEl && tomorrowEl && container) {
-            // 1. On fige la vue sur "Aujourd'hui" de manière invisible
-            const todayPos = todayEl.offsetLeft - (container.clientWidth / 2) + (todayEl.clientWidth / 2);
-            container.scrollLeft = todayPos;
+          const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
+          const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
-            // 2. On attend 800ms, puis on glisse tout en douceur vers "Demain"
+          if (startEl && targetEl && container) {
+            // 1. On fige la vue sur la colonne précédente de manière invisible
+            const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
+            container.scrollLeft = startPos;
+
+            // 2. On attend 800ms, puis on glisse tout en douceur vers la vraie date choisie
             setTimeout(() => {
-              const tomorrowPos = tomorrowEl.offsetLeft - (container.clientWidth / 2) + (tomorrowEl.clientWidth / 2);
-              container.scrollTo({ left: tomorrowPos, behavior: 'smooth' });
+              const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+              container.scrollTo({ left: targetPos, behavior: 'smooth' });
             }, 800);
           }
         }, 100);
@@ -233,7 +237,6 @@ export default function ReserverPage() {
           const centerEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (centerEl && container) {
             const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
-            // On utilise aussi le glissement doux ("smooth") ici pour que ça reste premium !
             container.scrollTo({ left: scrollPos, behavior: 'smooth' });
           }
         }, 50);
