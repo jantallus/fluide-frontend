@@ -56,12 +56,14 @@ export default function ReserverPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
-
   const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
   const [pickedDate, setPickedDate] = useState<string>(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return getLocalYYYYMMDD(tomorrow);
+    const defaultDate = new Date();
+    // 🎯 Si on est à midi (12h) ou plus tard, on passe à demain
+    if (defaultDate.getHours() >= 12) {
+      defaultDate.setDate(defaultDate.getDate() + 1);
+    }
+    return getLocalYYYYMMDD(defaultDate);
   });
   const [gridStartDate, setGridStartDate] = useState<string>(''); 
 
@@ -108,13 +110,15 @@ export default function ReserverPage() {
         }
         setDisplayDaysCount(count);
         
-        // 🎯 NOUVEAU : On affiche le lendemain par défaut pour éviter l'effet "Complet" de fin de journée
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = getLocalYYYYMMDD(tomorrow);
+        // 🎯 NOUVEAU : On affiche "Aujourd'hui" le matin, et "Demain" l'après-midi (dès 12h)
+        const defaultDate = new Date();
+        if (defaultDate.getHours() >= 12) {
+          defaultDate.setDate(defaultDate.getDate() + 1);
+        }
+        const defaultDateStr = getLocalYYYYMMDD(defaultDate);
         
-        setPickedDate(tomorrowStr);
-        setGridStartDate(calculateGridStart(tomorrowStr, count));
+        setPickedDate(defaultDateStr);
+        setGridStartDate(calculateGridStart(defaultDateStr, count));
 
       } catch (err) { 
         console.error("Erreur chargement données", err); 
