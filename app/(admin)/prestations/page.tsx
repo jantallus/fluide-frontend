@@ -25,7 +25,8 @@ export default function PrestationsPage() {
     weight_min: 20,
     weight_max: 110,
     allow_multi_slots: false,
-    booking_delay_hours: 1 // NOUVEAU : Valeur par défaut
+    booking_delay_hours: 1,
+    image_url: ''
   });
 
   const loadData = async () => {
@@ -56,7 +57,8 @@ export default function PrestationsPage() {
       price_cents: Number(formData.price_cents),
       weight_min: Number(formData.weight_min),
       weight_max: Number(formData.weight_max),
-      booking_delay_hours: Number(formData.booking_delay_hours) // NOUVEAU : On l'envoie au serveur
+      booking_delay_hours: Number(formData.booking_delay_hours),
+      image_url: formData.image_url // 🎯 NOUVEAU
     };
 
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
@@ -96,7 +98,8 @@ export default function PrestationsPage() {
       weight_min: f.weight_min !== undefined && f.weight_min !== null ? f.weight_min : 20,
       weight_max: f.weight_max !== undefined && f.weight_max !== null ? f.weight_max : 110,
       allow_multi_slots: f.allow_multi_slots || false,
-      booking_delay_hours: f.booking_delay_hours !== undefined && f.booking_delay_hours !== null ? f.booking_delay_hours : 1, // NOUVEAU
+      booking_delay_hours: f.booking_delay_hours !== undefined && f.booking_delay_hours !== null ? f.booking_delay_hours : 1,
+      image_url: f.image_url || '',
     });
     setShowModal(true);
   };
@@ -115,7 +118,8 @@ export default function PrestationsPage() {
       weight_min: 20,
       weight_max: 110,
       allow_multi_slots: false,
-      booking_delay_hours: 1 // NOUVEAU
+      booking_delay_hours: 1, 
+      image_url: '' 
     });
     setShowModal(true);
   };
@@ -191,7 +195,7 @@ export default function PrestationsPage() {
                     <div className="flex items-center gap-2 font-bold text-[10px] uppercase flex-wrap">
                       {f.season === 'SUMMER' && <span className="text-amber-500 bg-amber-50 px-2 py-1 rounded-md">☀️ Exclusif Été</span>}
                       {f.season === 'WINTER' && <span className="text-sky-500 bg-sky-50 px-2 py-1 rounded-md">❄️ Exclusif Hiver</span>}
-                      {(!f.season || f.season === 'ALL') && <span className="text-slate-400 bg-slate-100 px-2 py-1 rounded-md">🌍 Toute l'année</span>}
+                      {(!f.season || f.season === 'ALL') && <span className="text-slate-400 bg-slate-100 px-2 py-1 rounded-md">🌍 Toute l&apos;année</span>}
                       {f.allow_multi_slots && <span className="text-violet-500 bg-violet-50 px-2 py-1 rounded-md">🧩 Multi-créneaux</span>}
                     </div>
                   </div>
@@ -213,7 +217,19 @@ export default function PrestationsPage() {
               
               <div className="space-y-4">
                 <input type="text" placeholder="Nom du vol (ex: Grand Vol)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Image du vol (Dossier public)</label>
+                  <input 
+                    type="text" 
+                    placeholder="ex: /vol-prestige.jpg" 
+                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold mt-1" 
+                    value={formData.image_url} 
+                    onChange={e => setFormData({...formData, image_url: e.target.value})} 
+                  />
+                  {formData.image_url && (
+                    <div className="mt-2 h-24 rounded-xl bg-cover bg-center border-2 border-slate-200" style={{ backgroundImage: `url(${formData.image_url})` }}></div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Prix (€)</label>
@@ -248,7 +264,7 @@ export default function PrestationsPage() {
                       value={formData.season}
                       onChange={e => setFormData({...formData, season: e.target.value, allowed_time_slots: []})}
                     >
-                      <option value="ALL">🌍 Toute l'année</option>
+                      <option value="ALL">🌍 Toute l&apos;année</option>
                       <option value="SUMMER">☀️ Seulement l'Été</option>
                       <option value="WINTER">❄️ Seulement l'Hiver</option>
                     </select>
@@ -269,7 +285,7 @@ export default function PrestationsPage() {
 
                 <label className="flex items-center gap-3 cursor-pointer bg-violet-50 p-4 rounded-2xl border border-violet-100 hover:border-violet-300 transition-colors mt-2">
                   <input type="checkbox" className="w-5 h-5 accent-violet-500" checked={formData.allow_multi_slots} onChange={e => setFormData({...formData, allow_multi_slots: e.target.checked})} />
-                  <span className="font-bold text-violet-900 text-xs">Autoriser l'étalement sur plusieurs créneaux</span>
+                  <span className="font-bold text-violet-900 text-xs">Autoriser l&apos;étalement sur plusieurs créneaux</span>
                 </label>
 
                 <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl mt-4">

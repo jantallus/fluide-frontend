@@ -225,6 +225,15 @@ export default function CadeauPage() {
                   flexDirection: 'column',
                   justifyContent: 'space-between'
                 }}>
+                  
+                  {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU BON CADEAU */}
+                  {tpl.image_url && (
+                    <div 
+                      className="w-full h-40 md:h-52 bg-cover bg-center rounded-[12px] mb-6 shadow-sm border border-slate-100"
+                      style={{ backgroundImage: `url(${tpl.image_url})` }}
+                    />
+                  )}
+
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                       <span style={{ backgroundColor: '#eff6ff', color: '#1e40af', padding: '5px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>

@@ -622,6 +622,15 @@ export default function ReserverPage() {
 
                   return (
                   <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:border-sky-400 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                    
+                    {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
+                    {flight.image_url && (
+                      <div 
+                        className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100"
+                        style={{ backgroundImage: `url(${flight.image_url})` }}
+                      />
+                    )}
+
                     <div>
                       <h3 className="text-2xl font-black uppercase italic text-slate-900 mb-3">{flight.name}</h3>
                       <div className="flex gap-3 text-sm font-bold text-slate-500 mb-6">

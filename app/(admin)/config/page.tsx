@@ -418,7 +418,7 @@ export default function ConfigPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Image de fond du PDF</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Image d'illustration (Boutique & PDF)</label>
                   <input 
                     type="text" 
                     placeholder="Ex: /fond-bleu.jpg" 
@@ -427,6 +427,11 @@ export default function ConfigPage() {
                     onChange={e => setNewTemplate({...newTemplate, image_url: e.target.value})} 
                   />
                   <p className="text-xs text-slate-400 ml-4 mt-1">Placez l'image dans le dossier 'public' (ex: /fond-rose.jpg)</p>
+                  
+                  {/* 🎯 NOUVEAU : Aperçu de l'image en direct ! */}
+                  {newTemplate.image_url && (
+                    <div className="mt-3 h-32 rounded-2xl bg-cover bg-center border-2 border-slate-200 shadow-inner" style={{ backgroundImage: `url(${newTemplate.image_url})` }}></div>
+                  )}
                 </div>
                 
                 <label className="flex items-center gap-3 cursor-pointer bg-slate-50 p-4 rounded-2xl border border-slate-100">
