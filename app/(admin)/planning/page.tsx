@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -18,6 +18,8 @@ export default function PlanningAdmin() {
   const [slotDuration, setSlotDuration] = useState<number>(0); 
   const [availablePlans, setAvailablePlans] = useState<string[]>(['Standard']);
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
+  // 🎯 NOUVEAU : On mémorise l'heure de fin exacte du blocage (en ms)
+  const [blockUntilMs, setBlockUntilMs] = useState<number>(0);
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
   const [activeTab, setActiveTab] = useState<'client' | 'note' | 'move'>('client');
@@ -100,7 +102,8 @@ export default function PlanningAdmin() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleEventClick = (info: any) => {
+  // 🎯 NOUVEAU : On fige la fonction pour le calendrier
+  const handleEventClick = useCallback((info: any) => {
     const event = info.event;
     if (event.extendedProps.title?.startsWith('↪️ Suite')) {
       alert("⚠️ Pour modifier, déplacer ou supprimer ce vol, veuillez cliquer sur son premier créneau (celui contenant le nom du client).");
@@ -133,39 +136,132 @@ export default function PlanningAdmin() {
     setActiveTab('client');
     setBlockType('none');
     setSelectedMonitors([]);
+    setBlockUntilMs(end.getTime());
     setShowEditModal(true);
-  };
+  }, []); // <-- 🎯 LE SECRET EST CE PETIT TABLEAU VIDE À LA FIN !
 
   const handleSaveNote = async () => {
     if (!selectedEvent) return;
     try {
-      let finalTitle = formData.title;
-      if (activeTab === 'note' && !formData.title.trim()) {
-        if (blockType === 'all' || blockType === 'specific') finalTitle = 'NON DISPO';
-        else if (formData.notes.trim()) finalTitle = 'NOTE';
-      }
+      if (activeTab === 'note') {
+        // --- 📝 LOGIQUE ONGLET NOTE ET BLOCAGE MULTIPLE ---
 
-      if (blockType === 'all') {
-        const allSlots = appointments.filter(a => a.start_time === selectedEvent.start_time);
-        await Promise.all(allSlots.map(slot => 
-          apiFetch(`/api/slots/${slot.id}`, {
+        // 🎯 FIX 3 : On définit qu'une action est une simple note si on n'a pas explicitement cliqué sur "NON DISPO"
+        const isNonBlockingNote = (formData.title !== 'NON DISPO');
+
+        // 1. Qui cible-t-on ?
+        const targetMonitors = blockType === 'all'
+          ? monitors.map(m => m.id.toString())
+          : blockType === 'specific'
+            ? selectedMonitors
+            : [selectedEvent.monitor_id?.toString()];
+
+        const startMs = new Date(selectedEvent.start).getTime();
+
+        // 2. Quels créneaux cible-t-on ?
+        const slotsToUpdate = appointments.filter(a => {
+          if (!targetMonitors.includes(a.monitor_id?.toString())) return false; 
+          const aTime = new Date(a.start_time).getTime();
+          if (aTime < startMs) return false; 
+          return aTime < blockUntilMs;
+        });
+
+        // 3. VÉRIFICATION : Y a-t-il des clients sur le chemin ?
+        if (!isNonBlockingNote) {
+          const hasClientBooking = slotsToUpdate.some(slot =>
+            slot.status === 'booked' &&
+            slot.title &&
+            !slot.title.includes('☕') &&
+            !slot.title.toUpperCase().includes('PAUSE') &&
+            !slot.title.includes('❌') &&
+            !slot.title.toUpperCase().includes('NON DISPO') &&
+            slot.title !== 'NOTE'
+          );
+
+          if (hasClientBooking) {
+            alert("❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés sur cette sélection.");
+            return; 
+          }
+        }
+
+        // 4. On applique la modification intelligemment
+        await Promise.all(slotsToUpdate.map(slot => {
+          let payload: any = { 
+            title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', 
+            notes: formData.notes, 
+            status: isNonBlockingNote ? 'available' : 'booked' 
+          };
+
+          // 🎯 FIX 2 : Si c'est une simple note, on protège TOUTES les données des réservations existantes !
+          if (isNonBlockingNote) {
+            const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+
+            if (isClientSlot) {
+              payload.title = slot.title; // On ne touche pas au nom
+              payload.status = slot.status; // On garde le statut "booked"
+              
+              if (slot.notes && slot.notes.trim() !== '' && slot.notes !== formData.notes && !formData.notes.includes(slot.notes)) {
+                 payload.notes = slot.notes + " | " + formData.notes;
+              }
+
+              // On réinjecte précieusement toutes les données du client pour ne pas les effacer !
+              payload.flight_type_id = slot.flight_type_id;
+              payload.phone = slot.phone;
+              payload.email = slot.email;
+              payload.weightChecked = slot.weight_checked || slot.weightChecked;
+              payload.booking_options = slot.booking_options;
+              payload.client_message = slot.client_message;
+              payload.weight = slot.weight;
+            } else {
+              // Créneau vide : on nettoie les champs
+              payload.flight_type_id = null;
+              payload.phone = '';
+              payload.email = '';
+              payload.weightChecked = false;
+              payload.booking_options = '';
+              payload.client_message = '';
+            }
+          } else {
+             // Blocage (NON DISPO) : on nettoie les champs pour être sûr qu'il n'y a plus rien
+             payload.flight_type_id = null;
+             payload.phone = '';
+             payload.email = '';
+             payload.weightChecked = false;
+             payload.booking_options = '';
+             payload.client_message = '';
+          }
+
+          return apiFetch(`/api/slots/${slot.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ title: finalTitle || 'NON DISPO', notes: formData.notes, status: 'booked' })
-          })
-        ));
+            body: JSON.stringify(payload)
+          });
+        }));
+
       } else {
-        const isNonBlockingNote = (finalTitle === 'NOTE' && activeTab === 'note');
+        // --- 👤 LOGIQUE ONGLET CLIENT (On ne touche à rien !) ---
+        
+        // 🎯 FIX 1 : On empêche l'enregistrement si aucun vol n'est choisi
+        if (!formData.flight_type_id) {
+          alert("❌ Veuillez choisir un type de vol avant d'enregistrer.");
+          return;
+        }
+
+        // 🎯 NOUVEAU : On rend le téléphone strictement obligatoire !
+        if (!formData.phone || formData.phone.trim() === '') {
+          alert("❌ Le numéro de téléphone est obligatoire pour pouvoir joindre le client (météo, retard...).");
+          return;
+        }
+
         const selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
         const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
         
-        const slotsNeeded = (activeTab === 'client' && selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) 
-          ? Math.ceil(flightDuration / slotDuration) 
-          : 1;
+        const slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) 
+          ? Math.ceil(flightDuration / slotDuration) : 1;
 
         if (slotsNeeded > 1) {
           await apiFetch(`/api/slots/${selectedEvent.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ ...formData, title: finalTitle, status: 'booked' })
+            body: JSON.stringify({ ...formData, title: formData.title, status: 'booked' })
           });
 
           const startMs = new Date(selectedEvent.start).getTime();
@@ -176,25 +272,21 @@ export default function PlanningAdmin() {
               new Date(a.start_time).getTime() === nextMs &&
               a.status === 'available'
             );
-            
             if (nextSlot) {
               await apiFetch(`/api/slots/${nextSlot.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify({
-                  title: `↪️ Suite ${finalTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto'
-                })
+                body: JSON.stringify({ title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' })
               });
             }
           }
         } else {
           await apiFetch(`/api/slots/${selectedEvent.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({
-              ...formData, title: finalTitle, status: isNonBlockingNote ? 'available' : (finalTitle.trim() ? 'booked' : 'available')
-            })
+            body: JSON.stringify({ ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' })
           });
         }
       }
+      
       setShowEditModal(false);
       await loadData(); 
     } catch (err) { alert("Erreur lors de la sauvegarde"); }
@@ -233,15 +325,14 @@ export default function PlanningAdmin() {
     } catch (err) { console.error(err); }
   };
 
-  const currentBookingSlotIds = (() => {
+  // 🎯 1. Mémoire : Créneaux liés à la réservation
+  const currentBookingSlotIds = useMemo(() => {
     if (!selectedEvent) return [];
     const flight = flightTypes.find(f => f.id?.toString() === selectedEvent.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-
     const startMs = new Date(selectedEvent.start).getTime();
     const ids = [selectedEvent.id];
-
     for (let i = 1; i < slotsNeeded; i++) {
       const ms = startMs + (i * slotDuration * 60000);
       const slot = appointments.find(a =>
@@ -252,64 +343,109 @@ export default function PlanningAdmin() {
       if (slot) ids.push(slot.id);
     }
     return ids;
-  })();
+  }, [selectedEvent, flightTypes, slotDuration, appointments]);
 
-  const availableTargetSlots = appointments.filter(a => {
-    if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false; 
-
-    if (openingPeriods.length > 0) {
-      const slotDate = new Date(a.start_time);
-      const inSeason = openingPeriods.some((p: any) => {
-        if (!p.start || !p.end) return false;
-        const start = new Date(p.start); start.setHours(0, 0, 0, 0);
-        const end = new Date(p.end); end.setHours(23, 59, 59, 999);
-        return slotDate >= start && slotDate <= end;
-      });
-      if (!inSeason) return false;
-    }
-
-    const d = new Date(a.start_time);
-    const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-    if (dateStr !== moveConfig.date) return false;
-
-    if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
-
-    if (formData.flight_type_id) {
-      const flight = flightTypes?.find(f => f.id?.toString() === formData.flight_type_id?.toString());
-      if (flight) {
-        const flightDur = flight.duration_minutes || flight.duration || 0;
-        const isMultiSlotAllowed = flight.allow_multi_slots === true;
-        const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-
-        if (slotsNeeded > 1) {
-          const startMs = new Date(a.start_time).getTime();
-          for (let i = 1; i < slotsNeeded; i++) {
-            const nextMs = startMs + (i * slotDuration * 60000);
-            const nextSlot = appointments.find(appt =>
-              appt.monitor_id?.toString() === a.monitor_id?.toString() &&
-              new Date(appt.start_time).getTime() === nextMs &&
-              (appt.status === 'available' || currentBookingSlotIds.includes(appt.id))
-            );
-            if (!nextSlot) return false;
-          }
-        } else {
-          const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
-          if (flightDur > dur) return false;
-        }
-
-        const slotTimeStr = d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-        
-        const allowedSlots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
-        if (allowedSlots.length > 0 && !allowedSlots.includes(slotTimeStr)) return false; 
+  // 🎯 2. Mémoire : Créneaux de destination (Déplacement)
+  const availableTargetSlots = useMemo(() => {
+    return appointments.filter(a => {
+      if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false; 
+      if (openingPeriods.length > 0) {
+        const slotDate = new Date(a.start_time);
+        const inSeason = openingPeriods.some((p: any) => {
+          if (!p.start || !p.end) return false;
+          const start = new Date(p.start); start.setHours(0, 0, 0, 0);
+          const end = new Date(p.end); end.setHours(23, 59, 59, 999);
+          return slotDate >= start && slotDate <= end;
+        });
+        if (!inSeason) return false;
       }
-    }
-    return true;
-  });
+      const d = new Date(a.start_time);
+      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      if (dateStr !== moveConfig.date) return false;
+      if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
+      if (formData.flight_type_id) {
+        const flight = flightTypes?.find(f => f.id?.toString() === formData.flight_type_id?.toString());
+        if (flight) {
+          const flightDur = flight.duration_minutes || flight.duration || 0;
+          const isMultiSlotAllowed = flight.allow_multi_slots === true;
+          const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+          if (slotsNeeded > 1) {
+            const startMs = new Date(a.start_time).getTime();
+            for (let i = 1; i < slotsNeeded; i++) {
+              const nextMs = startMs + (i * slotDuration * 60000);
+              const nextSlot = appointments.find(appt =>
+                appt.monitor_id?.toString() === a.monitor_id?.toString() &&
+                new Date(appt.start_time).getTime() === nextMs &&
+                (appt.status === 'available' || currentBookingSlotIds.includes(appt.id))
+              );
+              if (!nextSlot) return false;
+            }
+          } else {
+            const dur = Math.round((new Date(a.end_time).getTime() - d.getTime()) / 60000);
+            if (flightDur > dur) return false;
+          }
+          const slotTimeStr = d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+          const allowedSlots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
+          if (allowedSlots.length > 0 && !allowedSlots.includes(slotTimeStr)) return false; 
+        }
+      }
+      return true;
+    });
+  }, [appointments, currentBookingSlotIds, openingPeriods, moveConfig, formData.flight_type_id, flightTypes, slotDuration]);
 
-  const availableTimes = Array.from(new Set(availableTargetSlots.map(a => {
-    const d = new Date(a.start_time);
-    return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-  }))).sort();
+  // 🎯 3. Mémoire : Heures disponibles
+  const availableTimes = useMemo(() => {
+    return Array.from(new Set(availableTargetSlots.map(a => {
+      const d = new Date(a.start_time);
+      return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+    }))).sort();
+  }, [availableTargetSlots]);
+
+  // 🎯 4. Mémoire : Liste intelligente des vols
+  const smartFlightOptions = useMemo(() => {
+    const dateStr = selectedEvent?.start ? selectedEvent.start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
+    const planSchedules: Record<string, Set<string>> = {};
+    slotDefs.forEach(d => {
+      const pName = d.plan_name || 'Standard';
+      if (!planSchedules[pName]) planSchedules[pName] = new Set();
+      const t = typeof d.start_time === 'string' ? d.start_time.substring(0, 5) : '';
+      if (t) planSchedules[pName].add(t);
+    });
+    const dayTimesArray = appointments.filter(a => {
+      const d = new Date(a.start_time);
+      return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dateStr;
+    }).map(a => {
+      const d = new Date(a.start_time);
+      return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+    });
+    let inferredPlan = 'Standard';
+    let maxMatches = -1;
+    for (const [pName, pSet] of Object.entries(planSchedules)) {
+      let matches = 0;
+      dayTimesArray.forEach(t => { if (pSet.has(t)) matches++; });
+      if (matches > maxMatches) { maxMatches = matches; inferredPlan = pName; }
+    }
+    const activePlanTimes = planSchedules[inferredPlan] || new Set();
+    return flightTypes?.filter(f => {
+      const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
+      if (allowed.length === 0) return true;
+      return allowed.some((t: string) => activePlanTimes.has(t));
+    }) || [];
+  }, [selectedEvent, slotDefs, appointments, flightTypes]);
+
+  // 🎯 5. Mémoire : Créneaux de la journée pour l'onglet Note
+  const upcomingBlockingSlots = useMemo(() => {
+    if (!selectedEvent) return [];
+    const startMs = new Date(selectedEvent.start).getTime();
+    const sDate = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    return appointments
+      .filter(a =>
+        a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+        new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === sDate &&
+        new Date(a.start_time).getTime() >= startMs
+      )
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  }, [appointments, selectedEvent]);
 
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
@@ -379,6 +515,91 @@ export default function PlanningAdmin() {
   const isOutOfSeason = selectedEvent?.isOutOfSeason === true;
   const isClientLocked = isEventBlocked || isOutOfSeason;
 
+  // 🎯 1. On "mémorise" les événements du calendrier
+  const calendarEvents = useMemo(() => {
+    return appointments.map(a => {
+      const flight = flightTypes?.find(f => f.id === a.flight_type_id);
+      const flightColor = flight?.color_code || '#0ea5e9'; 
+
+      let isSlotOutOfSeason = false;
+      if (openingPeriods.length > 0) {
+        const slotDate = new Date(a.start_time);
+        isSlotOutOfSeason = !openingPeriods.some((p: any) => {
+          if (!p.start || !p.end) return false;
+          const start = new Date(p.start); start.setHours(0, 0, 0, 0);
+          const end = new Date(p.end); end.setHours(23, 59, 59, 999);
+          return slotDate >= start && slotDate <= end;
+        });
+      }
+
+      const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
+      const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
+      
+      const isEmptyAndOOS = isSlotOutOfSeason && !a.title && !a.notes && a.status === 'available';
+
+      let displayTitle = a.title || (isEmptyAndOOS ? 'HORS SAISON' : (a.status === 'available' ? 'LIBRE' : ''));
+      
+      if (a.phone) displayTitle += ' 📞';
+      if (a.booking_options) displayTitle += ' 📸'; 
+      if (a.client_message) displayTitle += ' 💬';
+      if (a.notes && a.notes.trim() !== '') displayTitle += ' 📝'; 
+
+      return {
+        id: a.id?.toString() || Math.random().toString(),
+        resourceId: a.monitor_id?.toString() || "",
+        start: a.start_time,
+        end: a.end_time,
+        title: displayTitle,
+        backgroundColor: isPause ? '#f1f5f9'
+                       : isAlert ? '#fee2e2'
+                       : isEmptyAndOOS ? '#f8fafc' 
+                       : (a.status === 'available' ? '#ffffff' : flightColor),
+        textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) 
+                 : isPause ? '#94a3b8' 
+                 : isAlert ? '#ef4444' 
+                 : '#ffffff',
+        borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') 
+                   : isAlert ? '#fca5a5' 
+                   : flightColor,
+        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason }
+      };
+    });
+  }, [appointments, flightTypes, openingPeriods]);
+
+
+  // 🎯 2. LE BOUCLIER ANTI-LATENCE : On isole le calendrier en dessous !
+  const memoizedCalendar = useMemo(() => {
+    return (
+        <FullCalendar
+          ref={calendarRef}
+          schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
+          plugins={[resourceTimeGridPlugin, interactionPlugin]}
+          initialView="resourceTimeGridDay"
+          resources={monitors}
+          datesSet={(arg) => {
+            setCurrentDate(arg.startStr.split('T')[0]);
+          }}
+          events={calendarEvents}
+          locale={frLocale}
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridFourDay' }}
+          views={{ resourceTimeGridFourDay: { type: 'resourceTimeGrid', duration: { days: 4 }, buttonText: '4 jours' } }}
+          slotMinTime={timeBounds.min}
+          slotMaxTime={timeBounds.max}
+          allDaySlot={false}
+          height="auto"
+          eventClick={handleEventClick}
+          slotDuration="00:15:00" 
+          snapDuration="00:05:00"
+          eventOverlap={false}
+          slotEventOverlap={false}
+          displayEventTime={true}
+          eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
+        />
+    );
+  }, [calendarEvents, monitors, timeBounds, handleEventClick]);
+
+    
+
   return (
     <div className="p-4 bg-slate-50 min-h-screen">
       <header className="flex justify-between items-center mb-8 px-4">
@@ -415,81 +636,7 @@ export default function PlanningAdmin() {
       </header>
 
       <div className="bg-white rounded-[35px] shadow-2xl border border-slate-200 p-6 overflow-hidden">
-        <FullCalendar
-          ref={calendarRef}
-          schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
-          plugins={[resourceTimeGridPlugin, interactionPlugin]}
-          initialView="resourceTimeGridDay"
-          resources={monitors}
-          datesSet={(arg) => {
-            setCurrentDate(arg.startStr.split('T')[0]);
-          }}
-          events={appointments.map(a => {
-            const flight = flightTypes?.find(f => f.id === a.flight_type_id);
-            const flightColor = flight?.color_code || '#0ea5e9'; 
-
-            let isSlotOutOfSeason = false;
-            if (openingPeriods.length > 0) {
-              const slotDate = new Date(a.start_time);
-              isSlotOutOfSeason = !openingPeriods.some((p: any) => {
-                if (!p.start || !p.end) return false;
-                const start = new Date(p.start); start.setHours(0, 0, 0, 0);
-                const end = new Date(p.end); end.setHours(23, 59, 59, 999);
-                return slotDate >= start && slotDate <= end;
-              });
-            }
-
-            const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
-            const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
-            
-            const isEmptyAndOOS = isSlotOutOfSeason && !a.title && !a.notes && a.status === 'available';
-
-            let displayTitle = a.title || (isEmptyAndOOS ? 'HORS SAISON' : (a.status === 'available' ? 'LIBRE' : ''));
-            
-            if (a.phone) displayTitle += ' 📞';
-            if (a.booking_options) displayTitle += ' 📸'; 
-            if (a.client_message) displayTitle += ' 💬';
-            if (a.notes && a.notes.trim() !== '') displayTitle += ' 📝'; 
-
-            return {
-              id: a.id?.toString() || Math.random().toString(),
-              resourceId: a.monitor_id?.toString() || "",
-              start: a.start_time,
-              end: a.end_time,
-              title: displayTitle,
-              
-              backgroundColor: isPause ? '#f1f5f9'
-                             : isAlert ? '#fee2e2'
-                             : isEmptyAndOOS ? '#f8fafc' 
-                             : (a.status === 'available' ? '#ffffff' : flightColor),
-              
-              textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) 
-                       : isPause ? '#94a3b8' 
-                       : isAlert ? '#ef4444' 
-                       : '#ffffff',
-              
-              borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') 
-                         : isAlert ? '#fca5a5' 
-                         : flightColor,
-              
-              extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason }
-            };
-          })}
-          locale={frLocale}
-          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'resourceTimeGridDay,resourceTimeGridFourDay' }}
-          views={{ resourceTimeGridFourDay: { type: 'resourceTimeGrid', duration: { days: 4 }, buttonText: '4 jours' } }}
-          slotMinTime={timeBounds.min}
-          slotMaxTime={timeBounds.max}
-          allDaySlot={false}
-          height="auto"
-          eventClick={handleEventClick}
-          slotDuration="00:15:00" 
-          snapDuration="00:05:00"
-          eventOverlap={false}
-          slotEventOverlap={false}
-          displayEventTime={true}
-          eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
-        />
+        {memoizedCalendar}
       </div>
 
       {showEditModal && (
@@ -534,51 +681,8 @@ export default function PlanningAdmin() {
                       <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.flight_type_id} onChange={e => setFormData({...formData, flight_type_id: e.target.value})}>
                         <option value="">Choisir un vol...</option>
                         
-                        {/* 🚨 LE NOUVEAU FILTRE ULTRA-VERSATILE QUI DÉDUIT LE PLAN DU JOUR ! */}
-                        {(() => {
-                          const dateStr = selectedEvent?.start ? selectedEvent.start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
-                          
-                          // 1. Groupement des plans connus
-                          const planSchedules: Record<string, Set<string>> = {};
-                          slotDefs.forEach(d => {
-                            const pName = d.plan_name || 'Standard';
-                            if (!planSchedules[pName]) planSchedules[pName] = new Set();
-                            const t = typeof d.start_time === 'string' ? d.start_time.substring(0, 5) : '';
-                            if (t) planSchedules[pName].add(t);
-                          });
-
-                          // 2. Horaires de la journée actuelle
-                          const dayTimesArray = appointments.filter(a => {
-                            const d = new Date(a.start_time);
-                            return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dateStr;
-                          }).map(a => {
-                            const d = new Date(a.start_time);
-                            return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-                          });
-
-                          // 3. Déduction du plan (Lequel a le plus d'horaires en commun avec aujourd'hui ?)
-                          let inferredPlan = 'Standard';
-                          let maxMatches = -1;
-                          for (const [pName, pSet] of Object.entries(planSchedules)) {
-                            let matches = 0;
-                            dayTimesArray.forEach(t => { if (pSet.has(t)) matches++; });
-                            if (matches > maxMatches) {
-                              maxMatches = matches;
-                              inferredPlan = pName;
-                            }
-                          }
-
-                          const activePlanTimes = planSchedules[inferredPlan] || new Set();
-
-                          return flightTypes?.filter(f => {
-                          const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
-                          
-                          if (allowed.length === 0) return true;
-                          
-                          // CORRECTION TYPESCRIPT APPLIQUÉE :
-                          return allowed.some((t: string) => activePlanTimes.has(t));
-                        });
-                        })()?.map(f => {
+                        {/* 🎯 On utilise la liste intelligente en mémoire ! */}
+                        {smartFlightOptions.map(f => {
                           const flightDuration = f.duration_minutes || f.duration || 0; 
                           const isMultiSlotAllowed = f.allow_multi_slots === true;
                           const slotsNeeded = (isMultiSlotAllowed && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
@@ -634,12 +738,12 @@ export default function PlanningAdmin() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone</label>
-                        <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Optionnel" />
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone <span className="text-rose-500">*</span></label>
+                        <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="06 12 34 56 78" />
                       </div>
                       <div>
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
-                        <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Optionnel" />
+                        <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Optionnel" />
                       </div>
                     </div>
 
@@ -672,30 +776,64 @@ export default function PlanningAdmin() {
               {/* ONGLET 2 : NOTE ET BLOCAGE */}
               {activeTab === 'note' && (
                 <>
-                  <div className="flex gap-2">
-                    <button disabled={blockType === 'none' || isClientLocked} onClick={() => setFormData({...formData, title: '☕ PAUSE'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isClientLocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-amber-200 text-slate-700'}`}>☕ Pause</button>
-                    <button disabled={blockType === 'none' || isClientLocked} onClick={() => setFormData({...formData, title: 'NON DISPO'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${(blockType === 'none' || isClientLocked) ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-60' : 'bg-slate-50 border-slate-100 hover:border-rose-200 text-slate-700'}`}>❌ Non Dispo</button>
+                  <div className="flex gap-2 mb-4">
+                    <button 
+                      disabled={isClientLocked} 
+                      onClick={() => setFormData({...formData, title: 'NOTE'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isClientLocked ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}
+                    >
+                      📝 Note simple (Reste libre)
+                    </button>
+                    <button 
+                      disabled={isClientLocked} 
+                      onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isClientLocked ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}
+                    >
+                      ❌ Bloquer (Non dispo)
+                    </button>
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Note interne au pilote</label>
                     <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="Infos météo, retard..." />
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Action sur le planning</label>
-                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isClientLocked}>
-                      <option value="none">Simple note (pas de blocage)</option>
-                      <option value="all">🚫 Bloquer TOUS les pilotes</option>
-                      <option value="specific">👥 Bloquer certains pilotes</option>
+                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
+                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isClientLocked}>
+                      <option value="none">Ce pilote uniquement</option>
+                      <option value="all">🚫 TOUS les pilotes</option>
+                      <option value="specific">👥 Certains pilotes</option>
                     </select>
+
                     {blockType === 'specific' && !isClientLocked && (
-                      <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="mb-4 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
-                          <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer">
-                            <input type="checkbox" checked={selectedMonitors.includes(m.id.toString())} onChange={(e) => { const id = m.id.toString(); setSelectedMonitors(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id)); }}/>
+                          <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer hover:bg-slate-50">
+                            <input type="checkbox" className="accent-amber-500" checked={selectedMonitors.includes(m.id.toString())} onChange={(e) => { const id = m.id.toString(); setSelectedMonitors(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id)); }}/>
                             {m.title}
                           </label>
                         ))}
                       </div>
+                    )}
+
+                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Durée (Jusqu'à quand ?)</label>
+                    {selectedEvent && (
+                        <select 
+                          className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
+                          value={blockUntilMs} 
+                          onChange={(e: any) => setBlockUntilMs(Number(e.target.value))} 
+                          disabled={isClientLocked}
+                        >
+                          {upcomingBlockingSlots.map((slot, index) => {
+                            const end = new Date(slot.end_time);
+                            const timeStr = end.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+                            
+                            let label = `Jusqu'à ${timeStr}`;
+                            if (index === 0) label = `Ce créneau uniquement (Jusqu'à ${timeStr})`;
+                            else if (index === upcomingBlockingSlots.length - 1) label = `Toute la fin de journée (Jusqu'à ${timeStr})`;
+                            
+                            return <option key={slot.id} value={end.getTime()}>{label}</option>;
+                          })}
+                        </select>
                     )}
                   </div>
                 </>
@@ -707,7 +845,7 @@ export default function PlanningAdmin() {
                   {!(activeTab === 'client' && isClientLocked) && (
                     <>
                       <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">
-                        Enregistrer {blockType !== 'none' && !isClientLocked ? 'et bloquer' : ''}
+                        Enregistrer la modification
                       </button>
                       
                       {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
