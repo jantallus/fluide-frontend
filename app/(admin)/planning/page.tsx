@@ -142,186 +142,166 @@ export default function PlanningAdmin() {
 
   const handleSaveNote = async () => {
     if (!selectedEvent) return;
-    try {
-      if (activeTab === 'note') {
-        // --- 📝 LOGIQUE ONGLET NOTE ET BLOCAGE MULTIPLE ---
 
-        // 🎯 FIX 3 : On définit qu'une action est une simple note si on n'a pas explicitement cliqué sur "NON DISPO"
-        const isNonBlockingNote = (formData.title !== 'NON DISPO');
+    let targetMonitors: string[] = [];
+    let slotsToUpdate: any[] = [];
+    let isNonBlockingNote = false;
+    let selectedFlight: any = null;
+    let slotsNeeded = 1;
 
-        // 1. Qui cible-t-on ?
-        const targetMonitors = blockType === 'all'
-          ? monitors.map(m => m.id.toString())
-          : blockType === 'specific'
-            ? selectedMonitors
-            : [selectedEvent.monitor_id?.toString()];
+    if (activeTab === 'note') {
+      isNonBlockingNote = (formData.title !== 'NON DISPO');
+      targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
+      const startMs = new Date(selectedEvent.start).getTime();
+      slotsToUpdate = appointments.filter(a => {
+        if (!targetMonitors.includes(a.monitor_id?.toString())) return false; 
+        const aTime = new Date(a.start_time).getTime();
+        return aTime >= startMs && aTime < blockUntilMs;
+      });
 
-        const startMs = new Date(selectedEvent.start).getTime();
+      if (!isNonBlockingNote) {
+        const hasClientBooking = slotsToUpdate.some(slot => slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌'));
+        if (hasClientBooking) return alert("❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.");
+      }
+    } else {
+      if (!formData.flight_type_id) return alert("❌ Veuillez choisir un type de vol.");
+      if (!formData.phone || formData.phone.trim() === '') return alert("❌ Le numéro de téléphone est obligatoire.");
 
-        // 2. Quels créneaux cible-t-on ?
-        const slotsToUpdate = appointments.filter(a => {
-          if (!targetMonitors.includes(a.monitor_id?.toString())) return false; 
-          const aTime = new Date(a.start_time).getTime();
-          if (aTime < startMs) return false; 
-          return aTime < blockUntilMs;
-        });
+      selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
+      const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
+      slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
+    }
 
-        // 3. VÉRIFICATION : Y a-t-il des clients sur le chemin ?
-        if (!isNonBlockingNote) {
-          const hasClientBooking = slotsToUpdate.some(slot =>
-            slot.status === 'booked' &&
-            slot.title &&
-            !slot.title.includes('☕') &&
-            !slot.title.toUpperCase().includes('PAUSE') &&
-            !slot.title.includes('❌') &&
-            !slot.title.toUpperCase().includes('NON DISPO') &&
-            slot.title !== 'NOTE'
-          );
+    // 🎯 1. ON PRÉPARE LES DONNÉES LOCALEMENT
+    const updatesToApply: any[] = [];
 
-          if (hasClientBooking) {
-            alert("❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés sur cette sélection.");
-            return; 
-          }
-        }
-
-        // 4. On applique la modification intelligemment
-        await Promise.all(slotsToUpdate.map(slot => {
-          let payload: any = { 
-            title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', 
-            notes: formData.notes, 
-            status: isNonBlockingNote ? 'available' : 'booked' 
-          };
-
-          // 🎯 FIX 2 : Si c'est une simple note, on protège TOUTES les données des réservations existantes !
-          if (isNonBlockingNote) {
-            const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
-
-            if (isClientSlot) {
-              payload.title = slot.title; // On ne touche pas au nom
-              payload.status = slot.status; // On garde le statut "booked"
-              
-              if (slot.notes && slot.notes.trim() !== '' && slot.notes !== formData.notes && !formData.notes.includes(slot.notes)) {
-                 payload.notes = slot.notes + " | " + formData.notes;
-              }
-
-              // On réinjecte précieusement toutes les données du client pour ne pas les effacer !
-              payload.flight_type_id = slot.flight_type_id;
-              payload.phone = slot.phone;
-              payload.email = slot.email;
-              payload.weightChecked = slot.weight_checked || slot.weightChecked;
-              payload.booking_options = slot.booking_options;
-              payload.client_message = slot.client_message;
-              payload.weight = slot.weight;
-            } else {
-              // Créneau vide : on nettoie les champs
-              payload.flight_type_id = null;
-              payload.phone = '';
-              payload.email = '';
-              payload.weightChecked = false;
-              payload.booking_options = '';
-              payload.client_message = '';
+    if (activeTab === 'note') {
+      slotsToUpdate.forEach(slot => {
+        let payload: any = { title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
+        if (isNonBlockingNote) {
+          const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+          if (isClientSlot) {
+            payload.title = slot.title;
+            payload.status = slot.status;
+            if (slot.notes && slot.notes.trim() !== '' && slot.notes !== formData.notes && !formData.notes.includes(slot.notes)) {
+               payload.notes = slot.notes + " | " + formData.notes;
             }
+            payload.flight_type_id = slot.flight_type_id; payload.phone = slot.phone; payload.email = slot.email; payload.weightChecked = slot.weight_checked || slot.weightChecked; payload.booking_options = slot.booking_options; payload.client_message = slot.client_message; payload.weight = slot.weight;
           } else {
-             // Blocage (NON DISPO) : on nettoie les champs pour être sûr qu'il n'y a plus rien
-             payload.flight_type_id = null;
-             payload.phone = '';
-             payload.email = '';
-             payload.weightChecked = false;
-             payload.booking_options = '';
-             payload.client_message = '';
-          }
-
-          return apiFetch(`/api/slots/${slot.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload)
-          });
-        }));
-
-      } else {
-        // --- 👤 LOGIQUE ONGLET CLIENT (On ne touche à rien !) ---
-        
-        // 🎯 FIX 1 : On empêche l'enregistrement si aucun vol n'est choisi
-        if (!formData.flight_type_id) {
-          alert("❌ Veuillez choisir un type de vol avant d'enregistrer.");
-          return;
-        }
-
-        // 🎯 NOUVEAU : On rend le téléphone strictement obligatoire !
-        if (!formData.phone || formData.phone.trim() === '') {
-          alert("❌ Le numéro de téléphone est obligatoire pour pouvoir joindre le client (météo, retard...).");
-          return;
-        }
-
-        const selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
-        const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
-        
-        const slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) 
-          ? Math.ceil(flightDuration / slotDuration) : 1;
-
-        if (slotsNeeded > 1) {
-          await apiFetch(`/api/slots/${selectedEvent.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ ...formData, title: formData.title, status: 'booked' })
-          });
-
-          const startMs = new Date(selectedEvent.start).getTime();
-          for (let i = 1; i < slotsNeeded; i++) {
-            const nextMs = startMs + (i * slotDuration * 60000);
-            const nextSlot = appointments.find(a =>
-              a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
-              new Date(a.start_time).getTime() === nextMs &&
-              a.status === 'available'
-            );
-            if (nextSlot) {
-              await apiFetch(`/api/slots/${nextSlot.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' })
-              });
-            }
+            payload.flight_type_id = null; payload.phone = ''; payload.email = ''; payload.weightChecked = false; payload.booking_options = ''; payload.client_message = '';
           }
         } else {
-          await apiFetch(`/api/slots/${selectedEvent.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' })
-          });
+           payload.flight_type_id = null; payload.phone = ''; payload.email = ''; payload.weightChecked = false; payload.booking_options = ''; payload.client_message = '';
         }
+        updatesToApply.push({ id: slot.id, data: payload });
+      });
+    } else {
+      if (slotsNeeded > 1) {
+        updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
+        const startMs = new Date(selectedEvent.start).getTime();
+        for (let i = 1; i < slotsNeeded; i++) {
+          const nextMs = startMs + (i * slotDuration * 60000);
+          const nextSlot = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
+          if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+        }
+      } else {
+        updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' } });
       }
-      
-      setShowEditModal(false);
-      await loadData(); 
-    } catch (err) { alert("Erreur lors de la sauvegarde"); }
+    }
+
+    // 🚀 2. LA MAGIE : On met à jour le calendrier IMMÉDIATEMENT à l'écran !
+    setAppointments(prev => prev.map(slot => {
+      const update = updatesToApply.find(u => u.id === slot.id);
+      return update ? { ...slot, ...update.data } : slot;
+    }));
+    setShowEditModal(false);
+
+    // 🚀 3. On envoie au serveur en silence
+    try {
+      const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
+      await Promise.all(promises);
+      const res = await apiFetch('/api/slots');
+      if (res.ok) setAppointments(await res.json()); // Sécurité : on resynchronise discrètement
+    } catch (err) { console.error("Erreur de sauvegarde silencieuse"); }
   };
 
   const handleRelease = async () => {
     if (!selectedEvent || !confirm("Action irréversible. Confirmer ?")) return;
-    try {
-      const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
-      const flightDur = flight?.duration_minutes || flight?.duration || 0;
-      const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration)
-        ? Math.ceil(flightDur / slotDuration) : 1;
 
-      const startMs = new Date(selectedEvent.start).getTime();
+    const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+    const flightDur = flight?.duration_minutes || flight?.duration || 0;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+    const startMs = new Date(selectedEvent.start).getTime();
+    const updatesToApply: any[] = [];
+    
+    for (let i = 0; i < slotsNeeded; i++) {
+      const ms = startMs + (i * slotDuration * 60000);
+      const slotToFree = appointments.find(a =>
+         a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
+         new Date(a.start_time).getTime() === ms &&
+         (i === 0 || a.title?.startsWith('↪️ Suite'))
+      );
       
-      for (let i = 0; i < slotsNeeded; i++) {
-        const ms = startMs + (i * slotDuration * 60000);
-        const slotToFree = appointments.find(a =>
-           a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
-           new Date(a.start_time).getTime() === ms &&
-           (i === 0 || a.title?.startsWith('↪️ Suite'))
-        );
-        
-        if (slotToFree) {
-          await apiFetch(`/api/slots/${slotToFree.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ 
-              title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' 
-            })
-          });
-        }
+      if (slotToFree) {
+        updatesToApply.push({
+          id: slotToFree.id,
+          data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' }
+        });
       }
-      
-      setShowEditModal(false);
-      await loadData();
+    }
+
+    // 🚀 MAGIE : Effacement instantané à l'écran !
+    setAppointments(prev => prev.map(slot => {
+      const update = updatesToApply.find(u => u.id === slot.id);
+      return update ? { ...slot, ...update.data } : slot;
+    }));
+    setShowEditModal(false);
+
+    try {
+      const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
+      await Promise.all(promises);
+      const res = await apiFetch('/api/slots');
+      if (res.ok) setAppointments(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  // 🎯 NOUVEAU : Fonction pour effacer/libérer tout un lot de notes ou de blocages
+  const handleBulkRelease = async () => {
+    if (!selectedEvent) return;
+    if (!confirm("🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection actuelle (Cible + Durée) ?\n\n(Les réservations clients existantes seront conservées, seule la note ajoutée sera retirée).")) return;
+
+    const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
+    const startMs = new Date(selectedEvent.start).getTime();
+
+    const slotsToUpdate = appointments.filter(a => {
+      if (!targetMonitors.includes(a.monitor_id?.toString())) return false;
+      const aTime = new Date(a.start_time).getTime();
+      return aTime >= startMs && aTime < blockUntilMs;
+    });
+
+    const updatesToApply: any[] = [];
+    slotsToUpdate.forEach(slot => {
+      const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+      if (isClientSlot) {
+        updatesToApply.push({ id: slot.id, data: { ...slot, weightChecked: slot.weight_checked || slot.weightChecked, notes: '' } });
+      } else {
+        updatesToApply.push({ id: slot.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+      }
+    });
+
+    // 🚀 MAGIE : Effacement instantané !
+    setAppointments(prev => prev.map(slot => {
+      const update = updatesToApply.find(u => u.id === slot.id);
+      return update ? { ...slot, ...update.data } : slot;
+    }));
+    setShowEditModal(false);
+
+    try {
+      const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
+      await Promise.all(promises);
+      const res = await apiFetch('/api/slots');
+      if (res.ok) setAppointments(await res.json());
     } catch (err) { console.error(err); }
   };
 
@@ -460,48 +440,40 @@ export default function PlanningAdmin() {
 
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
-    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration)
-      ? Math.ceil(flightDur / slotDuration) : 1;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+    const updatesToApply: any[] = [];
+    const oldStartMs = new Date(selectedEvent.start).getTime();
+    
+    for (let i = 0; i < slotsNeeded; i++) {
+      const ms = oldStartMs + (i * slotDuration * 60000);
+      const slotToFree = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
+      if (slotToFree) {
+         updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+      }
+    }
+
+    const newStartMs = new Date(targetSlot.start_time).getTime();
+    for (let i = 0; i < slotsNeeded; i++) {
+      const ms = newStartMs + (i * slotDuration * 60000);
+      const slotToBook = appointments.find(a => a.monitor_id?.toString() === targetSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms);
+      if (slotToBook) {
+         updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto' } });
+      }
+    }
+
+    // 🚀 MAGIE : Transfert instantané sur la grille !
+    setAppointments(prev => prev.map(slot => {
+      const update = updatesToApply.find(u => u.id === slot.id);
+      return update ? { ...slot, ...update.data } : slot;
+    }));
+    setShowEditModal(false);
 
     try {
-      const oldStartMs = new Date(selectedEvent.start).getTime();
-      for (let i = 0; i < slotsNeeded; i++) {
-        const ms = oldStartMs + (i * slotDuration * 60000);
-        const slotToFree = appointments.find(a =>
-           a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
-           new Date(a.start_time).getTime() === ms &&
-           (i === 0 || a.title?.startsWith('↪️ Suite'))
-        );
-        if (slotToFree) {
-           await apiFetch(`/api/slots/${slotToFree.id}`, {
-              method: 'PATCH',
-              body: JSON.stringify({ title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' })
-           });
-        }
-      }
-
-      const newStartMs = new Date(targetSlot.start_time).getTime();
-      for (let i = 0; i < slotsNeeded; i++) {
-        const ms = newStartMs + (i * slotDuration * 60000);
-        const slotToBook = appointments.find(a =>
-           a.monitor_id?.toString() === targetSlot.monitor_id?.toString() &&
-           new Date(a.start_time).getTime() === ms
-        );
-        if (slotToBook) {
-           await apiFetch(`/api/slots/${slotToBook.id}`, {
-              method: 'PATCH',
-              body: JSON.stringify({
-                 ...formData,
-                 title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`,
-                 status: 'booked',
-                 notes: i === 0 ? formData.notes : 'Extension auto'
-              })
-           });
-        }
-      }
-
-      setShowEditModal(false);
-      await loadData();
+      const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
+      await Promise.all(promises);
+      const res = await apiFetch('/api/slots');
+      if (res.ok) setAppointments(await res.json());
     } catch (err) { console.error(err); }
   };
 
@@ -778,16 +750,16 @@ export default function PlanningAdmin() {
                 <>
                   <div className="flex gap-2 mb-4">
                     <button 
-                      disabled={isClientLocked} 
+                      disabled={isOutOfSeason} 
                       onClick={() => setFormData({...formData, title: 'NOTE'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isClientLocked ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}
                     >
                       📝 Note simple (Reste libre)
                     </button>
                     <button 
-                      disabled={isClientLocked} 
+                      disabled={isOutOfSeason} 
                       onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isClientLocked ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}
+                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}
                     >
                       ❌ Bloquer (Non dispo)
                     </button>
@@ -798,13 +770,13 @@ export default function PlanningAdmin() {
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
-                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isClientLocked}>
+                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isOutOfSeason}>
                       <option value="none">Ce pilote uniquement</option>
                       <option value="all">🚫 TOUS les pilotes</option>
                       <option value="specific">👥 Certains pilotes</option>
                     </select>
 
-                    {blockType === 'specific' && !isClientLocked && (
+                    {blockType === 'specific' && !isOutOfSeason && (
                       <div className="mb-4 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
                           <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer hover:bg-slate-50">
@@ -818,10 +790,10 @@ export default function PlanningAdmin() {
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Durée (Jusqu'à quand ?)</label>
                     {selectedEvent && (
                         <select 
-                          className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isClientLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
+                          className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
                           value={blockUntilMs} 
                           onChange={(e: any) => setBlockUntilMs(Number(e.target.value))} 
-                          disabled={isClientLocked}
+                          disabled={isOutOfSeason}
                         >
                           {upcomingBlockingSlots.map((slot, index) => {
                             const end = new Date(slot.end_time);
@@ -848,14 +820,26 @@ export default function PlanningAdmin() {
                         Enregistrer la modification
                       </button>
                       
+                      {/* 🎯 NOUVEAU : Boutons de libération intelligents */}
                       {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
-                        <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2 hover:text-rose-600 transition-colors">
-                          🗑️ Libérer ce créneau
-                        </button>
+                        activeTab === 'note' ? (
+                          <div className="flex gap-2 pt-2">
+                            <button onClick={handleRelease} className="flex-1 text-rose-400 font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-50 transition-colors border border-rose-100 rounded-xl py-3">
+                              🗑️ Libérer (Ce créneau)
+                            </button>
+                            <button onClick={handleBulkRelease} className="flex-1 bg-rose-50 text-rose-600 font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm rounded-xl py-3">
+                              🧹 Libérer (Le Lot complet)
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2 hover:text-rose-600 transition-colors">
+                            🗑️ Libérer ce créneau
+                          </button>
+                        )
                       )}
                     </>
                   )}
-                  <button onClick={() => setShowEditModal(false)} className="w-full text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600">Fermer sans sauvegarder</button>
+                  <button onClick={() => setShowEditModal(false)} className="w-full text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600 pt-2">Fermer sans sauvegarder</button>
                 </div>
               )}
 
