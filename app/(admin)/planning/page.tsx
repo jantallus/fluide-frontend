@@ -40,6 +40,67 @@ export default function PlanningAdmin() {
     startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all' 
   });
 
+  // 🎯 NOUVEAU : État pour la taille du groupe
+  const [groupSize, setGroupSize] = useState<number>(1);
+
+  // 🎯 NOUVEAU : Le cerveau qui calcule la répartition du groupe automatiquement
+  const groupDistribution = useMemo(() => {
+    if (!selectedEvent || groupSize <= 1 || !formData.flight_type_id) return null;
+
+    const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
+    const flightDur = flight?.duration_minutes || flight?.duration || 0;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+    const startMs = new Date(selectedEvent.start).getTime();
+    const dayStr = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+
+    // 1. Trouver tous les créneaux libres de la journée après le clic
+    const allDayAvailable = appointments.filter(a =>
+       a.status === 'available' &&
+       new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dayStr &&
+       new Date(a.start_time).getTime() >= startMs
+    );
+
+    // 2. Ne garder que les créneaux où le moniteur a assez de temps pour le vol entier
+    const validStartSlots: any[] = [];
+    allDayAvailable.forEach(slot => {
+       const sTime = new Date(slot.start_time).getTime();
+       let canDoFlight = true;
+       for(let i=0; i<slotsNeeded; i++) {
+          const checkMs = sTime + (i * slotDuration * 60000);
+          const hasSlot = allDayAvailable.find(x => x.monitor_id === slot.monitor_id && new Date(x.start_time).getTime() === checkMs);
+          if (!hasSlot) { canDoFlight = false; break; }
+       }
+       if (canDoFlight) validStartSlots.push(slot);
+    });
+
+    // 3. Trier par ordre chronologique
+    validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+    // 4. Distribuer les passagers
+    let remaining = groupSize;
+    const distribution: {time: string, count: number}[] = [];
+    const slotsToUse: any[] = [];
+    let currentTimeGroup: any = null;
+
+    for (const slot of validStartSlots) {
+       if (remaining === 0) break;
+       const timeStr = new Date(slot.start_time).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+
+       if (!currentTimeGroup || currentTimeGroup.time !== timeStr) {
+           if (currentTimeGroup) distribution.push(currentTimeGroup);
+           currentTimeGroup = { time: timeStr, count: 0 };
+       }
+
+       currentTimeGroup.count++;
+       slotsToUse.push(slot);
+       remaining--;
+    }
+    if (currentTimeGroup && currentTimeGroup.count > 0) distribution.push(currentTimeGroup);
+
+    return { distribution, slotsToUse, canFit: remaining === 0 };
+  }, [groupSize, selectedEvent, formData.flight_type_id, appointments, flightTypes, slotDuration]);
+
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
 
@@ -137,6 +198,7 @@ export default function PlanningAdmin() {
     setBlockType('none');
     setSelectedMonitors([]);
     setBlockUntilMs(end.getTime());
+    setGroupSize(1);
     setShowEditModal(true);
   }, []); // <-- 🎯 LE SECRET EST CE PETIT TABLEAU VIDE À LA FIN !
 
@@ -149,6 +211,7 @@ export default function PlanningAdmin() {
     let selectedFlight: any = null;
     let slotsNeeded = 1;
 
+    // --- VALIDATIONS ---
     if (activeTab === 'note') {
       isNonBlockingNote = (formData.title !== 'NON DISPO');
       targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
@@ -166,7 +229,6 @@ export default function PlanningAdmin() {
     } else {
       if (!formData.flight_type_id) return alert("❌ Veuillez choisir un type de vol.");
       if (!formData.phone || formData.phone.trim() === '') return alert("❌ Le numéro de téléphone est obligatoire.");
-
       selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
       const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
       slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
@@ -181,8 +243,7 @@ export default function PlanningAdmin() {
         if (isNonBlockingNote) {
           const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
           if (isClientSlot) {
-            payload.title = slot.title;
-            payload.status = slot.status;
+            payload.title = slot.title; payload.status = slot.status;
             if (slot.notes && slot.notes.trim() !== '' && slot.notes !== formData.notes && !formData.notes.includes(slot.notes)) {
                payload.notes = slot.notes + " | " + formData.notes;
             }
@@ -196,16 +257,39 @@ export default function PlanningAdmin() {
         updatesToApply.push({ id: slot.id, data: payload });
       });
     } else {
-      if (slotsNeeded > 1) {
-        updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
-        const startMs = new Date(selectedEvent.start).getTime();
-        for (let i = 1; i < slotsNeeded; i++) {
-          const nextMs = startMs + (i * slotDuration * 60000);
-          const nextSlot = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
-          if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+      
+      // 🚀 LOGIQUE DE GROUPE ICI !
+      if (groupSize > 1) {
+        if (!groupDistribution || !groupDistribution.canFit) {
+          return alert("❌ Pas assez de créneaux disponibles pour placer tout le groupe.");
         }
+        groupDistribution.slotsToUse.forEach((baseSlot, index) => {
+          const passengerTitle = formData.title ? `${formData.title} (${index + 1}/${groupSize})` : `Passager ${index + 1}`;
+          updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked' } });
+
+          // S'il faut plusieurs créneaux pour ce vol
+          if (slotsNeeded > 1) {
+            const baseStartMs = new Date(baseSlot.start_time).getTime();
+            for (let i = 1; i < slotsNeeded; i++) {
+              const nextMs = baseStartMs + (i * slotDuration * 60000);
+              const nextSlot = appointments.find(a => a.monitor_id?.toString() === baseSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
+              if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${passengerTitle}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+            }
+          }
+        });
       } else {
-        updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' } });
+        // Mode solo classique
+        if (slotsNeeded > 1) {
+          updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
+          const startMs = new Date(selectedEvent.start).getTime();
+          for (let i = 1; i < slotsNeeded; i++) {
+            const nextMs = startMs + (i * slotDuration * 60000);
+            const nextSlot = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
+            if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+          }
+        } else {
+          updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' } });
+        }
       }
     }
 
@@ -221,7 +305,7 @@ export default function PlanningAdmin() {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
       const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json()); // Sécurité : on resynchronise discrètement
+      if (res.ok) setAppointments(await res.json()); 
     } catch (err) { console.error("Erreur de sauvegarde silencieuse"); }
   };
 
@@ -692,6 +776,42 @@ export default function PlanningAdmin() {
                         })}
                       </select>
                     </div>
+
+                    {/* 🎯 NOUVEAU : CHOIX DU NOMBRE DE PERSONNES */}
+                    {formData.flight_type_id && (
+                      <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
+                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe</label>
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setGroupSize(Math.max(1, groupSize - 1))} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
+                          <span className="text-2xl font-black text-slate-900 w-8 text-center">{groupSize}</span>
+                          <button onClick={() => setGroupSize(groupSize + 1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
+                          <span className="text-sm font-bold text-slate-500 ml-2">Passager(s)</span>
+                        </div>
+                        
+                        {groupSize > 1 && groupDistribution && (
+                          <div className={`mt-4 p-3 rounded-xl text-xs font-bold border-2 transition-all ${groupDistribution.canFit ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                            {groupDistribution.canFit ? (
+                              <>
+                                <span className="block mb-2 uppercase tracking-wider text-[10px] opacity-70">✅ Répartition automatique :</span>
+                                <ul className="list-none space-y-1">
+                                  {groupDistribution.distribution.map((d, i) => (
+                                    <li key={i} className="flex items-center gap-2">
+                                      <span className="w-5 h-5 rounded bg-emerald-200 text-emerald-900 flex items-center justify-center">{d.count}</span>
+                                      <span>Passager(s) décollant à <strong className="text-sm">{d.time}</strong></span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            ) : (
+                              <span className="flex items-center gap-2">
+                                <span className="text-xl">❌</span> 
+                                Capacité insuffisante : Impossible de trouver {groupSize} places à la suite pour ce type de vol.
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {formData.flight_type_id && (() => {
                       const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
