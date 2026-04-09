@@ -13,6 +13,7 @@
     "@fullcalendar/interaction": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/resource-timegrid": "^6.1.20",
+    "@fullcalendar/scrollgrid": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "autoprefixer": "^10.4.27",
     "next": "16.1.6",

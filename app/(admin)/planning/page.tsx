@@ -4,6 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
+import scrollgridPlugin from '@fullcalendar/scrollgrid';
 import { apiFetch } from '../../../lib/api';
 
 export default function PlanningAdmin() {
@@ -836,7 +837,7 @@ export default function PlanningAdmin() {
         <FullCalendar
           ref={calendarRef}
           schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
-          plugins={[resourceTimeGridPlugin, interactionPlugin]}
+          plugins={[resourceTimeGridPlugin, interactionPlugin, scrollgridPlugin]}
           initialView="resourceTimeGridDay"
           resources={monitors}
           datesSet={(arg) => {
@@ -863,8 +864,6 @@ export default function PlanningAdmin() {
   }, [calendarEvents, monitors, timeBounds, handleEventClick]);
 
     
-
-  return (
     return (
     <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
       
