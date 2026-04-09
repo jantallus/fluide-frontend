@@ -512,13 +512,32 @@ export default function ReserverPage() {
     setIsCheckingOut(true);
 
     try {
+      // 🎯 NOUVEAU : Formatage intelligent des prénoms pour les groupes
+      const passengersToSubmit = passengers.map((p, index) => {
+        let finalName = p.firstName.trim();
+        
+        // Si c'est un groupe (plus d'un passager)
+        if (passengers.length > 1) {
+          // On vérifie si ce passager est le contact principal (soit c'est le passager 1 coché, soit ils ont exactement le même prénom)
+          const isContact = contact.isPassenger && (index === 0 || finalName.toLowerCase() === contact.firstName.trim().toLowerCase());
+          
+          if (!isContact) {
+            // Si ce n'est pas le contact, on ajoute le nom du "chef de groupe" entre parenthèses !
+            finalName = `${finalName} (${contact.firstName.trim()})`;
+          }
+        }
+        
+        // On retourne le passager avec son nouveau nom formaté
+        return { ...p, firstName: finalName };
+      });
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const res = await fetch(`${apiUrl}/api/public/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           contact, 
-          passengers,
+          passengers: passengersToSubmit, // 🚀 On envoie les noms formatés !
           voucher_code: appliedVoucher ? appliedVoucher.code : null
         })
       });

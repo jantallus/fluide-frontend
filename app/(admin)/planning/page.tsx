@@ -29,6 +29,8 @@ export default function PlanningAdmin() {
     time: '',
     monitorId: 'random'
   });
+  // 🎯 NOUVEAU : Option pour déplacer tout le groupe
+  const [moveGroup, setMoveGroup] = useState(false);
   
   const [formData, setFormData] = useState<{
     title: string, flight_type_id: string, weightChecked: boolean, phone: string, email: string, notes: string, booking_options: string, client_message: string
@@ -40,28 +42,26 @@ export default function PlanningAdmin() {
     startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all' 
   });
 
-  // 🎯 NOUVEAU : État pour la taille du groupe
+  // 🎯 1. ÉTATS DU GROUPE (Manuel vs Auto)
   const [groupSize, setGroupSize] = useState<number>(1);
+  const [manualCounts, setManualCounts] = useState<Record<string, number>>({});
+  const [isManual, setIsManual] = useState(false);
 
-  // 🎯 NOUVEAU : Le cerveau qui calcule la répartition du groupe automatiquement
-  const groupDistribution = useMemo(() => {
-    if (!selectedEvent || groupSize <= 1 || !formData.flight_type_id) return null;
-
+  // 🎯 2. MÉMOIRE : Tous les groupes de créneaux disponibles chronologiquement
+  const availableTimeGroups = useMemo(() => {
+    if (!selectedEvent || !formData.flight_type_id) return [];
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-
     const startMs = new Date(selectedEvent.start).getTime();
     const dayStr = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
 
-    // 1. Trouver tous les créneaux libres de la journée après le clic
     const allDayAvailable = appointments.filter(a =>
        a.status === 'available' &&
        new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dayStr &&
        new Date(a.start_time).getTime() >= startMs
     );
 
-    // 2. Ne garder que les créneaux où le moniteur a assez de temps pour le vol entier
     const validStartSlots: any[] = [];
     allDayAvailable.forEach(slot => {
        const sTime = new Date(slot.start_time).getTime();
@@ -74,32 +74,76 @@ export default function PlanningAdmin() {
        if (canDoFlight) validStartSlots.push(slot);
     });
 
-    // 3. Trier par ordre chronologique
-    validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    const groups: Record<string, any[]> = {};
+    validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()).forEach(slot => {
+      const timeStr = new Date(slot.start_time).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+      if (!groups[timeStr]) groups[timeStr] = [];
+      groups[timeStr].push(slot);
+    });
 
-    // 4. Distribuer les passagers
-    let remaining = groupSize;
-    const distribution: {time: string, count: number}[] = [];
-    const slotsToUse: any[] = [];
-    let currentTimeGroup: any = null;
+    return Object.keys(groups).map(time => ({ time, capacity: groups[time].length, slots: groups[time] })).sort((a, b) => a.time.localeCompare(b.time));
+  }, [selectedEvent, formData.flight_type_id, appointments, flightTypes, slotDuration]);
 
-    for (const slot of validStartSlots) {
-       if (remaining === 0) break;
-       const timeStr = new Date(slot.start_time).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+  // 🎯 3. MÉMOIRE : La répartition finale à afficher (gère l'Auto et le Manuel)
+  const displayDistribution = useMemo(() => {
+     let remaining = groupSize;
+     const result: {time: string, count: number, capacity: number, slots: any[]}[] = [];
+     let canFit = true;
 
-       if (!currentTimeGroup || currentTimeGroup.time !== timeStr) {
-           if (currentTimeGroup) distribution.push(currentTimeGroup);
-           currentTimeGroup = { time: timeStr, count: 0 };
-       }
+     if (!isManual) {
+         // --- MODE AUTO ---
+         for (const group of availableTimeGroups) {
+             if (remaining <= 0) break;
+             const take = Math.min(remaining, group.capacity);
+             result.push({ ...group, count: take });
+             remaining -= take;
+         }
+         if (remaining > 0) canFit = false;
+         
+         // On ajoute le prochain créneau vide pour permettre de l'étendre manuellement
+         if (remaining <= 0 && availableTimeGroups[result.length]) {
+             result.push({ ...availableTimeGroups[result.length], count: 0 });
+         }
+     } else {
+         // --- MODE MANUEL ---
+         let lastNonZeroIndex = -1;
+         for (let i = 0; i < availableTimeGroups.length; i++) {
+             if ((manualCounts[availableTimeGroups[i].time] || 0) > 0) lastNonZeroIndex = i;
+         }
+         const showUpTo = Math.min(lastNonZeroIndex + 1, availableTimeGroups.length - 1);
+         for (let i = 0; i <= Math.max(0, showUpTo); i++) {
+             const group = availableTimeGroups[i];
+             result.push({ ...group, count: manualCounts[group.time] || 0 });
+         }
+     }
+     
+     const slotsToUse: any[] = [];
+     result.forEach(r => { for(let i = 0; i < r.count; i++) slotsToUse.push(r.slots[i]); });
 
-       currentTimeGroup.count++;
-       slotsToUse.push(slot);
-       remaining--;
-    }
-    if (currentTimeGroup && currentTimeGroup.count > 0) distribution.push(currentTimeGroup);
+     return { items: result, canFit, slotsToUse };
+  }, [availableTimeGroups, groupSize, manualCounts, isManual]);
 
-    return { distribution, slotsToUse, canFit: remaining === 0 };
-  }, [groupSize, selectedEvent, formData.flight_type_id, appointments, flightTypes, slotDuration]);
+  // 🎯 4. FONCTIONS DE CONTRÔLE (Boutons + et -)
+  const handleMainChange = (delta: number) => {
+      setGroupSize(prev => Math.max(1, prev + delta));
+      setIsManual(false); // Le bouton principal remet en AUTO
+  };
+
+  const handleSubChange = (time: string, delta: number) => {
+      setManualCounts(prev => {
+          const newCounts = { ...prev };
+          // Si on était en auto, on "fossilise" la répartition actuelle avant de la modifier
+          if (!isManual) displayDistribution.items.forEach((item: any) => newCounts[item.time] = item.count);
+          
+          const current = newCounts[time] || 0;
+          const capacity = availableTimeGroups.find((g: any) => g.time === time)?.capacity || 0;
+          newCounts[time] = Math.max(0, Math.min(capacity, current + delta));
+          
+          setGroupSize(Object.values(newCounts).reduce((a, b) => a + b, 0)); // Met à jour le total
+          setIsManual(true); // Bascule en MANUEL
+          return newCounts;
+      });
+  };
 
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -199,6 +243,9 @@ export default function PlanningAdmin() {
     setSelectedMonitors([]);
     setBlockUntilMs(end.getTime());
     setGroupSize(1);
+    setManualCounts({});
+    setIsManual(false);
+    setMoveGroup(false);
     setShowEditModal(true);
   }, []); // <-- 🎯 LE SECRET EST CE PETIT TABLEAU VIDE À LA FIN !
 
@@ -259,12 +306,36 @@ export default function PlanningAdmin() {
     } else {
       
       // 🚀 LOGIQUE DE GROUPE ICI !
-      if (groupSize > 1) {
-        if (!groupDistribution || !groupDistribution.canFit) {
-          return alert("❌ Pas assez de créneaux disponibles pour placer tout le groupe.");
+      if (groupSize > 1 || isManual) {
+        if (!displayDistribution || !displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) {
+          return alert("❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.");
         }
-        groupDistribution.slotsToUse.forEach((baseSlot, index) => {
-          const passengerTitle = formData.title ? `${formData.title} (${index + 1}/${groupSize})` : `Passager ${index + 1}`;
+        displayDistribution.slotsToUse.forEach((baseSlot: any, index: number) => {
+          
+          // 🎯 NOUVEAU : Découpage intelligent (Le contact entre parenthèses)
+          let passengerTitle = '';
+          const namesList = formData.title.split(',').map(n => n.trim()).filter(n => n);
+
+          if (namesList.length === groupSize + 1) {
+            // CAS 2 : L'organisateur NE vole PAS (Il y a 1 nom de plus que le nombre de passagers)
+            const booker = namesList[0]; // Le premier est le contact
+            const passName = namesList[index + 1]; // On décale d'un cran
+            passengerTitle = `${passName} (${booker})`;
+          } else if (namesList.length > 0) {
+            // CAS 1 : L'organisateur VOLE
+            const booker = namesList[0];
+            if (index === 0) {
+              passengerTitle = booker; // Le contact lui-même (pas besoin de parenthèses)
+            } else if (namesList[index]) {
+              passengerTitle = `${namesList[index]} (${booker})`; // Passager suivant
+            } else {
+              passengerTitle = `Passager ${index + 1} (${booker})`; // S'il manque des prénoms
+            }
+          } else {
+            // Si le champ est totalement vide
+            passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (formData.title || '');
+          }
+              
           updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked' } });
 
           // S'il faut plusieurs créneaux pour ce vol
@@ -278,6 +349,7 @@ export default function PlanningAdmin() {
           }
         });
       } else {
+        // Mode solo classique (ne change pas)
         // Mode solo classique
         if (slotsNeeded > 1) {
           updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
@@ -350,6 +422,49 @@ export default function PlanningAdmin() {
     } catch (err) { console.error(err); }
   };
 
+  // 🎯 NOUVEAU : Libérer le groupe complet instantanément
+  const handleReleaseGroup = async () => {
+    if (!selectedEvent || !confirm(`🧹 Action irréversible. Libérer les ${groupRootSlots.length} créneaux de ce groupe ?`)) return;
+
+    const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+    const flightDur = flight?.duration_minutes || flight?.duration || 0;
+    const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+    const updatesToApply: any[] = [];
+
+    groupRootSlots.forEach(baseSlot => {
+      const startMs = new Date(baseSlot.start_time).getTime();
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = startMs + (i * slotDuration * 60000);
+        const slotToFree = appointments.find(a =>
+           a.monitor_id?.toString() === baseSlot.monitor_id?.toString() &&
+           new Date(a.start_time).getTime() === ms &&
+           (i === 0 || a.title?.startsWith('↪️ Suite'))
+        );
+        if (slotToFree) {
+          updatesToApply.push({
+            id: slotToFree.id,
+            data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' }
+          });
+        }
+      }
+    });
+
+    // 🚀 MAGIE : Effacement instantané !
+    setAppointments(prev => prev.map(slot => {
+      const update = updatesToApply.find(u => u.id === slot.id);
+      return update ? { ...slot, ...update.data } : slot;
+    }));
+    setShowEditModal(false);
+
+    try {
+      const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
+      await Promise.all(promises);
+      const res = await apiFetch('/api/slots');
+      if (res.ok) setAppointments(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
   // 🎯 NOUVEAU : Fonction pour effacer/libérer tout un lot de notes ou de blocages
   const handleBulkRelease = async () => {
     if (!selectedEvent) return;
@@ -388,6 +503,27 @@ export default function PlanningAdmin() {
       if (res.ok) setAppointments(await res.json());
     } catch (err) { console.error(err); }
   };
+
+  // 🎯 NOUVEAU : Mémoire qui trouve tous les membres du même groupe (même téléphone + même date)
+  const groupRootSlots = useMemo(() => {
+    if (!selectedEvent || selectedEvent.status !== 'booked' || selectedEvent.title?.startsWith('↪️ Suite')) return [];
+    const phone = selectedEvent.phone;
+    const baseTitle = selectedEvent.title?.replace(/\s*\(\d+\/\d+\)$/, '').trim();
+    if (!phone && !baseTitle) return [selectedEvent]; 
+
+    const dStr = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const rootSlots = appointments.filter(a => {
+      if (a.status !== 'booked' || a.title?.startsWith('↪️ Suite')) return false;
+      const aDate = new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      if (aDate !== dStr) return false;
+      if (phone && a.phone === phone) return true;
+      if (!phone && baseTitle && a.title?.replace(/\s*\(\d+\/\d+\)$/, '').trim() === baseTitle) return true;
+      return false;
+    });
+    
+    if (!rootSlots.some(s => s.id === selectedEvent.id)) rootSlots.push(selectedEvent);
+    return rootSlots;
+  }, [appointments, selectedEvent]);
 
   // 🎯 1. Mémoire : Créneaux liés à la réservation
   const currentBookingSlotIds = useMemo(() => {
@@ -514,39 +650,110 @@ export default function PlanningAdmin() {
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
 
-    const targetSlot = availableTargetSlots.find(a => {
-      const d = new Date(a.start_time);
-      const timeStr = d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-      return timeStr === moveConfig.time;
-    });
-
-    if (!targetSlot) return alert("Erreur: Créneau introuvable.");
-
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
 
     const updatesToApply: any[] = [];
-    const oldStartMs = new Date(selectedEvent.start).getTime();
-    
-    for (let i = 0; i < slotsNeeded; i++) {
-      const ms = oldStartMs + (i * slotDuration * 60000);
-      const slotToFree = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
-      if (slotToFree) {
-         updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+
+    if (moveGroup && groupRootSlots.length > 1) {
+      // --- 🚀 DÉPLACEMENT DE GROUPE ---
+      const slotsToFree: string[] = [];
+      
+      // 1. On "libère" virtuellement l'ancien groupe
+      groupRootSlots.forEach(baseSlot => {
+        const startMs = new Date(baseSlot.start_time).getTime();
+        for (let i = 0; i < slotsNeeded; i++) {
+          const ms = startMs + (i * slotDuration * 60000);
+          const slotToFree = appointments.find(a => a.monitor_id?.toString() === baseSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
+          if (slotToFree) {
+            updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+            slotsToFree.push(slotToFree.id);
+          }
+        }
+      });
+
+      // 2. On scanne la nouvelle date à la recherche de créneaux simultanés
+      const targetDateStr = moveConfig.date;
+      const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
+      const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
+
+      const allDayAvailable = appointments.filter(a => {
+        const isFreedNow = slotsToFree.includes(a.id);
+        if (a.status !== 'available' && !isFreedNow) return false;
+        const d = new Date(a.start_time);
+        if (d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) !== targetDateStr) return false;
+        if ((d.getHours() * 60 + d.getMinutes()) * 60000 < targetTimeMs) return false;
+        if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
+        return true;
+      });
+
+      const validStartSlots: any[] = [];
+      allDayAvailable.forEach(slot => {
+        const sTime = new Date(slot.start_time).getTime();
+        let canDoFlight = true;
+        for(let i=0; i<slotsNeeded; i++) {
+          const checkMs = sTime + (i * slotDuration * 60000);
+          if (!allDayAvailable.find(x => x.monitor_id === slot.monitor_id && new Date(x.start_time).getTime() === checkMs)) { canDoFlight = false; break; }
+        }
+        if (canDoFlight) validStartSlots.push(slot);
+      });
+
+      validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+      // 3. On tente de placer tout le monde sans conflit
+      let remaining = groupRootSlots.length;
+      const assignedSlots: any[] = [];
+      
+      for (const slot of validStartSlots) {
+        if (remaining === 0) break;
+        const sTime = new Date(slot.start_time).getTime();
+        const conflict = assignedSlots.some(a => a.monitor_id === slot.monitor_id && Math.abs(new Date(a.start_time).getTime() - sTime) < (slotsNeeded * slotDuration * 60000));
+        if (!conflict) { assignedSlots.push(slot); remaining--; }
+      }
+
+      if (remaining > 0) return alert(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`);
+
+      // 4. On réserve les nouvelles places
+      groupRootSlots.forEach((oldSlot, g) => {
+        const newBaseSlot = assignedSlots[g];
+        const passengerTitle = oldSlot.title || formData.title;
+        updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes } });
+
+        if (slotsNeeded > 1) {
+          const baseStartMs = new Date(newBaseSlot.start_time).getTime();
+          for (let i = 1; i < slotsNeeded; i++) {
+            const nextMs = baseStartMs + (i * slotDuration * 60000);
+            const nextSlot = allDayAvailable.find(a => a.monitor_id?.toString() === newBaseSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs);
+            if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${passengerTitle}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+          }
+        }
+      });
+
+    } else {
+      // --- 👤 DÉPLACEMENT SOLO CLASSIQUE ---
+      const targetSlot = availableTargetSlots.find(a => {
+        const d = new Date(a.start_time);
+        return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }) === moveConfig.time;
+      });
+      if (!targetSlot) return alert("Erreur: Créneau introuvable.");
+
+      const oldStartMs = new Date(selectedEvent.start).getTime();
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = oldStartMs + (i * slotDuration * 60000);
+        const slotToFree = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
+        if (slotToFree) updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+      }
+
+      const newStartMs = new Date(targetSlot.start_time).getTime();
+      for (let i = 0; i < slotsNeeded; i++) {
+        const ms = newStartMs + (i * slotDuration * 60000);
+        const slotToBook = appointments.find(a => a.monitor_id?.toString() === targetSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms);
+        if (slotToBook) updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto' } });
       }
     }
 
-    const newStartMs = new Date(targetSlot.start_time).getTime();
-    for (let i = 0; i < slotsNeeded; i++) {
-      const ms = newStartMs + (i * slotDuration * 60000);
-      const slotToBook = appointments.find(a => a.monitor_id?.toString() === targetSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms);
-      if (slotToBook) {
-         updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto' } });
-      }
-    }
-
-    // 🚀 MAGIE : Transfert instantané sur la grille !
+    // 🚀 MAGIE : Mise à jour instantanée de la grille
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -728,9 +935,14 @@ export default function PlanningAdmin() {
                   </div>
                 ) : (
                   <>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du passager</label>
-                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Ex: Jean Dupont" />
+                    <div className="mb-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du contact et passagers</label>
+                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Ex: Julien, Christophe, Alexandre..." />
+                      <span className="text-[9px] text-slate-400 ml-2 mt-1 block leading-tight">
+                        💡 <b>Astuce :</b> Le 1er nom est le contact. Séparez par des virgules.<br/>
+                        <i>Ex (3 places) : "léo, Alex, Paul, Léa" ➔ léo ne vole pas, Alex, Paul et Léa volent.</i><br/>
+                        <i>Ex (3 places) : "léo, Alex, Paul" ➔ léo, Alex et Paul volent.</i>
+                      </span>
                     </div>
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
@@ -777,35 +989,55 @@ export default function PlanningAdmin() {
                       </select>
                     </div>
 
-                    {/* 🎯 NOUVEAU : CHOIX DU NOMBRE DE PERSONNES */}
+                    {/* 🎯 CHOIX DU NOMBRE DE PERSONNES ET RÉPARTITION */}
                     {formData.flight_type_id && (
                       <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
-                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe</label>
+                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe (Total)</label>
                         <div className="flex items-center gap-4">
-                          <button onClick={() => setGroupSize(Math.max(1, groupSize - 1))} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
+                          <button onClick={() => handleMainChange(-1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
                           <span className="text-2xl font-black text-slate-900 w-8 text-center">{groupSize}</span>
-                          <button onClick={() => setGroupSize(groupSize + 1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
-                          <span className="text-sm font-bold text-slate-500 ml-2">Passager(s)</span>
+                          <button onClick={() => handleMainChange(1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
+                          <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
                         </div>
                         
-                        {groupSize > 1 && groupDistribution && (
-                          <div className={`mt-4 p-3 rounded-xl text-xs font-bold border-2 transition-all ${groupDistribution.canFit ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
-                            {groupDistribution.canFit ? (
+                        {groupSize > 0 && displayDistribution && (
+                          <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
+                            {displayDistribution.canFit ? (
                               <>
-                                <span className="block mb-2 uppercase tracking-wider text-[10px] opacity-70">✅ Répartition automatique :</span>
-                                <ul className="list-none space-y-1">
-                                  {groupDistribution.distribution.map((d, i) => (
-                                    <li key={i} className="flex items-center gap-2">
-                                      <span className="w-5 h-5 rounded bg-emerald-200 text-emerald-900 flex items-center justify-center">{d.count}</span>
-                                      <span>Passager(s) décollant à <strong className="text-sm">{d.time}</strong></span>
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className={`uppercase tracking-wider text-[10px] font-black ${isManual ? 'text-indigo-800' : 'text-emerald-800'} opacity-70`}>
+                                    {isManual ? '⚙️ Répartition Manuelle :' : '✅ Répartition Automatique :'}
+                                  </span>
+                                  {isManual && (
+                                    <button onClick={() => { setIsManual(false); setGroupSize(groupSize); }} className="text-[9px] uppercase font-bold text-indigo-500 hover:text-indigo-700 bg-white px-2 py-1 rounded-md border border-indigo-100 transition-all shadow-sm">
+                                      ↻ Remettre en auto
+                                    </button>
+                                  )}
+                                </div>
+                                <ul className="list-none space-y-2">
+                                  {displayDistribution.items.map((d, i) => (
+                                    <li key={i} className="flex items-center justify-between bg-white/60 p-2 rounded-lg">
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+                                          <button onClick={() => handleSubChange(d.time, -1)} disabled={d.count === 0} className={`w-6 h-6 flex items-center justify-center rounded-md font-bold transition-colors ${d.count === 0 ? 'text-slate-300' : 'bg-slate-50 text-slate-600 hover:bg-slate-200'}`}>-</button>
+                                          <span className={`w-4 text-center font-black text-sm ${d.count > 0 ? 'text-slate-800' : 'text-slate-400'}`}>{d.count}</span>
+                                          <button onClick={() => handleSubChange(d.time, 1)} disabled={d.count >= d.capacity} className={`w-6 h-6 flex items-center justify-center rounded-md font-bold transition-colors ${d.count >= d.capacity ? 'text-slate-300' : 'bg-slate-50 text-slate-600 hover:bg-slate-200'}`}>+</button>
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-700">
+                                          à <strong>{d.time}</strong>
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                        ({d.capacity} max)
+                                      </span>
                                     </li>
                                   ))}
                                 </ul>
                               </>
                             ) : (
-                              <span className="flex items-center gap-2">
+                              <span className="flex items-center gap-2 text-rose-800 text-xs font-bold">
                                 <span className="text-xl">❌</span> 
-                                Capacité insuffisante : Impossible de trouver {groupSize} places à la suite pour ce type de vol.
+                                Capacité insuffisante pour {groupSize} passager(s).
                               </span>
                             )}
                           </div>
@@ -952,9 +1184,16 @@ export default function PlanningAdmin() {
                             </button>
                           </div>
                         ) : (
-                          <button onClick={handleRelease} className="w-full text-rose-500 font-black uppercase italic text-[10px] tracking-widest pt-2 hover:text-rose-600 transition-colors">
-                            🗑️ Libérer ce créneau
-                          </button>
+                          <div className="flex gap-2 pt-2">
+                            <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 transition-colors py-2">
+                              🗑️ Libérer ce créneau
+                            </button>
+                            {groupRootSlots.length > 1 && (
+                              <button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">
+                                🧹 Libérer le groupe ({groupRootSlots.length})
+                              </button>
+                            )}
+                          </div>
                         )
                       )}
                     </>
@@ -973,6 +1212,16 @@ export default function PlanningAdmin() {
                   </div>
                 ) : (
                   <>
+                    {/* 🎯 NOUVEAU : Option pour déplacer le groupe complet */}
+                    {groupRootSlots.length > 1 && (
+                      <div className="mb-4 bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex items-center gap-3">
+                        <input type="checkbox" className="w-5 h-5 accent-emerald-500 cursor-pointer" checked={moveGroup} onChange={e => setMoveGroup(e.target.checked)} />
+                        <label className="text-xs font-bold text-emerald-900 cursor-pointer select-none" onClick={() => setMoveGroup(!moveGroup)}>
+                          Déplacer TOUT le groupe ({groupRootSlots.length} passagers)
+                        </label>
+                      </div>
+                    )}
+                    
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Date ciblée</label>
                       <input type="date" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={moveConfig.date} onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})} />
