@@ -48,7 +48,14 @@ export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
   const hasAnimatedIntro = useRef(false); // 🎯 NOUVEAU : Mémoire pour l'intro
-  
+  // 🎯 NOUVEAU : On mémorise si on est sur un autre site
+  const [isEmbed, setIsEmbed] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) {
+      setIsEmbed(true);
+    }
+  }, []);
+
   const [flights, setFlights] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
@@ -728,7 +735,7 @@ export default function ReserverPage() {
                 <div className="relative">
 
                   {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                  <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200 relative">
+                  <div className={`sticky ${isEmbed ? 'top-0' : 'top-20'} z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
                     
                     <div 
                       ref={headerScrollRef}
