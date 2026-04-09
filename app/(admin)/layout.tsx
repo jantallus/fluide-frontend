@@ -12,9 +12,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   
   // NOUVEAU : L'état qui bloque l'affichage tant qu'on n'est pas sûr
   const [isAuthorized, setIsAuthorized] = useState(false); 
+  // 🎯 NOUVEAU : État pour le menu hamburger sur mobile
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // 👉 On déclare le détecteur d'URL D'ABORD
   const router = useRouter();
   const pathname = usePathname();
+
+  // 👉 On s'en sert ENSUITE pour fermer le menu automatiquement
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // 1. VÉRIFICATION DE SÉCURITÉ ET RÉCUPÉRATION DES DONNÉES
   useEffect(() => {
@@ -118,10 +126,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <AutoLogout />
       
-      {/* SIDEBAR GAUCHE */}
-      <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-900 text-white transition-all duration-300 flex flex-col shadow-2xl z-20`}>
+      {/* 🎯 NOUVEAU : Overlay noir transparent qui apparaît derrière le menu sur mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* SIDEBAR GAUCHE RESPONSIVE */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 flex flex-col bg-slate-900 text-white shadow-2xl transition-transform duration-300
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:relative md:translate-x-0
+        ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64
+      `}>
         <div className="p-6 flex justify-between items-center border-b border-slate-800 h-20">
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileMenuOpen) && (
             <div className="flex flex-col">
               <span className="font-black italic text-xl tracking-tighter leading-none">
                 FLUIDE <span className="text-sky-400">PRO</span>
@@ -131,11 +152,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             </div>
           )}
+          
+          {/* Bouton flèche (Bureau) */}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="hover:bg-slate-800 p-2 rounded-xl transition-colors"
+            className="hidden md:block hover:bg-slate-800 p-2 rounded-xl transition-colors"
           >
             {isCollapsed ? '➡️' : '⬅️'}
+          </button>
+
+          {/* Bouton fermer (Mobile) */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            className="md:hidden hover:bg-slate-800 p-2 rounded-xl transition-colors font-black text-xl"
+          >
+            ✕
           </button>
         </div>
 
@@ -153,10 +184,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-xl">{item.icon}</span>
-                    {!isCollapsed && <span className="font-bold text-sm">{item.name}</span>}
+                    {(!isCollapsed || isMobileMenuOpen) && <span className="font-bold text-sm">{item.name}</span>}
                   </div>
 
-                  {!isCollapsed && item.badge !== undefined && item.badge > 0 && (
+                  {(!isCollapsed || isMobileMenuOpen) && item.badge !== undefined && item.badge > 0 && (
                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                       isActive ? 'bg-white text-sky-600' : 'bg-sky-500/20 text-sky-400'
                     }`}>
@@ -165,7 +196,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
                 </Link>
                 
-                {!isCollapsed && item.subItems && isActive && (
+                {(!isCollapsed || isMobileMenuOpen) && item.subItems && isActive && (
                   <div className="ml-10 space-y-1">
                     {item.subItems.map(sub => (
                       <Link 
@@ -191,19 +222,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex items-center gap-4 p-3 text-rose-400 hover:bg-rose-500/10 w-full rounded-xl transition-colors font-bold text-sm"
           >
             <span className="text-xl">🚪</span>
-            {!isCollapsed && <span>Déconnexion</span>}
+            {(!isCollapsed || isMobileMenuOpen) && <span>Déconnexion</span>}
           </button>
         </div>
       </aside>
 
       {/* ZONE DE CONTENU PRINCIPALE */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Poste de pilotage</span>
-            <span className="text-sm font-bold text-slate-700 capitalize">
-              {pathname.split('/').pop()?.replace('-', ' ')}
-            </span>
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-4">
+            
+            {/* 🎯 NOUVEAU : Bouton Hamburger pour mobile */}
+            <button 
+              className="md:hidden p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-sky-100 hover:text-sky-600 transition-colors"
+              onClick={() => { setIsMobileMenuOpen(true); setIsCollapsed(false); }}
+            >
+              <span className="text-xl">☰</span>
+            </button>
+
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hidden sm:block">Poste de pilotage</span>
+              <span className="text-sm font-bold text-slate-700 capitalize">
+                {pathname.split('/').pop()?.replace('-', ' ')}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -219,7 +261,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8 lg:p-12 bg-slate-50">
+        {/* 🎯 NOUVEAU : PADDING RÉDUIT SUR MOBILE (p-2 au lieu de p-8) */}
+        <main className="flex-1 overflow-y-auto p-2 md:p-8 lg:p-12 bg-slate-50">
           <div className="max-w-6xl mx-auto">
             {children}
           </div>
