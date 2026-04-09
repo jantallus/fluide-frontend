@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // SI ON EST LÀ, C'EST QU'ON EST CONNECTÉ (Affichage normal)
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <AutoLogout />
       
       {/* SIDEBAR GAUCHE */}
