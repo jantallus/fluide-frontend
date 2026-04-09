@@ -213,65 +213,59 @@ export default function CadeauPage() {
               <p style={{ color: '#64748b', fontWeight: 900 }}>Aucune offre n'est disponible pour le moment.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '20px', 
-                  padding: '30px', 
-                  boxShadow: selectedTemplate?.id === tpl.id ? '0 0 0 4px #1e40af, 0 20px 40px rgba(0,0,0,0.1)' : '0 10px 30px rgba(0,0,0,0.05)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}>
+                <div 
+                  key={tpl.id} 
+                  onClick={() => { setSelectedTemplate(tpl); scrollToForm(); }}
+                  className={`bg-white rounded-[35px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${
+                    selectedTemplate?.id === tpl.id 
+                      ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' 
+                      : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'
+                  }`}
+                >
                   
-                  {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU BON CADEAU */}
+                  {/* 🎯 LA SUPERBE PHOTO DU BON CADEAU */}
                   {tpl.image_url && (
                     <div 
-                      className="w-full h-40 md:h-52 bg-cover bg-center rounded-[12px] mb-6 shadow-sm border border-slate-100"
+                      className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100"
                       style={{ backgroundImage: `url(${tpl.image_url})` }}
                     />
                   )}
 
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                      <span style={{ backgroundColor: '#eff6ff', color: '#1e40af', padding: '5px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
-                        Valable {tpl.validity_months} mois
+                    <h3 className="text-2xl font-black uppercase italic text-slate-900 mb-3">{tpl.title}</h3>
+                    
+                    {/* LES BADGES (Durée de validité + Type de prestation) */}
+                    <div className="flex flex-wrap gap-2 text-xs font-bold mb-6">
+                      <span className="bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100">
+                        ⏳ Valable {tpl.validity_months} mois
                       </span>
-                      <span style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0f172a' }}>{tpl.price_cents / 100}€</span>
+                      {tpl.flight_name ? (
+                        <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">
+                          🎯 {tpl.flight_name}
+                        </span>
+                      ) : (
+                        <span className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg border border-amber-100">
+                          💶 Avoir Libre
+                        </span>
+                      )}
                     </div>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1e40af', marginBottom: '15px' }}>{tpl.title}</h3>
                     
-                    {tpl.flight_name ? (
-                      <p style={{ backgroundColor: '#f0fdf4', color: '#166534', padding: '10px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '20px' }}>
-                        🎯 Prestation : {tpl.flight_name}
-                      </p>
-                    ) : (
-                      <p style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '10px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '20px' }}>
-                        💶 Avoir Libre (Sur tout le site)
-                      </p>
-                    )}
-                    
-                    <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px' }}>{tpl.description}</p>
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">{tpl.description}</p>
                   </div>
                   
-                  <button 
-                    onClick={() => { setSelectedTemplate(tpl); scrollToForm(); }}
-                    style={{ 
-                      width: '100%', 
-                      padding: '15px', 
-                      borderRadius: '12px', 
-                      backgroundColor: selectedTemplate?.id === tpl.id ? '#f026b8' : '#1e40af', 
-                      color: 'white', 
-                      fontWeight: 900, 
-                      border: 'none', 
-                      cursor: 'pointer',
-                      transition: 'background-color 0.3s ease'
-                    }}
-                  >
-                    {selectedTemplate?.id === tpl.id ? '✓ Sélectionné' : 'Sélectionner ce bon'}
-                  </button>
+                  <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
+                    <div className="text-4xl font-black text-sky-600">{tpl.price_cents / 100}€</div>
+                    <button className={`px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-colors ${
+                      selectedTemplate?.id === tpl.id 
+                        ? 'bg-sky-500 text-white shadow-md' 
+                        : 'bg-slate-900 text-white group-hover:bg-sky-500'
+                    }`}>
+                      {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
+                    </button>
+                  </div>
+
                 </div>
               ))}
             </div>
