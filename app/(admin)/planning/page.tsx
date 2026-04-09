@@ -1073,11 +1073,33 @@ export default function PlanningAdmin() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone <span className="text-rose-500">*</span></label>
+                        <div className="flex items-center justify-between mb-1 ml-2 pr-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Téléphone <span className="text-rose-500">*</span></label>
+                          {/* 🎯 NOUVEAU : Bouton d'appel rapide (ne s'affiche que s'il y a un numéro) */}
+                          {formData.phone && (
+                            <a 
+                              href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
+                              className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm flex items-center gap-1"
+                            >
+                              📞 Appeler
+                            </a>
+                          )}
+                        </div>
                         <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="06 12 34 56 78" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
+                        <div className="flex items-center justify-between mb-1 ml-2 pr-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Email</label>
+                          {/* 🎯 NOUVEAU : Bouton d'email rapide (ne s'affiche que s'il y a un email) */}
+                          {formData.email && (
+                            <a 
+                              href={`mailto:${formData.email}`} 
+                              className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-lg font-black uppercase hover:bg-sky-200 transition-colors shadow-sm flex items-center gap-1"
+                            >
+                              ✉️ Écrire
+                            </a>
+                          )}
+                        </div>
                         <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Optionnel" />
                       </div>
                     </div>
