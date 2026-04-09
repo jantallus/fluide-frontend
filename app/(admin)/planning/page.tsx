@@ -857,6 +857,7 @@ export default function PlanningAdmin() {
           slotEventOverlap={false}
           displayEventTime={true}
           eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
+          dayMinWidth={130} /* 🎯 NOUVEAU : Force une largeur minimum par moniteur (active le scroll horizontal sur mobile) */
         />
     );
   }, [calendarEvents, monitors, timeBounds, handleEventClick]);
@@ -864,10 +865,21 @@ export default function PlanningAdmin() {
     
 
   return (
-    <div className="p-4 bg-slate-50 min-h-screen">
-      <header className="flex justify-between items-center mb-8 px-4">
+    return (
+    <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
+      
+      {/* 🎯 NOUVEAU : Optimisation de l'en-tête du calendrier pour les petits écrans */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 768px) {
+          .fc-header-toolbar { flex-direction: column !important; gap: 12px; }
+          .fc-toolbar-title { font-size: 1.2rem !important; }
+          .fc-button { padding: 0.3em 0.6em !important; font-size: 0.85em !important; }
+        }
+      `}} />
+
+      <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 md:mb-8 px-2 md:px-4">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900">
+          <h1 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-slate-900 text-center md:text-left">
             Planning <span className="text-sky-500">Vols</span>
           </h1>
         </div>
@@ -898,7 +910,7 @@ export default function PlanningAdmin() {
         </div>
       </header>
 
-      <div className="bg-white rounded-[35px] shadow-2xl border border-slate-200 p-6 overflow-hidden">
+      <div className="bg-white rounded-2xl md:rounded-[35px] shadow-2xl border border-slate-200 p-2 md:p-6 overflow-hidden">
         {memoizedCalendar}
       </div>
 
