@@ -1,22 +1,47 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation'; 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || "";
+  const isLogin = pathname.toLowerCase().includes("login");
+
   const [hasSplat, setHasSplat] = useState(false);
+  
+  // 🎯 1. NOUVEAU : Un état pour savoir si on est "intégré" dans un autre site
+  const [isEmbed, setIsEmbed] = useState(false); 
 
   useEffect(() => {
-    // Le splash apparaît après 2 secondes sur la partie publique uniquement
+    // 🎯 2. NOUVEAU : On détecte le mot magique "?embed=true" dans l'URL
+    if (window.location.search.includes('embed=true')) {
+      setIsEmbed(true);
+    }
+
+    if (isLogin) return;
+
     const timer = setTimeout(() => setHasSplat(true), 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLogin]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       
+      {/* 🚀 3. NOUVEAU NINJA SCRIPT : Cache instantanément les éléments avant même l'affichage */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        if (window.location.search.includes('embed=true')) {
+          document.documentElement.classList.add('embed-mode');
+        }
+      `}} />
+
       {/* --- STYLES GLOBAUX DU FRONT-OFFICE --- */}
       <style dangerouslySetInnerHTML={{ __html: `
+        /* 🎯 4. NOUVEAU : La règle CSS qui efface visuellement les menus */
+        .embed-mode #site-navbar, .embed-mode #site-footer {
+          display: none !important;
+        }
+
         @keyframes dropAndSplat {
           0% { transform: translateY(-100vh) scaleX(0.4); opacity: 0; }
           60% { transform: translateY(0) scaleX(0.7); opacity: 1; }
@@ -66,10 +91,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       `}} />
 
       {/* --- NAVIGATION --- */}
-      <Navbar />
+      {/* 🎯 5. NOUVEAU : On n'affiche la navbar que si on n'est PAS en mode embed */}
+      {!isEmbed && (
+        <div id="site-navbar">
+          <Navbar />
+        </div>
+      )}
 
       {/* --- SPLASH WIDGET (Texte complet) --- */}
-      {hasSplat && (
+      {/* 🎯 On coupe aussi le widget sur les autres sites pour éviter de les polluer visuellement */}
+      {hasSplat && !isLogin && !isEmbed && (
         <div className="splash-widget">
           <button className="close-x" onClick={() => setHasSplat(false)}>✕</button>
           <img src="/splash.avif" alt="Splash Fluide" className="img-splash" />
@@ -84,8 +115,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
-      {/* --- PIED DE PAGE (Design épuré & Escalier) --- */}
-      <Footer />
+      {/* --- PIED DE PAGE --- */}
+      {/* 🎯 6. NOUVEAU : On cache le pied de page en mode embed */}
+      {!isEmbed && (
+        <div id="site-footer">
+          <Footer />
+        </div>
+      )}
 
     </div>
   );
