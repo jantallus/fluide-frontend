@@ -1072,35 +1072,50 @@ export default function PlanningAdmin() {
                     })()}
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-1 ml-2 pr-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400">Téléphone <span className="text-rose-500">*</span></label>
-                          {/* 🎯 NOUVEAU : Bouton d'appel rapide (ne s'affiche que s'il y a un numéro) */}
-                          {formData.phone && (
-                            <a 
-                              href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
-                              className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm flex items-center gap-1"
-                            >
-                              📞 Appeler
-                            </a>
-                          )}
-                        </div>
-                        <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="06 12 34 56 78" />
+                      {/* COLONNE TÉLÉPHONE */}
+                      <div className="flex flex-col gap-1.5">
+                        {formData.phone ? (
+                          <a 
+                            href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
+                            className="w-full flex items-center justify-center gap-2 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm"
+                          >
+                            📞 Appeler
+                          </a>
+                        ) : (
+                          <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">
+                            📞 Appeler <span className="text-rose-500 -ml-1">*</span>
+                          </div>
+                        )}
+                        <input 
+                          type="tel" 
+                          className="w-full bg-slate-50 border-2 border-slate-100 focus:border-emerald-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" 
+                          value={formData.phone} 
+                          onChange={e => setFormData({...formData, phone: e.target.value})} 
+                          placeholder="06 12 34 56 78" 
+                        />
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1 ml-2 pr-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400">Email</label>
-                          {/* 🎯 NOUVEAU : Bouton d'email rapide (ne s'affiche que s'il y a un email) */}
-                          {formData.email && (
-                            <a 
-                              href={`mailto:${formData.email}`} 
-                              className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-lg font-black uppercase hover:bg-sky-200 transition-colors shadow-sm flex items-center gap-1"
-                            >
-                              ✉️ Écrire
-                            </a>
-                          )}
-                        </div>
-                        <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Optionnel" />
+
+                      {/* COLONNE EMAIL */}
+                      <div className="flex flex-col gap-1.5">
+                        {formData.email ? (
+                          <a 
+                            href={`mailto:${formData.email}`} 
+                            className="w-full flex items-center justify-center gap-2 text-[10px] bg-sky-100 text-sky-700 py-2 rounded-xl font-black uppercase hover:bg-sky-200 transition-colors shadow-sm"
+                          >
+                            ✉️ Écrire
+                          </a>
+                        ) : (
+                          <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">
+                            ✉️ Écrire
+                          </div>
+                        )}
+                        <input 
+                          type="email" 
+                          className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" 
+                          value={formData.email} 
+                          onChange={e => setFormData({...formData, email: e.target.value})} 
+                          placeholder="Email (Optionnel)" 
+                        />
                       </div>
                     </div>
 
