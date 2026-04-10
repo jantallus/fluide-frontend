@@ -391,7 +391,13 @@ export default function PlanningAdmin() {
   };
 
   const handleRelease = async () => {
-    if (!selectedEvent || !confirm("Action irréversible. Confirmer ?")) return;
+    // 🎯 Le message s'adapte si c'est juste une note ou un client
+    const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
+    const confirmMsg = isNoteOnly 
+      ? "🗑️ Voulez-vous vraiment effacer cette note ?"
+      : "🗑️ Action irréversible. Libérer ce créneau ?\n\n(Les notes éventuelles seront conservées)";
+      
+    if (!selectedEvent || !confirm(confirmMsg)) return;
 
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
@@ -409,9 +415,20 @@ export default function PlanningAdmin() {
       );
       
       if (slotToFree) {
+        // 🎯 NOUVEAU : On détecte s'il faut préserver une note !
+        const isClientSlot = slotToFree.status === 'booked' && slotToFree.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slotToFree.title) && !slotToFree.title.includes('❌');
+        
+        let newTitle = '';
+        let newNotes = '';
+        
+        if (isClientSlot && i === 0 && slotToFree.notes && slotToFree.notes !== 'Extension auto') {
+          newTitle = 'NOTE';
+          newNotes = slotToFree.notes;
+        }
+
         updatesToApply.push({
           id: slotToFree.id,
-          data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' }
+          data: { title: newTitle, flight_type_id: null, weight: null, notes: newNotes, status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' }
         });
       }
     }
@@ -1112,15 +1129,25 @@ export default function PlanningAdmin() {
                       {/* COLONNE TÉLÉPHONE */}
                       <div className="flex flex-col gap-1.5">
                         {formData.phone ? (
-                          <a 
-                            href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
-                            className="w-full flex items-center justify-center gap-2 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm"
-                          >
-                            📞 Appeler
-                          </a>
+                          <div className="flex gap-2 w-full">
+                            <a 
+                              href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
+                              className="flex-1 flex items-center justify-center text-[14px] bg-emerald-100 text-emerald-700 py-2 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm"
+                              title="Appeler"
+                            >
+                              📞
+                            </a>
+                            <a 
+                              href={`sms:${formData.phone.replace(/\s+/g, '')}`} 
+                              className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm"
+                              title="Envoyer un SMS"
+                            >
+                              💬 SMS
+                            </a>
+                          </div>
                         ) : (
                           <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">
-                            📞 Appeler <span className="text-rose-500 -ml-1">*</span>
+                            📞 Téléphone <span className="text-rose-500 -ml-1">*</span>
                           </div>
                         )}
                         <input 
@@ -1291,14 +1318,25 @@ export default function PlanningAdmin() {
                           </div>
                         ) : (
                           <div className="flex gap-2 pt-2">
-                            <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 transition-colors py-2">
-                              🗑️ Libérer ce créneau
-                            </button>
-                            {groupRootSlots.length > 1 && (
-                              <button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">
-                                🧹 Libérer le groupe ({groupRootSlots.length})
-                              </button>
-                            )}
+                            {(() => {
+                              const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
+                              const hasNote = !!selectedEvent?.notes && selectedEvent?.notes !== 'Extension auto';
+                              
+                              return (
+                                <>
+                                  <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">
+                                    {isNoteOnly 
+                                      ? "🗑️ Effacer la note" 
+                                      : (hasNote ? "🗑️ Libérer (Garder note)" : "🗑️ Libérer ce créneau")}
+                                  </button>
+                                  {groupRootSlots.length > 1 && (
+                                    <button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">
+                                      🧹 Libérer groupe ({groupRootSlots.length})
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         )
                       )}
