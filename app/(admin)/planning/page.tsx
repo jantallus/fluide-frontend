@@ -291,11 +291,19 @@ export default function PlanningAdmin() {
         if (isNonBlockingNote) {
           const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
           if (isClientSlot) {
-            payload.title = slot.title; payload.status = slot.status;
-            if (slot.notes && slot.notes.trim() !== '' && slot.notes !== formData.notes && !formData.notes.includes(slot.notes)) {
-               payload.notes = slot.notes + " | " + formData.notes;
-            }
-            payload.flight_type_id = slot.flight_type_id; payload.phone = slot.phone; payload.email = slot.email; payload.weightChecked = slot.weight_checked || slot.weightChecked; payload.booking_options = slot.booking_options; payload.client_message = slot.client_message; payload.weight = slot.weight;
+            payload.title = slot.title; 
+            payload.status = slot.status;
+            
+            // 🎯 CORRECTION 1 : On remplace strictement la note au lieu de l'ajouter à la suite !
+            payload.notes = formData.notes;
+            
+            payload.flight_type_id = slot.flight_type_id; 
+            payload.phone = slot.phone; 
+            payload.email = slot.email; 
+            payload.weightChecked = slot.weight_checked || slot.weightChecked; 
+            payload.booking_options = slot.booking_options; 
+            payload.client_message = slot.client_message; 
+            payload.weight = slot.weight;
           } else {
             payload.flight_type_id = null; payload.phone = ''; payload.email = ''; payload.weightChecked = false; payload.booking_options = ''; payload.client_message = '';
           }
@@ -466,10 +474,21 @@ export default function PlanningAdmin() {
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 NOUVEAU : Fonction pour effacer/libérer tout un lot de notes ou de blocages
+  // 🎯 NOUVEAU : Fonction adaptative pour effacer/libérer (Solo ou Lot complet)
   const handleBulkRelease = async () => {
     if (!selectedEvent) return;
-    if (!confirm("🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection actuelle (Cible + Durée) ?\n\n(Les réservations clients existantes seront conservées, seule la note ajoutée sera retirée).")) return;
+
+    // On analyse ce que l'utilisateur a sélectionné dans les menus déroulants
+    const isPlural = blockType === 'all' || 
+                     (blockType === 'specific' && selectedMonitors.length > 1) || 
+                     (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
+
+    // Le message s'adapte au contexte
+    const confirmMsg = isPlural 
+      ? "🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection (Pilotes + Durée) ?\n\n(Les réservations clients existantes seront conservées, seules les notes/blocages seront retirés)."
+      : "🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).";
+
+    if (!confirm(confirmMsg)) return;
 
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
     const startMs = new Date(selectedEvent.start).getTime();
@@ -483,8 +502,24 @@ export default function PlanningAdmin() {
     const updatesToApply: any[] = [];
     slotsToUpdate.forEach(slot => {
       const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+      
       if (isClientSlot) {
-        updatesToApply.push({ id: slot.id, data: { ...slot, weightChecked: slot.weight_checked || slot.weightChecked, notes: '' } });
+        // 🎯 CORRECTION 2 : On envoie un objet parfaitement propre au serveur pour garantir l'effacement
+        updatesToApply.push({ 
+          id: slot.id, 
+          data: { 
+            title: slot.title,
+            status: slot.status,
+            notes: '', // <-- L'effacement radical est ici
+            flight_type_id: slot.flight_type_id,
+            phone: slot.phone,
+            email: slot.email,
+            weightChecked: slot.weight_checked || slot.weightChecked,
+            booking_options: slot.booking_options,
+            client_message: slot.client_message,
+            weight: slot.weight 
+          } 
+        });
       } else {
         updatesToApply.push({ id: slot.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
       }
@@ -921,7 +956,9 @@ export default function PlanningAdmin() {
             <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
               <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
               <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note</button>
-              {selectedEvent?.status !== 'available' && (
+              
+              {/* 🎯 NOUVEAU : On cache l'onglet "Déplacer" si le créneau est un simple blocage (NON DISPO/PAUSE) ou hors-saison */}
+              {selectedEvent?.status !== 'available' && !isClientLocked && (
                 <button onClick={() => setActiveTab('move')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'move' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-400'}`}>🔄 Déplacer</button>
               )}
             </div>
@@ -1223,13 +1260,34 @@ export default function PlanningAdmin() {
                       {/* 🎯 NOUVEAU : Boutons de libération intelligents */}
                       {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
                         activeTab === 'note' ? (
-                          <div className="flex gap-2 pt-2">
-                            <button onClick={handleRelease} className="flex-1 text-rose-400 font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-50 transition-colors border border-rose-100 rounded-xl py-3">
-                              🗑️ Libérer (Ce créneau)
-                            </button>
-                            <button onClick={handleBulkRelease} className="flex-1 bg-rose-50 text-rose-600 font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm rounded-xl py-3">
-                              🧹 Libérer (Le Lot complet)
-                            </button>
+                          <div className="pt-2">
+                            {(() => {
+                              // 1. On détecte si on cible plusieurs créneaux/pilotes
+                              const isPlural = blockType === 'all' || 
+                                               (blockType === 'specific' && selectedMonitors.length > 1) || 
+                                               (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
+                              
+                              // 2. On détecte si c'est un vrai blocage dur (NON DISPO/PAUSE) ou juste une note
+                              const isBlock = ['NON DISPO', '☕ PAUSE'].includes(selectedEvent?.title) || selectedEvent?.title?.includes('❌');
+                              
+                              // 3. On génère le texte parfait
+                              const btnText = !isBlock 
+                                ? (isPlural ? "🧹 Effacer les notes sélectionnées" : "🗑️ Effacer la note")
+                                : (isPlural ? "🧹 Libérer les créneaux sélectionnés" : "🗑️ Libérer le créneau");
+                              
+                              return (
+                                <button 
+                                  onClick={handleBulkRelease} 
+                                  className={`w-full font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${
+                                    isPlural 
+                                      ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' 
+                                      : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'
+                                  }`}
+                                >
+                                  {btnText}
+                                </button>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <div className="flex gap-2 pt-2">
