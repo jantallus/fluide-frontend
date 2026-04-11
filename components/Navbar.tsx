@@ -22,7 +22,7 @@ export default function Navbar() {
       <div className="nav-container-fluid">
         
         {/* LOGO */}
-        <Link href="/" className="logo-escalier">
+        <Link href="/booking" className="logo-escalier">
           <span className="letter l1">f</span>
           <span className="letter l2">l</span>
           <span className="letter l3">u</span>
@@ -34,7 +34,7 @@ export default function Navbar() {
         {/* MENU DESKTOP */}
         <div className="desktop-nav">
           <div className="nav-links-group">
-            <Link href="/hiver" className={`nav-item ${pathname === '/hiver' ? 'active' : ''}`}>
+            {/*<Link href="/hiver" className={`nav-item ${pathname === '/hiver' ? 'active' : ''}`}>
               Biplace l'hiver
             </Link>
             <Link href="/ete" className={`nav-item ${pathname === '/ete' ? 'active' : ''}`}>
@@ -42,7 +42,7 @@ export default function Navbar() {
             </Link>
             <Link href="/infos" className={`nav-item ${pathname === '/infos' ? 'active' : ''}`}>
               Infos pratiques
-            </Link>
+            </Link> */}
             {/* 🚨 CORRECTION : Le bon lien est /bons-cadeaux */}
             <Link href="/bons-cadeaux" className={`nav-item ${pathname === '/bons-cadeaux' ? 'active' : ''}`}>
               Cartes cadeaux
@@ -83,19 +83,19 @@ export default function Navbar() {
           </Link>
 
           {/* Hamburger */}
-          <button className={`burger-menu ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
+          {/*<button className={`burger-menu ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
             <span></span>
             <span></span>
             <span></span>
-          </button>
+          </button>*/}
         </div>
       </div>
 
       {/* MOBILE NAV */}
       <div className={`mobile-nav ${isOpen ? 'active' : ''}`}>
-        <Link href="/hiver" onClick={() => setIsOpen(false)}>Biplace l'hiver</Link>
+        {/*<Link href="/hiver" onClick={() => setIsOpen(false)}>Biplace l'hiver</Link>
         <Link href="/ete" onClick={() => setIsOpen(false)}>Biplace l'été</Link>
-        <Link href="/infos" onClick={() => setIsOpen(false)}>Infos pratiques</Link>
+        <Link href="/infos" onClick={() => setIsOpen(false)}>Infos pratiques</Link>*/}
         <Link href="/bons-cadeaux" onClick={() => setIsOpen(false)}>Cartes cadeaux</Link>
         <Link href="/booking" className="cta-mobile" onClick={() => setIsOpen(false)}>Réserver mon vol</Link>
       </div>

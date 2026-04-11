@@ -78,14 +78,14 @@ export default function Footer() {
         <div className="footer-column">
           <h4 style={{ fontWeight: 900, marginBottom: '15px', textTransform: 'uppercase', fontSize: '0.9rem' }}>C'est Fluide</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            <li style={{ marginBottom: '8px' }}>
+            {/*<li style={{ marginBottom: '8px' }}>
               <Link href="/hiver" style={{ color: '#64748b', fontWeight: 400, textDecoration: 'none' }}>Baptême parapente La Clusaz hiver</Link>
             </li>
             <li style={{ marginBottom: '8px' }}>
               <Link href="/ete" style={{ color: '#64748b', fontWeight: 400, textDecoration: 'none' }}>Baptême parapente La Clusaz été</Link>
             </li>
             <li style={{ marginBottom: '8px' }}><Link href="/equipe" style={{ color: '#64748b', fontWeight: 400, textDecoration: 'none' }}>L'équipe</Link></li>
-            <li style={{ marginBottom: '8px' }}><Link href="/mag" style={{ color: '#64748b', fontWeight: 400, textDecoration: 'none' }}>Le Mag'</Link></li>
+            <li style={{ marginBottom: '8px' }}><Link href="/mag" style={{ color: '#64748b', fontWeight: 400, textDecoration: 'none' }}>Le Mag'</Link></li>*/}
           </ul>
         </div>
 
