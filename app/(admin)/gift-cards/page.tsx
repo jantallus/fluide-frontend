@@ -7,6 +7,7 @@ export default function VouchersPage() {
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'gift_card' | 'promo'>('gift_card');
   const [complements, setComplements] = useState<any[]>([]);
   const [giftCardMode, setGiftCardMode] = useState<'prestation' | 'value'>('prestation');
@@ -26,6 +27,50 @@ export default function VouchersPage() {
     valid_from: '',
     valid_until: ''
   });
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingCardId(null);
+    setNewVoucher({
+      type: 'gift_card', custom_code: '', buyer_name: '', beneficiary_name: '', gift_value: '', 
+      flight_type_id: '', discount_type: 'fixed', discount_value: '', discount_scope: 'both',
+      max_uses: '1', is_unlimited: false, valid_from: '', valid_until: ''
+    });
+    setSelectedPrestation('');
+    setGiftCardMode('prestation');
+  };
+
+  const handleEdit = (card: any) => {
+    setEditingCardId(card.id);
+    setActiveTab(card.type);
+    
+    setNewVoucher({
+      type: card.type,
+      custom_code: card.code,
+      buyer_name: card.buyer_name || '',
+      beneficiary_name: card.beneficiary_name || '',
+      gift_value: card.price_paid_cents ? (card.price_paid_cents / 100).toString() : '',
+      flight_type_id: card.flight_type_id?.toString() || '',
+      discount_type: card.discount_type || 'fixed',
+      discount_value: card.discount_value ? card.discount_value.toString() : '',
+      discount_scope: card.discount_scope || 'both',
+      max_uses: card.max_uses ? card.max_uses.toString() : '',
+      is_unlimited: card.max_uses === null,
+      valid_from: card.valid_from ? card.valid_from.split('T')[0] : '',
+      valid_until: card.valid_until ? card.valid_until.split('T')[0] : ''
+    });
+
+    if (card.type === 'gift_card') {
+      if (card.flight_type_id) {
+        setGiftCardMode('prestation');
+        setSelectedPrestation(`flight|${card.flight_type_id}`);
+      } else {
+        setGiftCardMode('value');
+        setSelectedPrestation('');
+      }
+    }
+    setShowModal(true);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -51,10 +96,12 @@ export default function VouchersPage() {
     const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
     if (!confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme utilisé ?")) return;
 
+    // 🎯 Appel propre pour juste changer le statut
     const res = await apiFetch(`/api/gift-cards/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status: newStatus })
     });
+
     if (res.ok) loadData();
   };
 
@@ -171,7 +218,7 @@ export default function VouchersPage() {
             Codes & <span className="text-indigo-500">Bons</span>
           </h1>
         </div>
-        <button onClick={() => setShowModal(true)} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform">
+        <button onClick={() => { setEditingCardId(null); setShowModal(true); }} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform">
           + Créer un Code
         </button>
       </header>
@@ -233,19 +280,31 @@ export default function VouchersPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-end">
+                {/* 🎯 NOUVEAU : On cache le bouton "Utilisé" pour les promos */}
+                {!isPromo && (
+                  <button
+                    onClick={() => toggleCardStatus(c.id, c.status)}
+                    className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all shadow-sm ${
+                      c.status === 'valid'
+                        ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105'
+                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
+                  </button>
+                )}
+
+                {/* 🎯 NOUVEAU : Le bouton Modifier pour tout le monde */}
                 <button
-                  onClick={() => toggleCardStatus(c.id, c.status)}
-                  className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all shadow-sm ${
-                    c.status === 'valid'
-                      ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105'
-                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                  }`}
+                  onClick={() => handleEdit(c)}
+                  className="px-6 py-2 rounded-full font-black uppercase text-xs bg-sky-100 text-sky-600 hover:bg-sky-200 transition-all shadow-sm mt-1"
                 >
-                  {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
+                  ✏️ Modifier
                 </button>
+
                 <button
                   onClick={() => deleteCard(c.id)}
-                  className="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors"
+                  className="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors mt-2"
                 >
                   🗑️ Supprimer
                 </button>
@@ -270,8 +329,15 @@ export default function VouchersPage() {
 
             <div className="space-y-6">
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex justify-between">Code personnalisé <span>(Optionnel)</span></label>
-                <input type="text" placeholder="Ex: NOEL2024 (Laisser vide pour auto-générer)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-indigo-500 outline-none uppercase" value={newVoucher.custom_code} onChange={e => setNewVoucher({ ...newVoucher, custom_code: e.target.value.toUpperCase() })} />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex justify-between">Code <span>({editingCardId ? "Non modifiable" : "Optionnel"})</span></label>
+                <input 
+                  type="text" 
+                  disabled={!!editingCardId} 
+                  placeholder="Ex: NOEL2024 (Laisser vide pour auto-générer)" 
+                  className={`w-full border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none uppercase ${editingCardId ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-50 focus:border-indigo-500'}`} 
+                  value={newVoucher.custom_code} 
+                  onChange={e => setNewVoucher({ ...newVoucher, custom_code: e.target.value.toUpperCase() })} 
+                />
               </div>
 
               {activeTab === 'gift_card' && (
@@ -417,9 +483,9 @@ export default function VouchersPage() {
               )}
 
               <button onClick={handleCreate} className={`w-full text-white py-5 rounded-3xl font-black uppercase italic shadow-xl transition-all ${activeTab === 'gift_card' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'}`}>
-                Générer le code
+                {editingCardId ? 'Enregistrer les modifications' : 'Générer le code'}
               </button>
-              <button onClick={() => setShowModal(false)} className="w-full text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-slate-600">
+              <button onClick={closeModal} className="w-full text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-slate-600">
                 Annuler
               </button>
             </div>
