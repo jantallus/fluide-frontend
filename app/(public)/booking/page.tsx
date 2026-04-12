@@ -844,6 +844,59 @@ export default function ReserverPage() {
                 <p className="text-slate-500 font-medium mt-2">Dernière étape avant de voler !</p>
               </div>
 
+              {/* 🎯 NOUVEAU : LA SECTION BON CADEAU EST MAINTENANT TOUT EN HAUT ! */}
+              <div className="mb-12 bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm">
+                <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
+                
+                <h3 className="font-black text-xl text-amber-900 mb-2 uppercase tracking-widest flex items-center gap-3 relative z-10">
+                  Vous avez un Bon Cadeau ou un Code Promo ?
+                </h3>
+                <p className="text-amber-700 font-bold mb-6 text-sm relative z-10">
+                  Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
+                </p>
+
+                {appliedVoucher ? (
+                  <div className="bg-white border-2 border-emerald-500 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
+                    <div>
+                      <p className="font-black text-emerald-900 uppercase tracking-widest text-sm">
+                        ✅ {appliedVoucher.type === 'promo' ? 'Code Promo appliqué' : 'Bon cadeau activé !'}
+                      </p>
+                      <p className="text-emerald-700 font-bold mt-1">
+                        Code : <span className="uppercase">{appliedVoucher.code}</span>
+                      </p>
+                    </div>
+                    <div className="text-left md:text-right w-full md:w-auto">
+                      <p className="text-3xl font-black text-emerald-600">
+                        - {discountAmount.toFixed(2)} €
+                      </p>
+                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-black uppercase text-rose-500 mt-2 hover:underline">
+                        Retirer le code
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative z-10">
+                    <div className="flex flex-col md:flex-row gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
+                        className="flex-1 bg-white border-2 border-amber-100 rounded-2xl p-4 font-black uppercase text-slate-800 focus:border-amber-500 outline-none transition-colors shadow-sm"
+                        value={voucherInput}
+                        onChange={e => setVoucherInput(e.target.value.toUpperCase())}
+                      />
+                      <button 
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher || !voucherInput.trim()}
+                        className={`px-8 py-4 md:py-0 rounded-2xl font-black uppercase tracking-widest text-sm transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'bg-amber-200/50 text-amber-400' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-md hover:-translate-y-0.5'}`}
+                      >
+                        {isApplyingVoucher ? '...' : 'Appliquer'}
+                      </button>
+                    </div>
+                    {voucherError && <p className="text-rose-600 font-bold text-sm mt-3 flex items-center gap-2"><span>❌</span> {voucherError}</p>}
+                  </div>
+                )}
+              </div>
+
               {/* SECTION 1 : CONTACT */}
               <div className="mb-12">
                 <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
@@ -898,21 +951,11 @@ export default function ReserverPage() {
                     <div key={p.id} className="bg-white border-2 border-slate-100 rounded-3xl p-6 relative overflow-hidden group">
                       <div className="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
                       
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-3">
-                          <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
-                          <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
-                            {p.flightName} • {getDayName(p.date)} à {p.time}
-                          </span>
-                        </div>
-                        
-                        <button 
-                          onClick={() => handleRemovePassenger(index, p.flightKey)}
-                          className="flex items-center gap-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors"
-                          title="Annuler cette place"
-                        >
-                          ❌ <span className="hidden md:inline">Retirer</span>
-                        </button>
+                      <div className="flex flex-wrap items-center gap-3 mb-5">
+                        <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
+                        <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
+                          {p.flightName} • {getDayName(p.date)} à {p.time}
+                        </span>
                       </div>
 
                       <div className="mb-4">
@@ -1009,56 +1052,7 @@ export default function ReserverPage() {
                   ))}
                 </div>
               </div>
-
             </div>
-            {/* SECTION 3 : CODE PROMO / BON CADEAU */}
-              <div className="mt-12 pt-8 border-t border-slate-100">
-                <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
-                  <span className="bg-amber-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
-                  Code Promo ou Bon Cadeau
-                </h3>
-
-                {appliedVoucher ? (
-                  <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-6 flex justify-between items-center">
-                    <div>
-                      <p className="font-black text-emerald-900 uppercase tracking-widest text-sm">
-                        ✅ {appliedVoucher.type === 'promo' ? 'Code Promo appliqué' : 'Bon cadeau appliqué'}
-                      </p>
-                      <p className="text-emerald-700 font-bold mt-1">
-                        Code : <span className="uppercase">{appliedVoucher.code}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-emerald-600">
-                        - {discountAmount.toFixed(2)} €
-                      </p>
-                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-black uppercase text-rose-500 mt-2 hover:underline">
-                        Retirer le code
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
-                        className="flex-1 bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold uppercase text-slate-800 focus:border-amber-500 outline-none transition-colors shadow-sm"
-                        value={voucherInput}
-                        onChange={e => setVoucherInput(e.target.value.toUpperCase())}
-                      />
-                      <button 
-                        onClick={handleApplyVoucher}
-                        disabled={isApplyingVoucher || !voucherInput.trim()}
-                        className={`px-8 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'bg-slate-200 text-slate-400' : 'bg-slate-900 text-white hover:bg-amber-500 shadow-md'}`}
-                      >
-                        {isApplyingVoucher ? '...' : 'Appliquer'}
-                      </button>
-                    </div>
-                    {voucherError && <p className="text-rose-500 font-bold text-xs mt-3 ml-2">❌ {voucherError}</p>}
-                  </div>
-                )}
-              </div>
           </div>
         )}
       </div>
@@ -1094,6 +1088,10 @@ export default function ReserverPage() {
             <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
               <div className="text-right">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                {/* 🎯 NOUVEAU : Si un bon est appliqué, on affiche l'ancien prix barré ! */}
+                {discountAmount > 0 && (
+                  <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
+                )}
                 <p className="text-2xl font-black text-sky-500">{finalPrice.toFixed(2)} €</p>
               </div>
               
@@ -1101,9 +1099,11 @@ export default function ReserverPage() {
                  <button 
                   onClick={handleSubmit}
                   disabled={!isFormValid || isCheckingOut}
-                  className={`flex-1 md:flex-none px-10 py-4 rounded-2xl font-black uppercase text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                  className={`flex-1 md:flex-none px-8 md:px-10 py-4 rounded-2xl font-black uppercase text-[11px] md:text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                 >
-                  {isCheckingOut ? 'Redirection Stripe...' : 'Confirmer la réservation'}
+                  {isCheckingOut 
+                    ? 'Validation...' 
+                    : (finalPrice === 0 ? '✨ Valider (Gratuit)' : '🔒 Payer la réservation')}
                 </button>
               ) : (
                 <button 
