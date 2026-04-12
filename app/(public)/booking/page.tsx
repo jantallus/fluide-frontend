@@ -979,15 +979,24 @@ export default function ReserverPage() {
                                       setPassengers(newP);
                                     }}
                                   />
-                                  <div className="flex-1">
-                                    <span className={`font-bold block ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
-                                      {comp.name} (+{comp.price_cents / 100}€)
-                                    </span>
-                                    {comp.description && (
-                                      <span className="text-xs text-slate-500 mt-1 block leading-tight">
-                                        {comp.description}
-                                      </span>
+                                  <div className="flex-1 flex items-center gap-4">
+                                    {/* 🎯 NOUVEAU : Le pictogramme joliment encadré */}
+                                    {comp.image_url && (
+                                      <div className="w-10 h-10 shrink-0 bg-white rounded-lg p-1 border border-slate-200 flex items-center justify-center shadow-sm">
+                                        <img src={comp.image_url} alt={comp.name} className="w-full h-full object-contain" />
+                                      </div>
                                     )}
+                                    
+                                    <div>
+                                      <span className={`font-bold block ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
+                                        {comp.name} (+{comp.price_cents / 100}€)
+                                      </span>
+                                      {comp.description && (
+                                        <span className="text-xs text-slate-500 mt-1 block leading-tight">
+                                          {comp.description}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </label>
                               );
