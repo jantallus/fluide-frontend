@@ -18,6 +18,8 @@ export default function ConfigPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // 🎯 NOUVEAU : Mémoire pour le bouton de chargement d'image
+  const [isUploading, setIsUploading] = useState(false);
   
   const [activePlan, setActivePlan] = useState<string>('Standard');
   const [newRotation, setNewRotation] = useState({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: 'Standard' });
@@ -419,18 +421,67 @@ export default function ConfigPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Image d'illustration (Boutique & PDF)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: /fond-bleu.jpg" 
-                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
-                    value={newTemplate.image_url || ''} 
-                    onChange={e => setNewTemplate({...newTemplate, image_url: e.target.value})} 
-                  />
-                  <p className="text-xs text-slate-400 ml-4 mt-1">Placez l'image dans le dossier 'public' (ex: /fond-rose.jpg)</p>
                   
-                  {/* 🎯 NOUVEAU : Aperçu de l'image en direct ! */}
+                  <div className="flex gap-3">
+                    {/* Le bouton caché pour choisir le fichier */}
+                    <input 
+                      type="file" 
+                      id="image-upload" 
+                      accept="image/*" 
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setIsUploading(true);
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        // ⚠️ REMPLACEZ "fluide_preset" PAR LE NOM DE VOTRE PRESET CLOUDINARY
+                        formData.append('upload_preset', 'fluide_preset'); 
+
+                        try {
+                          // ⚠️ REMPLACEZ "VOTRE_CLOUD_NAME" PAR VOTRE VRAI CLOUD NAME
+                          const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', {
+                            method: 'POST',
+                            body: formData
+                          });
+                          
+                          const data = await res.json();
+                          if (data.secure_url) {
+                            // On sauvegarde directement le lien Cloudinary !
+                            setNewTemplate({...newTemplate, image_url: data.secure_url});
+                          }
+                        } catch (err) {
+                          alert("Erreur lors de l'envoi de l'image.");
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }} 
+                    />
+                    
+                    {/* Le joli bouton sur lequel on clique */}
+                    <label 
+                      htmlFor="image-upload" 
+                      className={`flex-1 flex items-center justify-center border-2 border-dashed border-sky-300 rounded-2xl p-4 font-black uppercase text-[10px] tracking-widest transition-colors cursor-pointer ${isUploading ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-400'}`}
+                    >
+                      {isUploading ? '⏳ Envoi en cours...' : '📸 Uploader une image'}
+                    </label>
+
+                    {/* On garde la possibilité de mettre un lien à la main ou d'effacer (optionnel) */}
+                    <input 
+                      type="text" 
+                      placeholder="Ou collez un lien..." 
+                      className="flex-1 border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 text-xs text-slate-400" 
+                      value={newTemplate.image_url || ''} 
+                      onChange={e => setNewTemplate({...newTemplate, image_url: e.target.value})} 
+                    />
+                  </div>
+                  
                   {newTemplate.image_url && (
-                    <div className="mt-3 h-32 rounded-2xl bg-cover bg-center border-2 border-slate-200 shadow-inner" style={{ backgroundImage: `url(${newTemplate.image_url})` }}></div>
+                    <div className="mt-3 h-32 rounded-2xl bg-cover bg-center border-2 border-slate-200 shadow-inner relative group" style={{ backgroundImage: `url(${newTemplate.image_url})` }}>
+                       <button onClick={() => setNewTemplate({...newTemplate, image_url: ''})} className="absolute top-2 right-2 bg-rose-500 text-white w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md">✕</button>
+                    </div>
                   )}
                 </div>
                 

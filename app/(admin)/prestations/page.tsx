@@ -12,6 +12,8 @@ export default function PrestationsPage() {
   
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  // 🎯 NOUVEAU : Mémoire pour le bouton de chargement d'image
+  const [isUploading, setIsUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -218,16 +220,67 @@ export default function PrestationsPage() {
               <div className="space-y-4">
                 <input type="text" placeholder="Nom du vol (ex: Grand Vol)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Image du vol (Dossier public)</label>
-                  <input 
-                    type="text" 
-                    placeholder="ex: /vol-prestige.jpg" 
-                    className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold mt-1" 
-                    value={formData.image_url} 
-                    onChange={e => setFormData({...formData, image_url: e.target.value})} 
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Image du vol (Catalogue Client)</label>
+                  
+                  <div className="flex gap-3 mt-1">
+                    {/* Le bouton caché pour choisir le fichier */}
+                    <input 
+                      type="file" 
+                      id="image-upload-flight" 
+                      accept="image/*" 
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setIsUploading(true);
+                        const dataForm = new FormData();
+                        dataForm.append('file', file);
+                        
+                        // ⚠️ REMPLACEZ "fluide_preset" PAR LE NOM DE VOTRE PRESET CLOUDINARY
+                        dataForm.append('upload_preset', 'fluide_preset'); 
+
+                        try {
+                          // ⚠️ REMPLACEZ "VOTRE_CLOUD_NAME" PAR VOTRE VRAI CLOUD NAME
+                          const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', {
+                            method: 'POST',
+                            body: dataForm
+                          });
+                          
+                          const data = await res.json();
+                          if (data.secure_url) {
+                            setFormData({...formData, image_url: data.secure_url});
+                          }
+                        } catch (err) {
+                          alert("Erreur lors de l'envoi de l'image.");
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }} 
+                    />
+                    
+                    {/* Le joli bouton sur lequel on clique */}
+                    <label 
+                      htmlFor="image-upload-flight" 
+                      className={`flex-1 flex items-center justify-center border-2 border-dashed border-sky-300 rounded-2xl p-4 font-black uppercase text-[10px] tracking-widest transition-colors cursor-pointer ${isUploading ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-400'}`}
+                    >
+                      {isUploading ? '⏳ Envoi en cours...' : '📸 Uploader une image'}
+                    </label>
+
+                    {/* L'input texte en option */}
+                    <input 
+                      type="text" 
+                      placeholder="Ou collez un lien..." 
+                      className="flex-1 border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 text-xs text-slate-400" 
+                      value={formData.image_url || ''} 
+                      onChange={e => setFormData({...formData, image_url: e.target.value})} 
+                    />
+                  </div>
+                  
                   {formData.image_url && (
-                    <div className="mt-2 h-24 rounded-xl bg-cover bg-center border-2 border-slate-200" style={{ backgroundImage: `url(${formData.image_url})` }}></div>
+                    <div className="mt-3 h-28 rounded-2xl bg-cover bg-center border-2 border-slate-200 shadow-inner relative group" style={{ backgroundImage: `url(${formData.image_url})` }}>
+                       <button onClick={() => setFormData({...formData, image_url: ''})} className="absolute top-2 right-2 bg-rose-500 text-white w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md text-sm font-bold">✕</button>
+                    </div>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
