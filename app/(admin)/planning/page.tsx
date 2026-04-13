@@ -32,6 +32,12 @@ export default function PlanningAdmin() {
   });
   // 🎯 NOUVEAU : Option pour déplacer tout le groupe
   const [moveGroup, setMoveGroup] = useState(false);
+  // 🎯 NOUVEAU : On mémorise qui est connecté pour adapter l'interface
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  useEffect(() => {
+    const u = localStorage.getItem('user');
+    if (u) setCurrentUser(JSON.parse(u));
+  }, []);
   
   const [formData, setFormData] = useState<{
     title: string, flight_type_id: string, weightChecked: boolean, phone: string, email: string, notes: string, booking_options: string, client_message: string
@@ -210,6 +216,15 @@ export default function PlanningAdmin() {
 
   // 🎯 NOUVEAU : On fige la fonction pour le calendrier
   const handleEventClick = useCallback((info: any) => {
+    // 🛡️ BOUCLIER UI : Moniteur Journée = Ne rien faire du tout (il regarde juste)
+    if (currentUser?.role === 'monitor') return;
+    
+    // 🛡️ BOUCLIER UI : Permanent sur une autre colonne = Bloqué
+    if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
+      alert("Vous ne pouvez agir que sur votre propre colonne.");
+      return;
+    }
+
     const event = info.event;
     if (event.extendedProps.title?.startsWith('↪️ Suite')) {
       alert("⚠️ Pour modifier, déplacer ou supprimer ce vol, veuillez cliquer sur son premier créneau (celui contenant le nom du client).");
@@ -239,7 +254,7 @@ export default function PlanningAdmin() {
 
     const dStr = start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     setMoveConfig({ date: dStr, time: '', monitorId: 'random' });
-    setActiveTab('client');
+    setActiveTab(currentUser?.role === 'admin' ? 'client' : 'note'); // 🎯 On adapte l'onglet
     setBlockType('none');
     setSelectedMonitors([]);
     setBlockUntilMs(end.getTime());
@@ -248,7 +263,7 @@ export default function PlanningAdmin() {
     setIsManual(false);
     setMoveGroup(false);
     setShowEditModal(true);
-  }, []); // <-- 🎯 LE SECRET EST CE PETIT TABLEAU VIDE À LA FIN !
+  }, [currentUser]);
 
   const handleSaveNote = async () => {
     if (!selectedEvent) return;
@@ -830,6 +845,10 @@ export default function PlanningAdmin() {
 
   const isOutOfSeason = selectedEvent?.isOutOfSeason === true;
   const isClientLocked = isEventBlocked || isOutOfSeason;
+  // 🎯 NOUVEAU : Variables pour griser l'interface des permanents
+  const isClientSlotLocal = selectedEvent?.status === 'booked' && selectedEvent?.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some((t: string) => selectedEvent?.title?.includes(t)) && !selectedEvent?.title?.includes('❌');
+  const isAdminBlockLocal = selectedEvent?.title?.includes('(Admin)');
+  const isLockedForMe = currentUser?.role === 'permanent' && (isClientSlotLocal || isAdminBlockLocal);
 
   // 🎯 1. On "mémorise" les événements du calendrier
   const calendarEvents = useMemo(() => {
@@ -971,11 +990,13 @@ export default function PlanningAdmin() {
             <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
             
             <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
-              <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
+              {currentUser?.role === 'admin' && (
+                <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
+              )}
+              
               <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note</button>
               
-              {/* 🎯 NOUVEAU : On cache l'onglet "Déplacer" si le créneau est un simple blocage (NON DISPO/PAUSE) ou hors-saison */}
-              {selectedEvent?.status !== 'available' && !isClientLocked && (
+              {currentUser?.role === 'admin' && selectedEvent?.status !== 'available' && !isClientLocked && (
                 <button onClick={() => setActiveTab('move')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'move' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-400'}`}>🔄 Déplacer</button>
               )}
             </div>
@@ -1211,6 +1232,15 @@ export default function PlanningAdmin() {
 
               {/* ONGLET 2 : NOTE ET BLOCAGE */}
               {activeTab === 'note' && (
+                isLockedForMe ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center mt-4 shadow-inner">
+                    <span className="text-3xl block mb-2">🔒</span>
+                    <p className="text-slate-700 font-bold text-[11px] uppercase tracking-widest">
+                      {isAdminBlockLocal ? "Verrouillé par la direction" : "Réservation Client"}
+                    </p>
+                    <p className="text-slate-500 text-[10px] mt-2 font-medium">Vous ne pouvez pas modifier ce créneau.</p>
+                  </div>
+                ) : (
                 <>
                   <div className="flex gap-2 mb-4">
                     <button 
@@ -1233,14 +1263,24 @@ export default function PlanningAdmin() {
                     <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="Infos météo, retard..." />
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
-                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isOutOfSeason}>
+                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
+                    <select 
+                      className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
+                      value={blockType} 
+                      onChange={(e: any) => setBlockType(e.target.value)} 
+                      disabled={isOutOfSeason || currentUser?.role !== 'admin'}
+                    >
                       <option value="none">Ce pilote uniquement</option>
-                      <option value="all">🚫 TOUS les pilotes</option>
-                      <option value="specific">👥 Certains pilotes</option>
+                      {/* 🎯 NOUVEAU : Seul l'admin voit les autres options */}
+                      {currentUser?.role === 'admin' && (
+                        <>
+                          <option value="all">🚫 TOUS les pilotes</option>
+                          <option value="specific">👥 Certains pilotes</option>
+                        </>
+                      )}
                     </select>
 
-                    {blockType === 'specific' && !isOutOfSeason && (
+                    {blockType === 'specific' && !isOutOfSeason && currentUser?.role === 'admin' && (
                       <div className="mb-4 grid grid-cols-2 gap-2">
                         {monitors.map(m => (
                           <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer hover:bg-slate-50">
@@ -1273,12 +1313,13 @@ export default function PlanningAdmin() {
                     )}
                   </div>
                 </>
+                )
               )}
 
               {/* BOUTONS PARTAGÉS */}
               {(activeTab === 'client' || activeTab === 'note') && (
                 <div className="pt-4 space-y-3 border-t border-slate-100">
-                  {!(activeTab === 'client' && isClientLocked) && (
+                  {!(activeTab === 'client' && isClientLocked) && !isLockedForMe && (
                     <>
                       <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">
                         Enregistrer la modification

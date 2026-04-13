@@ -6,6 +6,7 @@ export default function MonitorsPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null); // 🎯 NOUVEAU
   
   // Initialisation propre de l'état pour garantir que 'role' est envoyé
   const [newUser, setNewUser] = useState({ 
@@ -33,26 +34,57 @@ export default function MonitorsPage() {
 
   useEffect(() => { loadUsers(); }, []);
 
-  const handleCreate = async () => {
-    // Validation simple
-    if (!newUser.first_name || !newUser.email || !newUser.password) {
-      alert("Veuillez remplir tous les champs.");
+  // 🎯 NOUVEAU : Fonction unique pour Ouvrir la modale
+  const openModal = (user?: any) => {
+    if (user) {
+      setEditingUserId(user.id);
+      setNewUser({
+        first_name: user.first_name,
+        email: user.email,
+        password: '', // On ne l'affiche pas pour des raisons de sécurité
+        role: user.role,
+        is_active_monitor: user.is_active_monitor ?? true
+      });
+    } else {
+      setEditingUserId(null);
+      setNewUser({ first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true });
+    }
+    setShowModal(true);
+  };
+
+  // 🎯 NOUVEAU : Sauvegarder (Création OU Modification)
+  const handleSave = async () => {
+    if (!newUser.first_name || !newUser.email) {
+      alert("Veuillez remplir le nom et l'email.");
+      return;
+    }
+    
+    // Le mot de passe est obligatoire uniquement si c'est un nouveau compte
+    if (!editingUserId && !newUser.password) {
+      alert("Le mot de passe est obligatoire pour un nouveau compte.");
       return;
     }
 
-    const res = await apiFetch('/api/users', {
-      method: 'POST',
-      body: JSON.stringify(newUser)
+    const url = editingUserId ? `/api/users/${editingUserId}` : '/api/users';
+    const method = editingUserId ? 'PATCH' : 'POST';
+
+    // On prépare les données (on ne renvoie pas le mot de passe s'il est vide en modification)
+    const payload: any = { ...newUser, status: 'Actif' };
+    if (editingUserId && !payload.password) {
+      delete payload.password;
+    }
+
+    const res = await apiFetch(url, {
+      method: method,
+      body: JSON.stringify(payload)
     });
 
     if (res.ok) {
       setShowModal(false);
-      // Reset du formulaire
-      setNewUser({ first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true });
       loadUsers();
     } else {
       const err = await res.json();
-      alert(err.error || "Erreur lors de la création");
+      alert(err.error || "Erreur lors de l'enregistrement");
     }
   };
 
@@ -81,7 +113,7 @@ export default function MonitorsPage() {
           </h1>
         </div>
         <button 
-          onClick={() => setShowModal(true)} 
+          onClick={() => openModal()} 
           className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform"
         >
           + Ajouter un membre
@@ -117,6 +149,14 @@ export default function MonitorsPage() {
                 }`}>
                   {u.role === 'admin' ? 'Administrateur' : u.role === 'permanent' ? 'Permanent' : 'Moniteur Journée'}
                 </div>
+                {/* 🎯 NOUVEAU : Bouton Modifier */}
+                <button 
+                  onClick={() => openModal(u)}
+                  className="p-3 text-slate-300 hover:text-sky-500 hover:bg-sky-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
+                  title="Modifier ce membre"
+                >
+                  <span className="text-xl">✏️</span>
+                </button>
 
                 {/* Bouton Supprimer - Apparaît au survol */}
                 <button 
@@ -137,12 +177,16 @@ export default function MonitorsPage() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
             <h2 className="text-2xl font-black uppercase italic mb-6">Nouveau Membre</h2>
+            <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-2xl font-black uppercase italic mb-6">
+              {editingUserId ? "Modifier le Membre" : "Nouveau Membre"}
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prénom</label>
                 <input 
                   type="text" 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" 
                   value={newUser.first_name}
                   onChange={e => setNewUser({...newUser, first_name: e.target.value})} 
                 />
@@ -151,16 +195,20 @@ export default function MonitorsPage() {
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Email (Identifiant)</label>
                 <input 
                   type="email" 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" 
                   value={newUser.email}
                   onChange={e => setNewUser({...newUser, email: e.target.value})} 
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Mot de passe</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex justify-between">
+                  Mot de passe 
+                  {editingUserId && <span className="normal-case">(Laisser vide pour ne pas changer)</span>}
+                </label>
                 <input 
                   type="password" 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
+                  placeholder={editingUserId ? "••••••••" : ""}
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" 
                   value={newUser.password}
                   onChange={e => setNewUser({...newUser, password: e.target.value})} 
                 />
@@ -168,31 +216,32 @@ export default function MonitorsPage() {
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Accès & Rôle</label>
                 <select 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50" 
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" 
                   value={newUser.role}
                   onChange={e => setNewUser({...newUser, role: e.target.value})}
                 >
-                  <option value="monitor">🏃 Moniteur Journée (Pas d'accès)</option>
-                  <option value="permanent">🔑 Moniteur Permanent (Calendrier)</option>
+                  <option value="monitor">🏃 Moniteur Journée (Pas d'accès au logiciel)</option>
+                  <option value="permanent">🔑 Moniteur Permanent (Accès calendrier)</option>
                   <option value="admin">🛡️ Administrateur (Accès total)</option>
                 </select>
               </div>
               
               <div className="pt-4 space-y-3">
                 <button 
-                  onClick={handleCreate} 
+                  onClick={handleSave} 
                   className="w-full bg-orange-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-orange-600 transition-all"
                 >
-                  Créer le compte
+                  {editingUserId ? "Enregistrer les modifications" : "Créer le compte"}
                 </button>
                 <button 
                   onClick={() => setShowModal(false)} 
-                  className="w-full text-slate-300 font-bold uppercase text-[10px] tracking-widest hover:text-slate-500 transition-colors"
+                  className="w-full text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-slate-600 transition-colors"
                 >
                   Annuler
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
