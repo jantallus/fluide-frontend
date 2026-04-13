@@ -49,6 +49,7 @@ export default function ClientsPage() {
                 <th className="p-6">Nom / Prénom</th>
                 <th className="p-6">Téléphone</th>
                 <th className="p-6 text-center">Poids</th>
+                <th className="p-6 text-center">Origine / Paiement</th>
                 <th className="p-6 text-right">Dernier Vol</th>
               </tr>
             </thead>
@@ -64,6 +65,16 @@ export default function ClientsPage() {
                     <span className="bg-slate-100 px-3 py-1 rounded-lg font-black text-slate-500 text-xs">
                       {c.weight ? `${c.weight}kg` : '--'}
                     </span>
+                  </td>
+                  <td className="p-6 text-center">
+                    {(() => {
+                      const status = c.payment_status;
+                      if (!status) return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 shadow-sm block w-fit mx-auto">🏢 Backoffice (À régler)</span>;
+                      if (status.includes('Bon Cadeau')) return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 shadow-sm block w-fit mx-auto">🎁 {status}</span>;
+                      if (status.includes('Promo')) return <span className="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-200 shadow-sm block w-fit mx-auto">🏷️ {status}</span>;
+                      if (status.includes('CB')) return <span className="bg-sky-100 text-sky-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-sky-200 shadow-sm block w-fit mx-auto">💳 {status}</span>;
+                      return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 shadow-sm block w-fit mx-auto">{status}</span>;
+                    })()}
                   </td>
                   <td className="p-6 text-right font-bold text-slate-400 text-xs uppercase">
                     {c.last_flight_date ? new Date(c.last_flight_date).toLocaleDateString() : 'Jamais'}
