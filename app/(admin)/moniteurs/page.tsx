@@ -8,14 +8,18 @@ export default function MonitorsPage() {
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<number | null>(null); // 🎯 NOUVEAU
   
-  // Initialisation propre de l'état pour garantir que 'role' est envoyé
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  useEffect(() => {
+    const u = localStorage.getItem('user');
+    if (u) setCurrentUser(JSON.parse(u));
+  }, []);
+
   const [newUser, setNewUser] = useState({ 
-    first_name: '', 
-    email: '', 
-    password: '', 
-    role: 'monitor', 
-    is_active_monitor: true 
+    first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true,
+    available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: ''
   });
+
+  const [availabilities, setAvailabilities] = useState<any[]>([]);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -34,20 +38,37 @@ export default function MonitorsPage() {
 
   useEffect(() => { loadUsers(); }, []);
 
-  // 🎯 NOUVEAU : Fonction unique pour Ouvrir la modale
+  // 🎯 NOUVEAU : Fonction unique pour Ouvrir la modale (AVEC HORAIRES)
   const openModal = (user?: any) => {
     if (user) {
       setEditingUserId(user.id);
+      
+      // 🎯 NOUVEAU : On s'assure de bien charger les périodes si on modifie un membre
+      apiFetch(`/api/users/${user.id}/availabilities`)
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setAvailabilities(data))
+        .catch(() => setAvailabilities([]));
+
       setNewUser({
-        first_name: user.first_name,
-        email: user.email,
-        password: '', // On ne l'affiche pas pour des raisons de sécurité
-        role: user.role,
-        is_active_monitor: user.is_active_monitor ?? true
+        first_name: user.first_name, 
+        email: user.email, 
+        password: '', 
+        role: user.role, 
+        is_active_monitor: user.is_active_monitor ?? true,
+        // Les champs suivants ne servent plus directement si on utilise le tableau multi-périodes,
+        // mais on les garde pour éviter des erreurs avec l'ancien code.
+        available_start_date: '',
+        available_end_date: '',
+        daily_start_time: '',
+        daily_end_time: ''
       });
     } else {
       setEditingUserId(null);
-      setNewUser({ first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true });
+      setAvailabilities([]); // 🎯 On vide la liste des périodes pour un nouveau moniteur
+      setNewUser({ 
+        first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true, 
+        available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '' 
+      });
     }
     setShowModal(true);
   };
@@ -80,6 +101,14 @@ export default function MonitorsPage() {
     });
 
     if (res.ok) {
+      const userData = await res.json();
+      const userId = editingUserId || userData.id;
+      
+      await apiFetch(`/api/users/${userId}/availabilities`, {
+        method: 'PUT',
+        body: JSON.stringify({ availabilities })
+      });
+
       setShowModal(false);
       loadUsers();
     } else {
@@ -109,22 +138,21 @@ export default function MonitorsPage() {
         <div>
           <p className="text-orange-500 font-black uppercase text-xs tracking-widest mb-2">Gestion d'équipe</p>
           <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
-            Équipe <span className="text-orange-500">Fluide</span>
+            {currentUser?.role === 'admin' ? 'Équipe ' : 'Mon '}<span className="text-orange-500">Profil</span>
           </h1>
         </div>
-        <button 
-          onClick={() => openModal()} 
-          className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform"
-        >
-          + Ajouter un membre
-        </button>
+        {currentUser?.role === 'admin' && (
+          <button onClick={() => openModal()} className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform">
+            + Ajouter un prestataire
+          </button>
+        )}
       </header>
 
       <div className="grid gap-6">
         {loading ? (
-          <div className="text-center py-12 font-bold text-slate-400 animate-pulse uppercase">Chargement de l'équipe...</div>
+          <div className="text-center py-12 font-bold text-slate-400 animate-pulse uppercase">Chargement...</div>
         ) : (
-          users.map(u => (
+          users.filter(u => currentUser?.role === 'admin' || u.id === currentUser?.id).map(u => (
             <div key={u.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-orange-100 transition-all">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-xl border border-slate-100">
@@ -153,19 +181,21 @@ export default function MonitorsPage() {
                 <button 
                   onClick={() => openModal(u)}
                   className="p-3 text-slate-300 hover:text-sky-500 hover:bg-sky-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
-                  title="Modifier ce membre"
+                  title="Modifier ce prestataire"
                 >
                   <span className="text-xl">✏️</span>
                 </button>
 
-                {/* Bouton Supprimer - Apparaît au survol */}
-                <button 
-                  onClick={() => handleDelete(u.id, u.first_name)}
-                  className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
-                  title="Supprimer définitivement"
-                >
-                  <span className="text-xl">🗑️</span>
-                </button>
+                {/* 🛡️ NOUVEAU : Seul l'admin peut voir le bouton Supprimer */}
+                {currentUser?.role === 'admin' && (
+                  <button 
+                    onClick={() => handleDelete(u.id, u.first_name)}
+                    className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
+                    title="Supprimer définitivement"
+                  >
+                    <span className="text-xl">🗑️</span>
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -175,11 +205,10 @@ export default function MonitorsPage() {
       {/* MODALE DE CRÉATION */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-black uppercase italic mb-6">Nouveau Membre</h2>
-            <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl">
+          {/* 🎯 NOUVEAU : max-h-[95vh] et overflow-y-auto ajoutent le scrolling vertical ! */}
+          <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl max-h-[95vh] overflow-y-auto custom-scrollbar">
             <h2 className="text-2xl font-black uppercase italic mb-6">
-              {editingUserId ? "Modifier le Membre" : "Nouveau Membre"}
+              {editingUserId ? "Modifier le Prestataire" : "Nouveau Prestataire"}
             </h2>
             <div className="space-y-4">
               <div>
@@ -213,17 +242,55 @@ export default function MonitorsPage() {
                   onChange={e => setNewUser({...newUser, password: e.target.value})} 
                 />
               </div>
+              
+              {/* --- 🎯 NOUVEAU : BLOC BLEU DES DISPONIBILITÉS --- */}
+              <div className="bg-sky-50 p-4 rounded-3xl border border-sky-100 space-y-4">
+                <div className="flex justify-between items-center px-2">
+                  <p className="text-[10px] font-black uppercase text-sky-600 tracking-widest">📅 Périodes d'activité</p>
+                  <button 
+                    onClick={() => setAvailabilities([...availabilities, { start_date: '', end_date: '', daily_start_time: '09:00', daily_end_time: '18:00' }])}
+                    className="bg-sky-500 text-white text-[9px] font-black px-3 py-1 rounded-lg shadow-sm hover:bg-sky-600 uppercase"
+                  >
+                    + Ajouter une période
+                  </button>
+                </div>
+
+                {availabilities.map((a, idx) => (
+                  <div key={idx} className="bg-white p-3 rounded-2xl border border-sky-200 relative group/item">
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                      <input type="date" className="border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.start_date} onChange={e => { const newA = [...availabilities]; newA[idx].start_date = e.target.value; setAvailabilities(newA); }} />
+                      <input type="date" className="border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.end_date} onChange={e => { const newA = [...availabilities]; newA[idx].end_date = e.target.value; setAvailabilities(newA); }} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="time" className="border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.daily_start_time} onChange={e => { const newA = [...availabilities]; newA[idx].daily_start_time = e.target.value; setAvailabilities(newA); }} />
+                      <input type="time" className="border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.daily_end_time} onChange={e => { const newA = [...availabilities]; newA[idx].daily_end_time = e.target.value; setAvailabilities(newA); }} />
+                    </div>
+                    <button 
+                      onClick={() => setAvailabilities(availabilities.filter((_, i) => i !== idx))}
+                      className="absolute -top-2 -right-2 bg-rose-500 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center shadow-md opacity-0 group-hover/item:opacity-100 transition-opacity"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                
+                {availabilities.length === 0 && <p className="text-[10px] text-sky-400 italic text-center py-2 italic">Aucune restriction (dispo 24h/24 par défaut)</p>}
+              </div>
+
+              {/* --- 🎯 ACCÈS & RÔLE (Vérrouillé si on n'est pas Admin) --- */}
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Accès & Rôle</label>
                 <select 
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" 
+                  className={`w-full border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none ${currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 focus:border-orange-300'}`}
                   value={newUser.role}
+                  disabled={currentUser?.role !== 'admin'}
                   onChange={e => setNewUser({...newUser, role: e.target.value})}
                 >
                   <option value="monitor">🏃 Moniteur Journée (Pas d'accès au logiciel)</option>
                   <option value="permanent">🔑 Moniteur Permanent (Accès calendrier)</option>
                   <option value="admin">🛡️ Administrateur (Accès total)</option>
                 </select>
+                {currentUser?.role !== 'admin' && <p className="text-[9px] text-slate-400 mt-1 ml-4 italic">Seul un administrateur peut modifier les droits d'accès.</p>}
               </div>
               
               <div className="pt-4 space-y-3">
@@ -241,7 +308,6 @@ export default function MonitorsPage() {
                 </button>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
