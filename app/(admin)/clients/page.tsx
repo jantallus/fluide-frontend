@@ -21,6 +21,9 @@ export default function ClientsPage() {
   const [tempMonitorId, setTempMonitorId] = useState<string>("");
   const [tempPayMethod, setTempPayMethod] = useState<string>("CB");
   const [tempPayAmount, setTempPayAmount] = useState<number>(0);
+  const [tempPayCode, setTempPayCode] = useState<string>("");
+  // 🎯 NOUVEAU : On prépare la mémoire pour les codes existants
+  const [giftCards, setGiftCards] = useState<any[]>([]);
 
   const saveQuickEdit = async (slotId: number, clientId: number) => {
     let payload: any = {};
@@ -29,7 +32,13 @@ export default function ClientsPage() {
     if (editType === 'monitor') {
       payload.monitor_id = tempMonitorId;
     } else if (editType === 'payment') {
-      newPaymentStatus = `Payé sur place (${tempPayMethod} : ${tempPayAmount}€)`;
+      // 🎯 NOUVEAU : Si c'est un bon ou une promo, on inclut le code dans le texte
+      if (tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') {
+        const codeText = tempPayCode ? ` - Code: ${tempPayCode.toUpperCase()}` : '';
+        newPaymentStatus = `Payé sur place (${tempPayMethod}${codeText} : ${tempPayAmount}€)`;
+      } else {
+        newPaymentStatus = `Payé sur place (${tempPayMethod} : ${tempPayAmount}€)`;
+      }
       payload.payment_status = newPaymentStatus;
     }
     
@@ -66,17 +75,19 @@ export default function ClientsPage() {
     } catch (err) { console.error(err); }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resC, resM, resF] = await Promise.all([
+        const [resC, resM, resF, resG] = await Promise.all([
           apiFetch('/api/clients'),
           apiFetch('/api/monitors'),
-          apiFetch('/api/flight-types')
+          apiFetch('/api/flight-types'),
+          apiFetch('/api/gift-cards') // 🎯 NOUVEAU : On récupère les codes
         ]);
         if (resC.ok) setClients(await resC.json());
         if (resM.ok) setMonitors(await resM.json());
         if (resF.ok) setFlightTypes(await resF.json());
+        if (resG.ok) setGiftCards(await resG.json()); // 🎯 NOUVEAU : On stocke les codes
       } catch (err) { console.error("Erreur chargement:", err); }
     };
     fetchData();
@@ -117,6 +128,7 @@ export default function ClientsPage() {
     if (status.includes('Bon Cadeau')) return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 block w-fit">🎁 Bon</span>;
     if (status.includes('Promo')) return <span className="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-200 block w-fit">🏷️ Promo</span>;
     if (status.includes('CB')) return <span className="bg-sky-100 text-sky-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-sky-200 block w-fit">💳 CB</span>;
+    if (status.includes('ANCV')) return <span className="bg-teal-100 text-teal-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-200 block w-fit">🎫 ANCV</span>;
     return <span className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-amber-200 block w-fit">🤝 {status}</span>;
   };
 
@@ -176,11 +188,13 @@ export default function ClientsPage() {
         </div>
 
         {/* 💻 DESKTOP */}
-        <div className="hidden md:block bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
+        {/* 🎯 CORRECTION 1 : On retire "overflow-hidden" de cette ligne pour laisser sortir la fenêtre */}
+        <div className="hidden md:block bg-white rounded-[40px] shadow-sm border border-slate-100">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
-                <th className="p-6 w-12 text-center">
+                {/* 🎯 CORRECTION 2 : On met les coins arrondis (rounded-tl) directement sur la 1ère case pour garder le design */}
+                <th className="p-6 w-12 text-center rounded-tl-[40px]">
                   <input type="checkbox" className="w-4 h-4 rounded" checked={clientsList.length > 0 && clientsList.every(c => selectedIds.includes(c.id))} onChange={(e) => {
                     const idsInList = clientsList.map(c => c.id);
                     setSelectedIds(e.target.checked ? Array.from(new Set([...selectedIds, ...idsInList])) : selectedIds.filter(id => !idsInList.includes(id)));
@@ -189,7 +203,8 @@ export default function ClientsPage() {
                 <th className="p-6 text-xs">Nom / Prénom</th>
                 <th className="p-6 text-xs">Téléphone</th>
                 <th className="p-6 text-xs text-center">Vols</th>
-                <th className="p-6 text-xs text-right">Détails</th>
+                {/* 🎯 CORRECTION 3 : Et on met l'autre coin arrondi (rounded-tr) sur la dernière case */}
+                <th className="p-6 text-xs text-right rounded-tr-[40px]">Détails</th>
               </tr>
             </thead>
             <tbody>
@@ -227,7 +242,13 @@ export default function ClientsPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-4">
-                                <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if(!f.payment_status){ setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0); setTempPayMethod("CB"); setEditingSlotId(f.id); setEditType('payment'); } }}>
+                                <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
+                                    setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
+                                    setTempPayMethod("CB");
+                                    setTempPayCode(""); // 🎯 NOUVEAU : On vide la case du code
+                                    setEditingSlotId(f.id);
+                                    setEditType('payment');
+                                  } }}>
                                   {renderPaymentBadge(f.payment_status)}
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }} className="p-2 text-rose-400">🗑️</button>
@@ -236,14 +257,80 @@ export default function ClientsPage() {
                                 <div className="absolute right-0 top-full mt-2 bg-white shadow-2xl border border-slate-200 p-4 rounded-2xl z-[100] flex items-center gap-3 animate-in fade-in" onClick={e => e.stopPropagation()}>
                                   {editType === 'monitor' ? (
                                     <>
-                                      <select className="bg-slate-50 border rounded-lg p-2 font-bold text-xs" value={tempMonitorId} onChange={e => setTempMonitorId(e.target.value)}><option value="">Pilote...</option>{monitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}</select>
+                                      <select 
+                                    className="bg-slate-50 border rounded-lg p-2 font-bold text-xs" 
+                                    value={tempMonitorId} 
+                                    onChange={e => setTempMonitorId(e.target.value)}
+                                  >
+                                    <option value="">Pilote...</option>
+                                    {monitors.map(m => {
+                                      // 🎯 VÉRIFICATION : Le pilote a-t-il un autre vol à cette heure exacte ?
+                                      const isBusy = clients.some(client => 
+                                        client.flights.some((flight: any) => 
+                                          flight.start_time === f.start_time && 
+                                          flight.monitor_id?.toString() === m.id.toString() && 
+                                          flight.id !== f.id // On exclut le vol actuel
+                                        )
+                                      );
+                                      return (
+                                        <option 
+                                          key={m.id} 
+                                          value={m.id} 
+                                          disabled={isBusy} 
+                                          className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                                        >
+                                          {m.first_name} {isBusy ? '(Occupé)' : ''}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
                                       <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-black text-xs">OK</button>
                                     </>
                                   ) : (
                                     <>
-                                      <select value={tempPayMethod} onChange={e => setTempPayMethod(e.target.value)} className="bg-slate-50 border rounded-lg p-2 font-bold text-xs"><option value="CB">💳 CB</option><option value="Espèces">💶 Esp.</option><option value="Chèque">📝 Chq.</option></select>
-                                      <input type="number" value={tempPayAmount} onChange={e => setTempPayAmount(Number(e.target.value))} className="w-20 bg-slate-50 border rounded-lg p-2 font-bold text-xs text-center" />
-                                      <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-black text-xs">ENCAISSER</button>
+                                      <div className="flex gap-1 flex-wrap">
+                                        <select 
+                                          value={tempPayMethod} 
+                                          onChange={e => setTempPayMethod(e.target.value)} 
+                                          className="bg-slate-50 border rounded-lg p-2 font-bold text-xs"
+                                        >
+                                          <option value="CB">💳 CB</option>
+                                          <option value="Espèces">💶 Espèces</option>
+                                          <option value="Chèque">📝 Chèque</option>
+                                          <option value="ANCV">🎫 ANCV</option>
+                                          <option value="Bon Cadeau">🎁 Bon Cadeau</option>
+                                          <option value="Promo">🏷️ Code Promo</option>
+                                        </select>
+
+                                        {/* 🎯 NOUVEAU : La case devient un menu déroulant listant les codes existants */}
+                                      {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
+                                        <select 
+                                          value={tempPayCode} 
+                                          onChange={e => setTempPayCode(e.target.value)} 
+                                          className="w-32 bg-slate-50 border rounded-lg p-2 font-bold text-[10px] text-slate-700"
+                                        >
+                                          <option value="">Sélectionner...</option>
+                                          {giftCards
+                                            .filter(gc => gc.status === 'valid') // 🛡️ SÉCURITÉ : Ne montre que les codes non utilisés
+                                            .map(gc => (
+                                              <option key={gc.id} value={gc.code}>
+                                                {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
+                                              </option>
+                                            ))
+                                          }
+                                        </select>
+                                      )}
+
+                                        <input 
+                                          type="number" 
+                                          value={tempPayAmount} 
+                                          onChange={e => setTempPayAmount(Number(e.target.value))} 
+                                          className="w-16 bg-slate-50 border rounded-lg p-2 font-bold text-xs text-center" 
+                                        />
+                                      </div>
+                                      <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full mt-2 bg-emerald-500 text-white py-2 rounded-lg font-black text-[10px] uppercase">
+                                        ENCAISSER
+                                      </button>
                                     </>
                                   )}
                                   <button onClick={() => setEditingSlotId(null)} className="ml-2 text-slate-400">✕</button>
@@ -305,16 +392,94 @@ export default function ClientsPage() {
                         </div>
                         <button onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }} className="text-rose-300">🗑️</button>
                       </div>
-                      <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if(!f.payment_status){ setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0); setTempPayMethod("CB"); setEditingSlotId(f.id); setEditType('payment'); } }}>
+                      <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
+                          setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
+                          setTempPayMethod("CB");
+                          setTempPayCode(""); // 🎯 NOUVEAU : On vide la case du code
+                          setEditingSlotId(f.id);
+                          setEditType('payment');
+                        } }}>
                         {renderPaymentBadge(f.payment_status)}
                       </div>
                       {editingSlotId === f.id && (
                         <div className="absolute inset-0 bg-white/95 z-10 flex flex-col justify-center p-4 rounded-2xl" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-between mb-2"><p className="text-[8px] font-black uppercase text-slate-400">Modifier</p><button onClick={() => setEditingSlotId(null)}>✕</button></div>
                           {editType === 'monitor' ? (
-                            <div className="flex gap-1"><select className="flex-1 border rounded-lg p-2 font-bold text-xs" value={tempMonitorId} onChange={e => setTempMonitorId(e.target.value)}><option value="">Pilote...</option>{monitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}</select><button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 rounded-lg font-black text-xs uppercase">OK</button></div>
+                            <div className="flex gap-1">
+                        <select 
+                          className="flex-1 border rounded-lg p-2 font-bold text-xs" 
+                          value={tempMonitorId} 
+                          onChange={e => setTempMonitorId(e.target.value)}
+                        >
+                          <option value="">Pilote...</option>
+                          {monitors.map(m => {
+                            // 🎯 VÉRIFICATION MOBILE
+                            const isBusy = clients.some(client => 
+                              client.flights.some((flight: any) => 
+                                flight.start_time === f.start_time && 
+                                flight.monitor_id?.toString() === m.id.toString() && 
+                                flight.id !== f.id 
+                              )
+                            );
+                            return (
+                              <option 
+                                key={m.id} 
+                                value={m.id} 
+                                disabled={isBusy} 
+                                className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                              >
+                                {m.first_name} {isBusy ? '(Occupé)' : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 rounded-lg font-black text-xs uppercase">OK</button></div>
                           ) : (
-                            <div className="space-y-2"><div className="flex gap-1"><select value={tempPayMethod} onChange={e => setTempPayMethod(e.target.value)} className="flex-1 border rounded-lg p-2 font-bold text-xs"><option value="CB">💳 CB</option><option value="Espèces">💶 Esp.</option></select><input type="number" value={tempPayAmount} onChange={e => setTempPayAmount(Number(e.target.value))} className="w-16 border rounded-lg p-2 font-bold text-xs text-center" /></div><button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-black text-[9px] uppercase">Confirmer</button></div>
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap gap-2">
+                                <select 
+                                  value={tempPayMethod} 
+                                  onChange={e => setTempPayMethod(e.target.value)} 
+                                  className="flex-1 border rounded-lg p-2 font-bold text-xs"
+                                >
+                                  <option value="CB">💳 CB</option>
+                                  <option value="Espèces">💶 Espèces</option>
+                                  <option value="Chèque">📝 Chèque</option>
+                                  <option value="ANCV">🎫 ANCV</option>
+                                  <option value="Bon Cadeau">🎁 Bon Cadeau</option>
+                                  <option value="Promo">🏷️ Code Promo</option>
+                                </select>
+
+                                <input 
+                                  type="number" 
+                                  value={tempPayAmount} 
+                                  onChange={e => setTempPayAmount(Number(e.target.value))} 
+                                  className="w-16 border rounded-lg p-2 font-bold text-xs text-center" 
+                                />
+
+                                {/* 🎯 NOUVEAU : La case devient un menu déroulant listant les codes existants pour mobile */}
+                                {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
+                                  <select 
+                                    value={tempPayCode} 
+                                    onChange={e => setTempPayCode(e.target.value)} 
+                                    className="w-full bg-slate-50 border rounded-lg p-2 font-bold text-[10px] text-slate-700"
+                                  >
+                                    <option value="">Sélectionner le code...</option>
+                                    {giftCards
+                                      .filter(gc => gc.status === 'valid') // 🛡️ SÉCURITÉ : Ne montre que les codes non utilisés
+                                      .map(gc => (
+                                        <option key={gc.id} value={gc.code}>
+                                          {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
+                                        </option>
+                                      ))
+                                    }
+                                  </select>
+                                )}
+                              </div>
+                              <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-black text-[9px] uppercase">
+                                Confirmer
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}

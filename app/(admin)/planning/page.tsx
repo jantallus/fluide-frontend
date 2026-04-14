@@ -253,7 +253,11 @@ export default function PlanningAdmin() {
     });
 
     const dStr = start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-    setMoveConfig({ date: dStr, time: '', monitorId: 'random' });
+    // 🎯 NOUVEAU : On récupère l'heure exacte et l'ID du pilote actuel
+    const tStr = start.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+    const mId = event.getResources()[0]?.id || 'random';
+    
+    setMoveConfig({ date: dStr, time: tStr, monitorId: mId });
     setActiveTab(currentUser?.role === 'admin' ? 'client' : 'note'); // 🎯 On adapte l'onglet
     setBlockType('none');
     setSelectedMonitors([]);
@@ -725,19 +729,17 @@ export default function PlanningAdmin() {
     const updatesToApply: any[] = [];
 
     if (moveGroup && groupRootSlots.length > 1) {
-      // --- 🚀 DÉPLACEMENT DE GROUPE ---
-      const slotsToFree: string[] = [];
-      
-      // 1. On "libère" virtuellement l'ancien groupe
+      // 1. On libère virtuellement les créneaux actuels pour faire de la place
+      const slotsToFree: any[] = [];
       groupRootSlots.forEach(baseSlot => {
-        const startMs = new Date(baseSlot.start_time).getTime();
-        for (let i = 0; i < slotsNeeded; i++) {
-          const ms = startMs + (i * slotDuration * 60000);
-          const slotToFree = appointments.find(a => a.monitor_id?.toString() === baseSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
-          if (slotToFree) {
-            updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
-            slotsToFree.push(slotToFree.id);
-          }
+        slotsToFree.push(baseSlot.id);
+        if (slotsNeeded > 1) {
+           const bMs = new Date(baseSlot.start_time).getTime();
+           for(let i=1; i<slotsNeeded; i++) {
+              const nMs = bMs + (i * slotDuration * 60000);
+              const nSlot = appointments.find(a => a.monitor_id === baseSlot.monitor_id && new Date(a.start_time).getTime() === nMs);
+              if (nSlot) slotsToFree.push(nSlot.id);
+           }
         }
       });
 
@@ -781,12 +783,21 @@ export default function PlanningAdmin() {
       }
 
       if (remaining > 0) return alert(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`);
+      // 🎯 SÉCURITÉ : On empêche le transfert si rien n'a changé
+      const isExactlySame = assignedSlots.length === groupRootSlots.length && assignedSlots.every((s, i) => s.id === groupRootSlots[i].id);
+      if (isExactlySame) return alert("ℹ️ Le groupe est déjà assigné exactement à ces mêmes créneaux et pilotes.");
+
+      // On vide les anciens
+      slotsToFree.forEach(id => {
+        updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } });
+      });
 
       // 4. On réserve les nouvelles places
       groupRootSlots.forEach((oldSlot, g) => {
         const newBaseSlot = assignedSlots[g];
         const passengerTitle = oldSlot.title || formData.title;
-        updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes } });
+        // 🎯 CORRECTION : On conserve payment_status
+        updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes, payment_status: oldSlot.payment_status } });
 
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(newBaseSlot.start_time).getTime();
@@ -800,24 +811,46 @@ export default function PlanningAdmin() {
 
     } else {
       // --- 👤 DÉPLACEMENT SOLO CLASSIQUE ---
+      const targetDateStr = moveConfig.date;
+      const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
+      const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
+
       const targetSlot = availableTargetSlots.find(a => {
         const d = new Date(a.start_time);
-        return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }) === moveConfig.time;
+        return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === targetDateStr &&
+               (d.getHours() * 60 + d.getMinutes()) * 60000 === targetTimeMs &&
+               (moveConfig.monitorId === 'random' || a.monitor_id?.toString() === moveConfig.monitorId);
       });
-      if (!targetSlot) return alert("Erreur: Créneau introuvable.");
 
-      const oldStartMs = new Date(selectedEvent.start).getTime();
-      for (let i = 0; i < slotsNeeded; i++) {
-        const ms = oldStartMs + (i * slotDuration * 60000);
-        const slotToFree = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
-        if (slotToFree) updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+      if (!targetSlot) return alert("❌ Le créneau cible n'est plus disponible.");
+      // 🎯 SÉCURITÉ : On empêche le transfert si c'est le même emplacement
+      if (targetSlot.id === selectedEvent.id) {
+          return alert("ℹ️ Le créneau est déjà à cet emplacement avec ce pilote.");
       }
+
+      // On libère les anciens
+      currentBookingSlotIds.forEach(id => {
+        updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } });
+      });
 
       const newStartMs = new Date(targetSlot.start_time).getTime();
       for (let i = 0; i < slotsNeeded; i++) {
         const ms = newStartMs + (i * slotDuration * 60000);
         const slotToBook = appointments.find(a => a.monitor_id?.toString() === targetSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms);
-        if (slotToBook) updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto' } });
+        
+        if (slotToBook) {
+          updatesToApply.push({ 
+            id: slotToBook.id, 
+            data: { 
+              ...formData, 
+              title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, 
+              status: 'booked', 
+              notes: i === 0 ? formData.notes : 'Extension auto',
+              // 🎯 CORRECTION : On conserve payment_status
+              payment_status: selectedEvent.payment_status
+            } 
+          });
+        }
       }
     }
 
@@ -1422,20 +1455,64 @@ export default function PlanningAdmin() {
 
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
-                      <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={moveConfig.monitorId} onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})}>
+                      <select 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" 
+                        value={moveConfig.monitorId} 
+                        onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})}
+                      >
                         <option value="random">🎲 Aléatoire (Peu importe)</option>
                         {monitors.map(m => {
                           let isBusy = false;
+                          
                           if (moveConfig.date && moveConfig.time) {
-                            isBusy = !appointments.some(a => {
+                            // 🎯 1. Calcul des besoins en créneaux selon la durée du vol
+                            const flight = flightTypes.find(f => f.id?.toString() === formData.flight_type_id?.toString());
+                            const flightDur = flight?.duration_minutes || flight?.duration || 0;
+                            const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
+
+                            // 🎯 2. On cible le créneau exact de ce pilote
+                            const targetSlot = appointments.find(a => {
                               if (a.monitor_id?.toString() !== m.id.toString()) return false;
                               const d = new Date(a.start_time);
                               const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
                               const timeStr = d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
                               return dateStr === moveConfig.date && timeStr === moveConfig.time;
                             });
+
+                            if (!targetSlot) {
+                              // Cas A : Le pilote ne travaille pas à cette heure-là
+                              isBusy = true; 
+                            } else if (targetSlot.status !== 'available' && !currentBookingSlotIds.includes(targetSlot.id)) {
+                              // Cas B : Le pilote a déjà un client (et ce n'est pas le client qu'on est en train de déplacer)
+                              isBusy = true; 
+                            } else if (slotsNeeded > 1) {
+                              // Cas C : Le vol est long (ex: Prestige), on vérifie que les créneaux SUIVANTS sont aussi libres
+                              const startMs = new Date(targetSlot.start_time).getTime();
+                              for (let i = 1; i < slotsNeeded; i++) {
+                                const nextMs = startMs + (i * slotDuration * 60000);
+                                const nextSlot = appointments.find(a => 
+                                  a.monitor_id?.toString() === m.id.toString() && 
+                                  new Date(a.start_time).getTime() === nextMs && 
+                                  (a.status === 'available' || currentBookingSlotIds.includes(a.id))
+                                );
+                                if (!nextSlot) {
+                                  isBusy = true; // Un des créneaux suivants est pris, il ne peut pas faire ce vol !
+                                  break;
+                                }
+                              }
+                            }
                           }
-                          return <option key={m.id} value={m.id} disabled={isBusy} className={isBusy ? "text-slate-300" : ""}>{m.title} {isBusy ? '(Occupé)' : ''}</option>;
+                          
+                          return (
+                            <option 
+                              key={m.id} 
+                              value={m.id} 
+                              disabled={isBusy} 
+                              className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                            >
+                              {m.title} {isBusy ? '(Occupé)' : ''}
+                            </option>
+                          );
                         })}
                       </select>
                     </div>
