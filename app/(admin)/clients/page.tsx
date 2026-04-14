@@ -162,35 +162,29 @@ export default function ClientsPage() {
   pastClients.sort((a, b) => b.sortKey - a.sortKey); // Du plus récent au plus ancien
 
 
-  // 🎯 NOUVEAU : Fonction "usine" pour dessiner les tableaux de façon modulaire
-  const renderClientTable = (title: string, clientsList: any[], icon: string, bgIcon: string, textIcon: string) => {
-    if (clientsList.length === 0) return null;
-
+  const renderClientTable = (title: string, clientsList: any[], icon: string, bgColor: string, textColor: string) => {
     return (
-      <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center gap-4 mb-6 px-4">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${bgIcon} ${textIcon} shadow-sm border border-white`}>
+      <div className="mb-12">
+        {/* EN-TÊTE DE SECTION */}
+        <div className="flex items-center gap-4 mb-6 ml-4">
+          <div className={`${bgColor} ${textColor} w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm font-bold`}>
             {icon}
           </div>
-          <div>
-            <h2 className="text-2xl font-black uppercase italic text-slate-800 leading-tight">
-              {title}
-            </h2>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {clientsList.length} dossier{clientsList.length > 1 ? 's' : ''}
-            </p>
-          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tight text-slate-800">{title}</h2>
+          <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-full text-xs font-black">
+            {clientsList.length}
+          </span>
         </div>
 
-        <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
+        {/* 💻 VERSION DESKTOP : Visible sur écran large (md:block), masqué sur petit (hidden) */}
+        <div className="hidden md:block bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 <th className="p-6 w-12 text-center">
-                  <input 
+                   <input 
                     type="checkbox" 
                     className="w-4 h-4 rounded border-slate-300 text-emerald-500 cursor-pointer"
-                    // 🎯 ON UTILISE clientsList ICI (le nom de l'argument de la fonction)
                     checked={clientsList.length > 0 && clientsList.every(c => selectedIds.includes(c.id))}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -209,13 +203,12 @@ export default function ClientsPage() {
                 <th className="p-6 text-right">Détails</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
-              {clientsList.map(c => (
+            <tbody>
+              {clientsList.map((c) => (
                 <React.Fragment key={c.id}>
-                  {/* LIGNE PRINCIPALE (Cliquable) */}
                   <tr 
                     onClick={() => setExpandedClient(expandedClient === c.id ? null : c.id)}
-                    className={`cursor-pointer transition-colors ${expandedClient === c.id ? 'bg-sky-50/50' : 'hover:bg-slate-50'}`}
+                    className={`group border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer ${expandedClient === c.id ? 'bg-sky-50/30' : ''}`}
                   >
                     <td className="p-6 text-center" onClick={e => e.stopPropagation()}>
                       <input 
@@ -226,120 +219,140 @@ export default function ClientsPage() {
                       />
                     </td>
                     <td className="p-6">
-                      <p className="font-black text-slate-800 uppercase">{c.last_name} {c.first_name}</p>
-                      <p className="text-[10px] text-slate-400 font-bold">{c.email}</p>
+                      <p className="font-black text-slate-800 uppercase tracking-tight">{c.last_name} {c.first_name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">{c.email || 'Pas d\'email'}</p>
                     </td>
-                    <td className="p-6 font-bold text-slate-600 text-sm">{c.phone || '--'}</td>
+                    <td className="p-6">
+                      <span className="font-bold text-slate-600 text-sm">{c.phone || '—'}</span>
+                    </td>
                     <td className="p-6 text-center">
-                      <span className="bg-slate-100 px-3 py-1 rounded-lg font-black text-slate-500 text-xs">
-                        {c.flights?.length || 0} vol(s)
+                      <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                        {c.flights?.length || 0} Vol(s)
                       </span>
                     </td>
-                    <td className="p-6 text-right font-black text-sky-500 text-xl select-none">
-                      {expandedClient === c.id ? '▴' : '▾'}
+                    <td className="p-6 text-right">
+                      <span className={`text-xl transition-transform duration-300 inline-block ${expandedClient === c.id ? 'rotate-180' : ''}`}>
+                        {expandedClient === c.id ? '🔼' : '🔽'}
+                      </span>
                     </td>
                   </tr>
 
-                  {/* SOUS-LIGNE : DÉTAIL DES VOLS DU CLIENT */}
-                  {expandedClient === c.id && c.flights && (
+                  {/* DÉTAILS ÉTENDUS (Vols du client) */}
+                  {expandedClient === c.id && (
                     <tr>
-                      <td colSpan={4} className="p-0 border-b-2 border-slate-100">
-                        <div className="bg-sky-50/30 p-4 md:p-8 space-y-3 shadow-inner">
-                          <p className="text-[10px] font-black uppercase text-sky-600 tracking-widest mb-4">Dossier de vol(s)</p>
-                          
-                          {c.flights.map((f: any, idx: number) => {
-                            const isFuture = new Date(f.start_time) >= new Date();
-                            return (
-                              <div key={idx} className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-4 rounded-2xl border border-sky-100 shadow-sm gap-4 relative">
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-xl font-black text-lg ${isFuture ? 'bg-amber-100 text-amber-500' : 'bg-slate-100 text-slate-400'}`}>
-                                    {isFuture ? '⏳' : '✅'}
-                                  </div>
-                                  <div>
-                                    {/* 🎯 CORRECTION : On remplace le <p> par un <div> */}
-                                    <div className="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1">
-                                      {f.flight_name} <span className="text-slate-400 font-normal">avec</span> 
-                                      
-                                      {/* 🎯 ÉDITION RAPIDE DU PILOTE */}
-                                      {editingSlotId === f.id && editType === 'monitor' ? (
-                                        <div className="inline-flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
-                                          <select className="bg-sky-50 border border-sky-200 rounded text-xs font-bold p-1 text-sky-700 outline-none" value={tempMonitorId} onChange={e => setTempMonitorId(e.target.value)}>
-                                            <option value="">Pilote...</option>
-                                            {monitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
-                                          </select>
-                                          <button onClick={(e) => { e.stopPropagation(); saveQuickEdit(f.id, c.id); }} className="bg-emerald-500 text-white w-6 h-6 rounded flex items-center justify-center hover:bg-emerald-600 transition-colors">✓</button>
-                                          <button onClick={(e) => { e.stopPropagation(); setEditingSlotId(null); setEditType(null); }} className="bg-slate-200 text-slate-600 w-6 h-6 rounded flex items-center justify-center hover:bg-slate-300 transition-colors">✕</button>
-                                        </div>
-                                      ) : (
-                                        <span 
-                                          className="text-sky-600 cursor-pointer hover:bg-sky-50 border-b border-dashed border-sky-300 ml-1 transition-colors px-1 rounded"
-                                          title="Changer le pilote"
-                                          onClick={(e) => { e.stopPropagation(); setTempMonitorId(f.monitor_id?.toString() || ""); setEditingSlotId(f.id); setEditType('monitor'); }}
-                                        >
-                                          {f.monitor_name}
-                                        </span>
-                                      )}
-                                    </div> {/* 🎯 CORRECTION : On ferme bien avec </div> au lieu de </p> */}
-                                    
-                                    <p className="text-xs font-bold text-slate-500 capitalize mt-0.5">
-                                      {new Date(f.start_time).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(':', 'h')}
-                                    </p>
-                                  </div>
-                                </div>
-                                
-                                <div className="w-full md:w-auto flex justify-end" onClick={e => e.stopPropagation()}>
-                                  {/* 🎯 ÉDITION RAPIDE DE LA CAISSE (PAIEMENT) */}
-                                  {editingSlotId === f.id && editType === 'payment' ? (
-                                    <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-sm animate-in zoom-in-95 origin-right">
-                                      <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Règlement sur place</p>
-                                      <div className="flex items-center gap-2">
-                                        <select value={tempPayMethod} onChange={e => setTempPayMethod(e.target.value)} className="bg-white border border-slate-200 rounded text-xs font-bold p-1.5 outline-none text-slate-700">
-                                          <option value="CB">💳 CB</option>
-                                          <option value="Espèces">💶 Espèces</option>
-                                          <option value="Chèque">📝 Chèque</option>
-                                          <option value="ANCV">🏖️ Chèques Vacances</option>
-                                        </select>
-                                        <div className="flex items-center bg-white border border-slate-200 rounded px-2">
-                                          <input type="number" value={tempPayAmount} onChange={e => setTempPayAmount(Number(e.target.value))} className="w-12 text-xs font-bold p-1.5 outline-none text-center text-slate-700" />
-                                          <span className="text-xs font-bold text-slate-400">€</span>
-                                        </div>
-                                      </div>
-                                      <div className="flex gap-2 mt-1">
-                                        <button onClick={(e) => { e.stopPropagation(); saveQuickEdit(f.id, c.id); }} className="flex-1 bg-emerald-500 text-white rounded text-[10px] font-black py-1.5 uppercase hover:bg-emerald-600 transition-colors">Valider</button>
-                                        <button onClick={(e) => { e.stopPropagation(); setEditingSlotId(null); setEditType(null); }} className="flex-1 bg-slate-200 text-slate-600 rounded text-[10px] font-black py-1.5 uppercase hover:bg-slate-300 transition-colors">Annuler</button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div 
-                                      className={!f.payment_status ? "cursor-pointer hover:scale-105 transition-transform group" : ""} 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!f.payment_status) {
-                                          setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
-                                          setTempPayMethod("CB");
-                                          setEditingSlotId(f.id);
-                                          setEditType('payment');
-                                        }
-                                      }}
-                                      title={!f.payment_status ? "Cliquer pour encaisser ce client" : ""}
-                                    >
-                                      {renderPaymentBadge(f.payment_status)}
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }}
-                                        className="p-2 ml-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                        title="Supprimer ce vol"
-                                      >
-                                        🗑️
-                                      </button>
-                                      {!f.payment_status && (
-                                         <div className="absolute -top-2 -right-2 bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md">💰</div>
-                                      )}
-                                    </div>
-                                  )}
+                      <td colSpan={5} className="bg-slate-50/50 p-6">
+                        <div className="grid grid-cols-1 gap-4">
+                          {c.flights.map((f: any, idx: number) => (
+                            <div key={idx} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between relative"> {/* 🎯 AJOUT DE "relative" ICI */}
+                            <div className="flex items-center gap-6">
+                              <div className="text-center min-w-[80px]">
+                                <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
+                                  {new Date(f.start_time).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                                </p>
+                                <p className="text-lg font-black text-slate-800 leading-none">
+                                  {new Date(f.start_time).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="font-black text-slate-800 uppercase text-xs mb-1">{f.flight_name}</p>
+                                <div className="flex items-center gap-2">
+                                  {/* BOUTON PILOTE */}
+                                  <button 
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      setTempMonitorId(f.monitor_id?.toString() || ""); 
+                                      setEditingSlotId(f.id); 
+                                      setEditType('monitor'); 
+                                    }}
+                                    className="text-[10px] font-bold bg-sky-50 text-sky-600 px-2 py-1 rounded-md border border-sky-100 hover:bg-sky-100"
+                                  >
+                                    👨‍✈️ {f.monitor_name || "Assigner pilote"}
+                                  </button>
                                 </div>
                               </div>
-                            );
-                          })}
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              {/* BADGE PAIEMENT */}
+                              <div className="cursor-pointer" onClick={(e) => {
+                                e.stopPropagation();
+                                setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
+                                setTempPayMethod("CB"); // 🎯 On remet une valeur par défaut
+                                setEditingSlotId(f.id);
+                                setEditType('payment');
+                              }}>
+                                {renderPaymentBadge(f.payment_status)}
+                              </div>
+                              
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }}
+                                className="p-2 text-rose-400 hover:text-rose-600"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+
+                            {/* 🎯 INTERFACE D'ÉDITION RAPIDE (VÉRIFIEZ BIEN CE BLOC) */}
+                            {editingSlotId === f.id && (
+                              <div 
+                                className="absolute right-0 top-full mt-2 bg-white shadow-2xl border border-slate-200 p-4 rounded-2xl z-[100] flex items-center gap-3 animate-in fade-in zoom-in-95" 
+                                onClick={e => e.stopPropagation()}
+                              >
+                                {editType === 'monitor' ? (
+                                  <>
+                                    <select 
+                                      className="bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs outline-none focus:border-sky-400" 
+                                      value={tempMonitorId} 
+                                      onChange={e => setTempMonitorId(e.target.value)}
+                                    >
+                                      <option value="">Choisir un pilote...</option>
+                                      {monitors.map(m => (
+                                        <option key={m.id} value={m.id}>{m.first_name}</option>
+                                      ))}
+                                    </select>
+                                    <button 
+                                      onClick={() => saveQuickEdit(f.id, c.id)} 
+                                      className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-black text-xs hover:bg-emerald-600 transition-colors"
+                                    >
+                                      OK
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <select 
+                                      value={tempPayMethod} 
+                                      onChange={e => setTempPayMethod(e.target.value)} 
+                                      className="bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs"
+                                    >
+                                      <option value="CB">💳 CB</option>
+                                      <option value="Espèces">💶 Espèces</option>
+                                      <option value="Chèque">📝 Chèque</option>
+                                      <option value="Bon Cadeau">🎁 Bon Cadeau</option>
+                                    </select>
+                                    <input 
+                                      type="number" 
+                                      value={tempPayAmount} 
+                                      onChange={e => setTempPayAmount(Number(e.target.value))} 
+                                      className="w-20 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs" 
+                                    />
+                                    <button 
+                                      onClick={() => saveQuickEdit(f.id, c.id)} 
+                                      className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-black text-xs hover:bg-emerald-600"
+                                    >
+                                      ENCAISSER
+                                    </button>
+                                  </>
+                                )}
+                                <button 
+                                  onClick={() => { setEditingSlotId(null); setEditType(null); }} 
+                                  className="ml-2 text-slate-400 hover:text-slate-600 p-1"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          ))}
                         </div>
                       </td>
                     </tr>
@@ -349,10 +362,117 @@ export default function ClientsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* 📱 VERSION MOBILE : Visible uniquement sur petit écran (md:hidden) */}
+        <div className="md:hidden space-y-4 px-2">
+  {clientsList.map(c => (
+    <div key={c.id} className={`bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all ${expandedClient === c.id ? 'ring-2 ring-sky-500/10' : ''}`}>
+      {/* EN-TÊTE DE LA CARTE */}
+      <div 
+        className="p-4 flex items-center justify-between active:bg-slate-50"
+        onClick={() => setExpandedClient(expandedClient === c.id ? null : c.id)}
+      >
+        <div className="flex items-center gap-3">
+          <input 
+            type="checkbox" 
+            checked={selectedIds.includes(c.id)}
+            onChange={() => setSelectedIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}
+            onClick={e => e.stopPropagation()}
+            className="w-5 h-5 rounded border-slate-300 text-emerald-500"
+          />
+          <div>
+            <p className="font-black text-slate-800 uppercase text-sm leading-tight">{c.last_name} {c.first_name}</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{c.phone || 'Pas de numéro'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-500 text-[10px]">
+            {c.flights?.length || 0}
+          </span>
+          <span className={`text-sky-500 font-black transition-transform ${expandedClient === c.id ? 'rotate-180' : ''}`}>▼</span>
+        </div>
+      </div>
+
+      {/* DÉTAILS DU DOSSIER (ACCORDÉON) */}
+      {expandedClient === c.id && (
+        <div className="bg-slate-50/50 p-3 space-y-3 border-t border-slate-100">
+          {c.flights.map((f: any, idx: number) => (
+            <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-4 relative">
+              <div className="flex justify-between items-start">
+                <div className="flex gap-3">
+                  <div className="bg-sky-50 text-sky-600 px-2 py-1 rounded-lg text-center min-w-[45px] h-fit border border-sky-100">
+                    <p className="text-[8px] font-black uppercase leading-none mb-1">{new Date(f.start_time).toLocaleDateString('fr-FR', { weekday: 'short' })}</p>
+                    <p className="text-sm font-black leading-none">{new Date(f.start_time).toLocaleDateString('fr-FR', { day: '2-digit' })}</p>
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-800 uppercase text-[11px] leading-tight mb-1">{f.flight_name}</p>
+                    {/* Bouton Pilote Mobile */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setTempMonitorId(f.monitor_id?.toString() || ""); setEditingSlotId(f.id); setEditType('monitor'); }}
+                      className="text-[9px] font-bold bg-slate-50 text-slate-600 px-2 py-1 rounded-md border border-slate-100"
+                    >
+                      👨‍✈️ {f.monitor_name || "Assigner"}
+                    </button>
+                  </div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }} className="text-rose-300 p-1">🗑️</button>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-50 pt-3">
+                <div onClick={(e) => {
+                  e.stopPropagation();
+                  setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
+                  setTempPayMethod("CB");
+                  setEditingSlotId(f.id);
+                  setEditType('payment');
+                }}>
+                  {renderPaymentBadge(f.payment_status)}
+                </div>
+              </div>
+
+              {/* ÉDITION RAPIDE MOBILE */}
+              {editingSlotId === f.id && (
+                <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col justify-center p-4 rounded-2xl animate-in fade-in slide-in-from-bottom-2" onClick={e => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[10px] font-black uppercase text-slate-400">{editType === 'monitor' ? 'Changer de pilote' : 'Encaisser le vol'}</p>
+                    <button onClick={() => setEditingSlotId(null)} className="text-slate-400 text-lg">✕</button>
+                  </div>
+                  
+                  {editType === 'monitor' ? (
+                    <div className="flex gap-2">
+                      <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-sm outline-none" value={tempMonitorId} onChange={e => setTempMonitorId(e.target.value)}>
+                        <option value="">Choisir...</option>
+                        {monitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
+                      </select>
+                      <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-6 rounded-xl font-black text-sm uppercase">OK</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <select value={tempPayMethod} onChange={e => setTempPayMethod(e.target.value)} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-sm">
+                          <option value="CB">💳 CB</option>
+                          <option value="Espèces">💶 Esp.</option>
+                          <option value="Chèque">📝 Chq.</option>
+                          <option value="Bon Cadeau">🎁 Bon</option>
+                        </select>
+                        <input type="number" value={tempPayAmount} onChange={e => setTempPayAmount(Number(e.target.value))} className="w-24 bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-sm text-center" />
+                      </div>
+                      <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full bg-emerald-500 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest">Confirmer le paiement</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  ))}
+</div>
       </div>
     );
   };
-
+  
   const deleteFlight = async (slotId: number, clientId: number) => {
     if (!confirm("Supprimer ce vol ? Le créneau redeviendra disponible sur le calendrier.")) return;
     try {
@@ -369,7 +489,10 @@ export default function ClientsPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`🚨 ATTENTION : Vous allez supprimer définitivement ${selectedIds.length} dossiers clients. Continuer ?`)) return;
+  if (!filterStartDate || !filterEndDate) {
+    return alert("Veuillez sélectionner une période (Date de début et Date de fin) avant de supprimer.");
+  }
+  if (!confirm(`🚨 ATTENTION : Vous allez supprimer définitivement ${selectedIds.length} dossiers clients. Continuer ?`)) return;
     try {
       const res = await apiFetch('/api/clients/bulk-delete', {
         method: 'POST',
@@ -428,26 +551,27 @@ export default function ClientsPage() {
             Tes <span className="text-sky-500">Clients</span>
           </h1>
 
-          <div className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 space-y-4">
+          <div className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px] shadow-sm border border-slate-100 space-y-3 md:space-y-4">
             <input 
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 transition-all"
-              placeholder="Rechercher un passager par son nom..."
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl md:rounded-2xl p-3 md:p-4 font-bold outline-none focus:border-sky-500 transition-all text-sm md:text-base"
+              placeholder="Rechercher un passager..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterMonitor} onChange={e => setFilterMonitor(e.target.value)}>
+            {/* On réduit la taille des selects sur mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-2.5 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterMonitor} onChange={e => setFilterMonitor(e.target.value)}>
                 <option value="">👨‍✈️ Tous les pilotes</option>
                 {monitors.map(m => <option key={m.id} value={m.first_name}>{m.first_name}</option>)}
               </select>
 
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterFlight} onChange={e => setFilterFlight(e.target.value)}>
+              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-2.5 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterFlight} onChange={e => setFilterFlight(e.target.value)}>
                 <option value="">🪂 Toutes les prestations</option>
                 {flightTypes.map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
               </select>
 
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
+              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-2.5 font-bold text-xs text-slate-600 outline-none focus:border-sky-300" value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
                 <option value="">💰 Tous les paiements</option>
                 <option value="backoffice">🏢 À régler (Backoffice)</option>
                 <option value="cb">💳 Payés en CB</option>
