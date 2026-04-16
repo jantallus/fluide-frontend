@@ -673,6 +673,13 @@ export default function PlanningAdmin() {
     }))).sort();
   }, [availableTargetSlots]);
 
+  // 🎯 NOUVEAU : Auto-nettoyage de l'heure UNIQUEMENT si elle n'est plus dispo à la nouvelle date
+  useEffect(() => {
+    if (moveConfig.time && !availableTimes.includes(moveConfig.time)) {
+      setMoveConfig(prev => ({ ...prev, time: '' }));
+    }
+  }, [availableTimes]);
+
   // 🎯 4. Mémoire : Liste intelligente des vols
   const smartFlightOptions = useMemo(() => {
     const dateStr = selectedEvent?.start ? selectedEvent.start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
@@ -1442,7 +1449,7 @@ export default function PlanningAdmin() {
                     
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Date ciblée</label>
-                      <input type="date" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={moveConfig.date} onChange={e => setMoveConfig({...moveConfig, date: e.target.value, time: ''})} />
+                      <input type="date" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={moveConfig.date} onChange={e => setMoveConfig({...moveConfig, date: e.target.value})} />
                     </div>
 
                     <div>
