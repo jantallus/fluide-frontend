@@ -80,7 +80,7 @@ export default function ClientsPage() {
     try {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      const key = `fluide_filters_${user?.id || 'default'}`; // 👈 Clé unique par profil !
+      const key = `fluide_filters_${user?.id || 'default'}`; 
       const saved = localStorage.getItem(key);
       
       if (saved) {
@@ -93,12 +93,18 @@ export default function ClientsPage() {
         if (parsed.search) setSearch(parsed.search);
       }
     } catch (e) { console.error("Erreur chargement filtres", e); }
-    setFiltersLoaded(true); // On autorise maintenant la sauvegarde
+    
+    // 🎯 LA CORRECTION EST ICI : 
+    // On bloque la sauvegarde pendant 500ms au démarrage.
+    // Ça empêche l'app d'écraser la mémoire avec du "vide" quand on l'ouvre à froid !
+    setTimeout(() => {
+      setFiltersLoaded(true); 
+    }, 500);
   }, []);
 
   // 2. SAUVEGARDE AUTOMATIQUE À CHAQUE CLIC
   useEffect(() => {
-    if (!filtersLoaded) return; // On ne sauvegarde pas tant que la page n'a pas fini de charger
+    if (!filtersLoaded) return; // Ne sauvegarde rien les premières 500 millisecondes
     try {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
