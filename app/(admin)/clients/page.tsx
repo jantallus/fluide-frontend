@@ -73,6 +73,42 @@ export default function ClientsPage() {
   const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+
+  // 1. CHARGEMENT DE LA MÉMOIRE AU DÉMARRAGE
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = `fluide_filters_${user?.id || 'default'}`; // 👈 Clé unique par profil !
+      const saved = localStorage.getItem(key);
+      
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.filterMonitors) setFilterMonitors(parsed.filterMonitors);
+        if (parsed.filterFlights) setFilterFlights(parsed.filterFlights);
+        if (parsed.filterPayments) setFilterPayments(parsed.filterPayments);
+        if (parsed.filterStartDate) setFilterStartDate(parsed.filterStartDate);
+        if (parsed.filterEndDate) setFilterEndDate(parsed.filterEndDate);
+        if (parsed.search) setSearch(parsed.search);
+      }
+    } catch (e) { console.error("Erreur chargement filtres", e); }
+    setFiltersLoaded(true); // On autorise maintenant la sauvegarde
+  }, []);
+
+  // 2. SAUVEGARDE AUTOMATIQUE À CHAQUE CLIC
+  useEffect(() => {
+    if (!filtersLoaded) return; // On ne sauvegarde pas tant que la page n'a pas fini de charger
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = `fluide_filters_${user?.id || 'default'}`;
+      
+      const filtersToSave = { filterMonitors, filterFlights, filterPayments, filterStartDate, filterEndDate, search };
+      localStorage.setItem(key, JSON.stringify(filtersToSave));
+    } catch (e) {}
+  }, [filterMonitors, filterFlights, filterPayments, filterStartDate, filterEndDate, search, filtersLoaded]);
+
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
   const [editType, setEditType] = useState<'monitor' | 'payment' | null>(null);
   const [tempMonitorId, setTempMonitorId] = useState<string>("");
