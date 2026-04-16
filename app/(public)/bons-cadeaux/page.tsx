@@ -8,7 +8,7 @@ export default function CadeauPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
-  // Formulaire de l'acheteur
+  // 🎯 SÉCURITÉ : On ne demande plus que le nom, l'email et le téléphone
   const [buyer, setBuyer] = useState({ name: '', email: '', phone: '' });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
@@ -31,6 +31,7 @@ export default function CadeauPage() {
     fetchTemplates();
   }, []);
 
+  // 🎯 SÉCURITÉ : La validation du formulaire est plus rapide
   const isFormValid = buyer.name && buyer.email && buyer.phone;
 
   const handleCheckout = async () => {
@@ -285,6 +286,7 @@ export default function CadeauPage() {
               <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#1e40af', marginBottom: '10px' }}>Personnalisez votre bon</h3>
               <p style={{ color: '#f026b8', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>{selectedTemplate.title} - {selectedTemplate.price_cents / 100}€</p>
               
+              {/* 🎯 SÉCURITÉ : La grille est réduite à 3 colonnes pour éliminer le bénéficiaire */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Qui offre ? (Acheteur)</label>

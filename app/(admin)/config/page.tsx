@@ -8,18 +8,20 @@ export default function ConfigPage() {
   const [loading, setLoading] = useState(true);
   const [seasons, setSeasons] = useState<{id: string, name: string, start: string, end: string}[]>([]);
   
-  // NOUVEAU : États pour la boutique
+  // NOUVEAU : États pour la boutique (Avec pdf_background_url)
   const [templates, setTemplates] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
-  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', is_published: false });
+  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: false });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  // 🎯 NOUVEAU : Mémoire pour le bouton de chargement d'image
+  
+  // 🎯 NOUVEAU : Mémoires pour les DEUX boutons de chargement d'image
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   
   const [activePlan, setActivePlan] = useState<string>('Standard');
   const [newRotation, setNewRotation] = useState({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: 'Standard' });
@@ -30,8 +32,8 @@ export default function ConfigPage() {
       const [defRes, setRes, tplRes, flightsRes] = await Promise.all([ 
         apiFetch('/api/slot-definitions'), 
         apiFetch('/api/settings'),
-        apiFetch('/api/gift-card-templates'), // 👈 On charge les modèles
-        apiFetch('/api/flight-types')         // 👈 On charge les vols pour la liste déroulante
+        apiFetch('/api/gift-card-templates'),
+        apiFetch('/api/flight-types')
       ]);
       
       if (defRes.ok) setDefinitions(await defRes.json());
@@ -55,7 +57,6 @@ export default function ConfigPage() {
   if (!uniquePlans.includes('Standard') && definitions.length === 0) uniquePlans.push('Standard');
   const activeDefs = definitions.filter(d => (d.plan_name || 'Standard') === activePlan); 
 
-  // --- LOGIQUE ROTATIONS & PLANS ---
   const handleSaveRotation = async () => {
     if (!newRotation.start_time || newRotation.duration_minutes <= 0) return;
     setIsSaving(true); 
@@ -86,33 +87,19 @@ export default function ConfigPage() {
     setActivePlan('Standard'); loadData();
   };
 
-  // --- LOGIQUE SAISONS ---
   const saveSeasonsToDB = async (updatedSeasons: any[]) => { await apiFetch('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'opening_periods', value: JSON.stringify(updatedSeasons) }) }); };
   const handleAddSeason = () => { const updated = [...seasons, { id: Date.now().toString(), name: '', start: '', end: '' }]; setSeasons(updated); saveSeasonsToDB(updated); };
   const handleSeasonChange = (id: string, field: string, value: string) => { setSeasons(seasons.map(s => s.id === id ? { ...s, [field]: value } : s)); };
   const handleDeleteSeason = (id: string) => { if(!confirm("Supprimer ?")) return; const updated = seasons.filter(s => s.id !== id); setSeasons(updated); saveSeasonsToDB(updated); };
 
-  // --- LOGIQUE EMAILS ---
   const saveEmailSetting = async (key: string, value: string) => {
     try {
-      // 🚨 CORRECTION : On utilise apiFetch pour être sûr de taper sur la bonne URL (Locale ou Railway)
-      const res = await apiFetch('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify({ key, value })
-      });
-      
-      if (res.ok) {
-        alert("Sauvegardé avec succès ! ✅");
-      } else {
-        alert("❌ Erreur lors de la sauvegarde côté serveur.");
-      }
-    } catch (err) { 
-      console.error(err); 
-      alert("❌ Erreur de connexion avec le serveur.");
-    }
+      const res = await apiFetch('/api/settings', { method: 'POST', body: JSON.stringify({ key, value }) });
+      if (res.ok) alert("Sauvegardé avec succès ! ✅");
+      else alert("❌ Erreur lors de la sauvegarde côté serveur.");
+    } catch (err) { alert("❌ Erreur de connexion avec le serveur."); }
   };
 
-  // --- LOGIQUE BOUTIQUE BONS CADEAUX ---
   const handleSaveTemplate = async () => {
     if (!newTemplate.title || !newTemplate.price_cents) return alert("Le titre et le prix sont obligatoires.");
     setIsSaving(true);
@@ -141,13 +128,13 @@ export default function ConfigPage() {
           </h1>
         </header>
 
-        {/* --- NOUVELLE SECTION : BOUTIQUE BONS CADEAUX --- */}
+        {/* --- SECTION : BOUTIQUE BONS CADEAUX --- */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">🛍️ Boutique Bons Cadeaux</h2>
             <button onClick={() => { 
                 setEditingTemplateId(null); 
-                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', is_published: true }); 
+                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: true }); 
                 setShowTemplateModal(true); 
               }} 
               className="bg-amber-500 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
@@ -176,7 +163,7 @@ export default function ConfigPage() {
                   <div className="flex flex-col gap-2">
                     <button onClick={() => {
                         setEditingTemplateId(tpl.id);
-                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '' });
+                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '', pdf_background_url: tpl.pdf_background_url || '' });
                         setShowTemplateModal(true);
                       }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">✏️ Modifier</button>
                     <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors">🗑️ Supprimer</button>
@@ -187,7 +174,7 @@ export default function ConfigPage() {
           </div>
         </section>
 
-        {/* SECTION 1 : SAISONS MULTIPLES (inchangé) */}
+        {/* SECTION 1 : SAISONS MULTIPLES */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📅 Périodes d'ouverture</h2>
@@ -216,7 +203,7 @@ export default function ConfigPage() {
           </div>
         </section>
 
-        {/* SECTION 2 : ROTATIONS PAR PLAN (inchangé) */}
+        {/* SECTION 2 : ROTATIONS PAR PLAN */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">⏱️ Modèles de Rotations</h2>
@@ -245,13 +232,11 @@ export default function ConfigPage() {
           <button onClick={() => { setEditingId(null); setNewRotation({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: activePlan }); setShowAddModal(true); }} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase italic shadow-xl hover:scale-[1.01] transition-transform">+ Ajouter une rotation</button>
         </section>
 
-        {/* SECTION NOUVELLE : AFFICHAGE DU PLANNING CLIENT */}
+        {/* SECTION : AFFICHAGE DU PLANNING CLIENT */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📱 Affichage du Planning</h2>
           </div>
-          <p className="text-slate-500 mb-6 font-medium">Choisissez le nombre de jours affichés simultanément sur la page de réservation publique.</p>
-
           <div className="bg-slate-50 p-6 rounded-[30px] border border-slate-100">
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Nombre de colonnes (jours)</label>
             <div className="flex flex-col md:flex-row items-center gap-4">
@@ -260,35 +245,28 @@ export default function ConfigPage() {
                 value={settings['display_days_count'] || '7'}
                 onChange={(e) => setSettings({...settings, 'display_days_count': e.target.value})}
               >
-                <option value="3">3 jours (Idéal sur mobile, navigation par flèches)</option>
-                <option value="4">4 jours (Navigation par flèches)</option>
-                <option value="5">5 jours (Scroll horizontal activé)</option>
-                <option value="6">6 jours (Scroll horizontal activé)</option>
-                <option value="7">7 jours (Semaine complète : du Samedi au Vendredi)</option>
+                <option value="3">3 jours (Idéal sur mobile)</option>
+                <option value="4">4 jours</option>
+                <option value="5">5 jours</option>
+                <option value="6">6 jours</option>
+                <option value="7">7 jours (Semaine complète)</option>
               </select>
-              {/* Note : On réutilise votre fonction saveEmailSetting qui sauvegarde n'importe quel paramètre */}
-              <button 
-                onClick={() => saveEmailSetting('display_days_count', settings['display_days_count'] || '7')} 
-                className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all shadow-md"
-              >
+              <button onClick={() => saveEmailSetting('display_days_count', settings['display_days_count'] || '7')} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all shadow-md">
                 Enregistrer le format
               </button>
             </div>
           </div>
         </section>
 
-{/* SECTION NOUVELLE : EMAILS PERSONNALISÉS */}
+        {/* SECTION : EMAILS PERSONNALISÉS */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">💌 Messages Automatiques</h2>
           </div>
-          <p className="text-slate-500 mb-8 font-medium">Personnalisez les conseils envoyés par email à vos clients après leur achat.</p>
-
-{/* NOTIFICATIONS ADMIN */}
-            <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 relative overflow-hidden">
+          
+            <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 relative overflow-hidden mb-8">
               <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
               <h3 className="font-black text-emerald-900 uppercase tracking-widest text-sm mb-2">🛎️ Adresses de notification (Nouvelles réservations)</h3>
-              <p className="text-xs text-emerald-600 mb-4 font-bold">Vous recevrez un email ici à chaque fois qu'un client réserve un vol en ligne. Séparez les adresses par une virgule pour en mettre plusieurs.</p>
               <input
                 type="text"
                 className="w-full bg-white border-2 border-emerald-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-slate-700"
@@ -302,7 +280,6 @@ export default function ConfigPage() {
             </div>
 
           <div className="space-y-8">
-            {/* BON CADEAU */}
             <div className="bg-fuchsia-50 p-6 rounded-[30px] border border-fuchsia-100 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-2 h-full bg-fuchsia-500"></div>
               <h3 className="font-black text-fuchsia-900 uppercase tracking-widest text-sm mb-4">🎁 Achat d'un Bon Cadeau</h3>
@@ -317,32 +294,17 @@ export default function ConfigPage() {
               </button>
             </div>
 
-            {/* VOLS : EMAILS + SMS */}
-          <div>
-            <h3 className="font-black text-sky-900 uppercase tracking-widest text-sm mb-6 border-b-2 border-slate-100 pb-4">
-              🪂 Personnalisation par type de vol
-            </h3>
+            <div>
+            <h3 className="font-black text-sky-900 uppercase tracking-widest text-sm mb-6 border-b-2 border-slate-100 pb-4">🪂 Personnalisation par type de vol</h3>
             <div className="grid grid-cols-1 gap-8">
               {flights.map(flight => (
                 <div key={flight.id} className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
                   <h4 className="font-black text-slate-800 uppercase italic mb-6 text-xl">{flight.name}</h4>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* COLONNE EMAIL */}
                     <div>
                       <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-1 block">📧 Contenu du bloc "Conseils" (Email)</label>
-                      
-                      {/* 🎯 NOUVEAU : Explication des variables pour l'email */}
-                      <p className="text-[10px] text-slate-500 font-bold ml-4 mb-3 leading-tight">
-                        Mots magiques (remplacés auto) : <br/>
-                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100">[PRENOM]</code> 
-                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 ml-1">[DATE]</code> 
-                        <code className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 ml-1">[HEURE]</code>
-                      </p>
-
                       <textarea
                         className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 text-sm min-h-[120px] text-slate-600"
-                        placeholder="Ex: Bonjour [PRENOM], pour votre vol du [DATE] à [HEURE], prévoyez des chaussures fermées..."
                         value={settings[`email_flight_${flight.id}`] || ''}
                         onChange={(e) => setSettings({...settings, [`email_flight_${flight.id}`]: e.target.value})}
                       />
@@ -350,29 +312,15 @@ export default function ConfigPage() {
                         Enregistrer l'Email
                       </button>
                     </div>
-
-                    {/* COLONNE SMS */}
                     <div>
                       <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-1 block">📱 Message SMS (Court)</label>
-                      
-                      {/* 🎯 NOUVEAU : Explication des variables dynamiques */}
-                      <p className="text-[10px] text-slate-500 font-bold ml-4 mb-3 leading-tight">
-                        Mots magiques (remplacés auto) : <br/>
-                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">[PRENOM]</code> 
-                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 ml-1">[DATE]</code> 
-                        <code className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 ml-1">[HEURE]</code>
-                      </p>
-
                       <textarea
                         className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-sm min-h-[120px] text-slate-600"
-                        /* 🎯 NOUVEAU : Placeholder mis à jour avec les variables */
-                        placeholder="Ex: Bonjour [PRENOM], RDV le [DATE] à [HEURE] au Crêt du Loup. N'oubliez pas vos chaussures fermées !"
                         maxLength={160}
                         value={settings[`sms_flight_${flight.id}`] || ''}
                         onChange={(e) => setSettings({...settings, [`sms_flight_${flight.id}`]: e.target.value})}
                       />
                       <div className="flex justify-between items-center mt-3">
-                        <span className="text-[10px] font-bold text-slate-400 ml-2">{(settings[`sms_flight_${flight.id}`] || '').length}/160 caractères</span>
                         <button onClick={() => saveEmailSetting(`sms_flight_${flight.id}`, settings[`sms_flight_${flight.id}`])} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
                           Enregistrer le SMS
                         </button>
@@ -382,11 +330,11 @@ export default function ConfigPage() {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
           </div>
         </section>
 
-        {/* MODALE : MODÈLE BOUTIQUE */}
+        {/* MODALE : MODÈLE BOUTIQUE (AVEC DOUBLE UPLOAD) */}
         {showTemplateModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl my-8">
@@ -419,72 +367,68 @@ export default function ConfigPage() {
                     {flights.map(f => <option key={f.id} value={f.id}>🎯 Uniquement : {f.name}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Image d'illustration (Boutique & PDF)</label>
+
+                {/* 🎯 DOUBLE UPLOAD D'IMAGES */}
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 space-y-6">
                   
-                  <div className="flex gap-3">
-                    {/* Le bouton caché pour choisir le fichier */}
-                    <input 
-                      type="file" 
-                      id="image-upload" 
-                      accept="image/*" 
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
+                  {/* 1. Image Vitrine Boutique */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-sky-500 ml-2">1. Image d'illustration (Vitrine Boutique)</label>
+                    <div className="flex gap-3 mt-2">
+                      <input 
+                        type="file" id="image-upload" accept="image/*" className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]; if (!file) return;
+                          setIsUploading(true);
+                          const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', 'fluide_preset'); 
+                          try {
+                            const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', { method: 'POST', body: formData });
+                            const data = await res.json();
+                            if (data.secure_url) setNewTemplate({...newTemplate, image_url: data.secure_url});
+                          } catch (err) { alert("Erreur d'envoi."); } finally { setIsUploading(false); }
+                        }} 
+                      />
+                      <label htmlFor="image-upload" className={`flex-1 flex items-center justify-center border-2 border-dashed border-sky-300 rounded-2xl p-3 font-black uppercase text-[10px] tracking-widest cursor-pointer ${isUploading ? 'bg-white text-slate-400' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'}`}>
+                        {isUploading ? '⏳ Envoi...' : '📸 Uploader la miniature'}
+                      </label>
+                    </div>
+                    {newTemplate.image_url && (
+                      <div className="mt-3 h-24 rounded-xl bg-cover bg-center border border-slate-200 relative group" style={{ backgroundImage: `url(${newTemplate.image_url})` }}>
+                         <button onClick={() => setNewTemplate({...newTemplate, image_url: ''})} className="absolute top-2 right-2 bg-rose-500 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 text-xs">✕</button>
+                      </div>
+                    )}
+                  </div>
 
-                        setIsUploading(true);
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        // ⚠️ REMPLACEZ "fluide_preset" PAR LE NOM DE VOTRE PRESET CLOUDINARY
-                        formData.append('upload_preset', 'fluide_preset'); 
-
-                        try {
-                          // ⚠️ REMPLACEZ "VOTRE_CLOUD_NAME" PAR VOTRE VRAI CLOUD NAME
-                          const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', {
-                            method: 'POST',
-                            body: formData
-                          });
-                          
-                          const data = await res.json();
-                          if (data.secure_url) {
-                            // On sauvegarde directement le lien Cloudinary !
-                            setNewTemplate({...newTemplate, image_url: data.secure_url});
-                          }
-                        } catch (err) {
-                          alert("Erreur lors de l'envoi de l'image.");
-                        } finally {
-                          setIsUploading(false);
-                        }
-                      }} 
-                    />
-                    
-                    {/* Le joli bouton sur lequel on clique */}
-                    <label 
-                      htmlFor="image-upload" 
-                      className={`flex-1 flex items-center justify-center border-2 border-dashed border-sky-300 rounded-2xl p-4 font-black uppercase text-[10px] tracking-widest transition-colors cursor-pointer ${isUploading ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-400'}`}
-                    >
-                      {isUploading ? '⏳ Envoi en cours...' : '📸 Uploader une image'}
-                    </label>
-
-                    {/* On garde la possibilité de mettre un lien à la main ou d'effacer (optionnel) */}
-                    <input 
-                      type="text" 
-                      placeholder="Ou collez un lien..." 
-                      className="flex-1 border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 text-xs text-slate-400" 
-                      value={newTemplate.image_url || ''} 
-                      onChange={e => setNewTemplate({...newTemplate, image_url: e.target.value})} 
-                    />
+                  {/* 2. Image Fond PDF */}
+                  <div className="border-t border-slate-200 pt-4">
+                    <label className="text-[10px] font-black uppercase text-rose-500 ml-2">2. Image de Fond du PDF (Format A4 Vertical)</label>
+                    <div className="flex gap-3 mt-2">
+                      <input 
+                        type="file" id="pdf-upload" accept="image/*" className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]; if (!file) return;
+                          setIsUploadingPdf(true);
+                          const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', 'fluide_preset'); 
+                          try {
+                            const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', { method: 'POST', body: formData });
+                            const data = await res.json();
+                            if (data.secure_url) setNewTemplate({...newTemplate, pdf_background_url: data.secure_url});
+                          } catch (err) { alert("Erreur d'envoi."); } finally { setIsUploadingPdf(false); }
+                        }} 
+                      />
+                      <label htmlFor="pdf-upload" className={`flex-1 flex items-center justify-center border-2 border-dashed border-rose-300 rounded-2xl p-3 font-black uppercase text-[10px] tracking-widest cursor-pointer ${isUploadingPdf ? 'bg-white text-slate-400' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}`}>
+                        {isUploadingPdf ? '⏳ Envoi...' : '🖼️ Uploader un fond PDF'}
+                      </label>
+                    </div>
+                    {newTemplate.pdf_background_url && (
+                      <div className="mt-3 h-32 w-24 mx-auto rounded-md bg-cover bg-center border border-slate-200 relative group" style={{ backgroundImage: `url(${newTemplate.pdf_background_url})` }}>
+                         <button onClick={() => setNewTemplate({...newTemplate, pdf_background_url: ''})} className="absolute -top-2 -right-2 bg-rose-500 text-white w-5 h-5 rounded-full opacity-0 group-hover:opacity-100 text-[10px] flex items-center justify-center shadow-md">✕</button>
+                      </div>
+                    )}
                   </div>
                   
-                  {newTemplate.image_url && (
-                    <div className="mt-3 h-32 rounded-2xl bg-cover bg-center border-2 border-slate-200 shadow-inner relative group" style={{ backgroundImage: `url(${newTemplate.image_url})` }}>
-                       <button onClick={() => setNewTemplate({...newTemplate, image_url: ''})} className="absolute top-2 right-2 bg-rose-500 text-white w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md">✕</button>
-                    </div>
-                  )}
                 </div>
-                
+
                 <label className="flex items-center gap-3 cursor-pointer bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <input type="checkbox" className="w-5 h-5 accent-emerald-500" checked={newTemplate.is_published} onChange={e => setNewTemplate({...newTemplate, is_published: e.target.checked})} />
                   <span className="font-bold text-slate-700 text-sm">Rendre visible sur la boutique en ligne</span>
@@ -499,7 +443,7 @@ export default function ConfigPage() {
           </div>
         )}
 
-        {/* MODALE : ROTATION (inchangé) */}
+        {/* MODALE : ROTATION */}
         {showAddModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
              <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">

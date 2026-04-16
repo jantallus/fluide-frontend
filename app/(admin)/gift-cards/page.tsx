@@ -13,7 +13,6 @@ export default function VouchersPage() {
   const [giftCardMode, setGiftCardMode] = useState<'prestation' | 'value'>('prestation');
   const [selectedPrestation, setSelectedPrestation] = useState('');
   
-  // 🎯 NOUVEAU : Les variables d'état pour les deux filtres
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -30,7 +29,9 @@ export default function VouchersPage() {
     max_uses: '1',
     is_unlimited: false,
     valid_from: '',
-    valid_until: ''
+    valid_until: '',
+    is_partner: false,    // 👈 AJOUTÉ
+    partner_amount: ''    // 👈 AJOUTÉ
   });
 
   const closeModal = () => {
@@ -39,7 +40,8 @@ export default function VouchersPage() {
     setNewVoucher({
       type: 'gift_card', custom_code: '', buyer_name: '', beneficiary_name: '', gift_value: '', 
       flight_type_id: '', discount_type: 'fixed', discount_value: '', discount_scope: 'both',
-      max_uses: '1', is_unlimited: false, valid_from: '', valid_until: ''
+      max_uses: '1', is_unlimited: false, valid_from: '', valid_until: '',
+      is_partner: false, partner_amount: '' // 👈 AJOUTÉ
     });
     setSelectedPrestation('');
     setGiftCardMode('prestation');
@@ -62,7 +64,9 @@ export default function VouchersPage() {
       max_uses: card.max_uses ? card.max_uses.toString() : '',
       is_unlimited: card.max_uses === null,
       valid_from: card.valid_from ? card.valid_from.split('T')[0] : '',
-      valid_until: card.valid_until ? card.valid_until.split('T')[0] : ''
+      valid_until: card.valid_until ? card.valid_until.split('T')[0] : '',
+      is_partner: card.is_partner || false, // 👈 AJOUTÉ
+      partner_amount: card.partner_amount_cents ? (card.partner_amount_cents / 100).toString() : '' // 👈 AJOUTÉ
     });
 
     if (card.type === 'gift_card') {
@@ -142,11 +146,13 @@ export default function VouchersPage() {
         ...payload,
         flight_type_id: (giftCardMode === 'prestation' && selectedPrestation.startsWith('flight|')) ? newVoucher.flight_type_id : null,
         buyer_name: newVoucher.buyer_name,
-        beneficiary_name: '', // 👈 On envoie une chaîne vide à la BDD
+        beneficiary_name: '', 
         price_paid_cents: Math.round(parseFloat(newVoucher.gift_value) * 100),
         notes: finalNotes,
         max_uses: 1,
-        discount_scope: 'both' 
+        discount_scope: 'both',
+        is_partner: false,
+        partner_amount_cents: null
       };
     } else {
       if (!newVoucher.discount_value) {
@@ -168,6 +174,8 @@ export default function VouchersPage() {
         max_uses: newVoucher.is_unlimited ? null : parseInt(newVoucher.max_uses) || 1,
         valid_from: newVoucher.valid_from || null,
         valid_until: newVoucher.valid_until || null,
+        is_partner: newVoucher.is_partner, // 👈 AJOUTÉ
+        partner_amount_cents: newVoucher.partner_amount ? Math.round(parseFloat(newVoucher.partner_amount) * 100) : null, // 👈 AJOUTÉ
         notes: newVoucher.flight_type_id ? `Promo spécifique` : `Promo globale`
       };
     }
@@ -182,7 +190,7 @@ export default function VouchersPage() {
       setNewVoucher({
         type: 'gift_card', custom_code: '', flight_type_id: '', buyer_name: '', beneficiary_name: '',
         gift_value: '', discount_type: 'fixed', discount_value: '', discount_scope: 'both',
-        max_uses: '1', is_unlimited: false, valid_from: '', valid_until: ''
+        max_uses: '1', is_unlimited: false, valid_from: '', valid_until: '', is_partner: false, partner_amount: ''
       });
       setSelectedPrestation(''); 
       setGiftCardMode('prestation');
@@ -213,7 +221,6 @@ export default function VouchersPage() {
         </button>
       </header>
 
-      {/* 🎯 NOUVEAU : LA BARRE DE FILTRES */}
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <select
           className="bg-white border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 shadow-sm outline-none w-full md:w-auto"
@@ -223,8 +230,8 @@ export default function VouchersPage() {
           <option value="all">🎟️ Tous les types</option>
           <option value="gift_card">🎁 Bons Cadeaux</option>
           <option value="promo">✂️ Tous les Codes Promos</option>
-          <option value="promo_campaign">📢 Campagnes Promotionnelles (Limités)</option>
-          <option value="promo_partner">🤝 Codes Partenaires (Illimités)</option>
+          <option value="promo_campaign">📢 Campagnes Promotionnelles</option>
+          <option value="promo_partner">🤝 Codes Partenaires</option>
         </select>
 
         <select
@@ -243,17 +250,14 @@ export default function VouchersPage() {
           <div className="text-center py-12 font-bold text-slate-400 animate-pulse">Chargement...</div>
         ) : [...cards]
             .filter(c => {
-              // 🎯 NOUVEAU : Logique de filtrage par Statut
               if (filterStatus === 'active' && c.status !== 'valid') return false;
               if (filterStatus === 'inactive' && c.status === 'valid') return false;
 
-              // 🎯 NOUVEAU : Logique de filtrage par Type
               if (filterType === 'gift_card' && c.type !== 'gift_card') return false;
               if (filterType === 'promo' && c.type !== 'promo') return false;
-              // Campagne = Promo avec une limite d'utilisation
-              if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.max_uses === null)) return false;
-              // Partenaire = Promo illimitée
-              if (filterType === 'promo_partner' && (c.type !== 'promo' || c.max_uses !== null)) return false;
+              // 🎯 AJOUTÉ : Basé sur la VRAIE case partenaire
+              if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.is_partner)) return false;
+              if (filterType === 'promo_partner' && (c.type !== 'promo' || !c.is_partner)) return false;
 
               return true;
             })
@@ -268,8 +272,9 @@ export default function VouchersPage() {
             <div key={c.id} className={`bg-white p-6 rounded-[30px] shadow-sm border flex justify-between items-center group transition-all ${c.status !== 'valid' ? 'opacity-60 border-slate-100 grayscale-[0.5]' : 'border-slate-100 hover:border-indigo-200'}`}>
               <div className="flex gap-6 items-center">
                 <div className={`p-4 rounded-2xl text-center min-w-[120px] ${isPromo ? 'bg-amber-50' : 'bg-indigo-50'}`}>
+                  {/* 🎯 AJOUTÉ : Affiche Partenaire en fonction de la vraie case */}
                   <p className={`text-[10px] font-black uppercase ${isPromo ? 'text-amber-400' : 'text-indigo-400'}`}>
-                    {isPromo ? (c.max_uses === null ? 'Partenaire' : 'Campagne') : 'Bon Cadeau'}
+                    {isPromo ? (c.is_partner ? 'Partenaire' : 'Campagne') : 'Bon Cadeau'}
                   </p>
                   <p className={`font-black ${isPromo ? 'text-amber-600' : 'text-indigo-600'}`}>{c.code}</p>
                 </div>
@@ -293,6 +298,12 @@ export default function VouchersPage() {
                             📅 {c.valid_from ? `Du ${formatDate(c.valid_from)}` : ''} {c.valid_until ? `Au ${formatDate(c.valid_until)}` : ''}
                           </span>
                         )}
+                        {/* 🎯 AJOUTÉ : Affiche le montant à facturer au partenaire */}
+                        {c.is_partner && c.partner_amount_cents > 0 && (
+                          <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-md text-[10px] font-bold">
+                            💰 Facturation : {c.partner_amount_cents / 100}€ / vol
+                          </span>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -303,6 +314,20 @@ export default function VouchersPage() {
                       <p className="text-sm text-slate-400 font-bold uppercase tracking-tight mt-1">
                         {c.flight_name ? `Vol : ${c.flight_name}` : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
                       </p>
+                      
+                      {/* 🎯 NOUVEAU : Badges pour le Téléphone et la Date d'expiration */}
+                      <div className="flex gap-3 mt-2">
+                        {c.buyer_phone && (
+                          <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[10px] font-bold">
+                            📞 {c.buyer_phone}
+                          </span>
+                        )}
+                        {c.valid_until && (
+                          <span className="bg-rose-50 text-rose-600 px-2 py-1 rounded-md text-[10px] font-bold">
+                            ⏳ Expire le {formatDate(c.valid_until)}
+                          </span>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
@@ -495,6 +520,21 @@ export default function VouchersPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* 🎯 AJOUTÉ : Le bloc spécifique pour les partenaires ! */}
+                  <div className="p-4 bg-amber-50 rounded-2xl space-y-4 border border-amber-100 mt-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-amber-500" checked={newVoucher.is_partner} onChange={e => setNewVoucher({ ...newVoucher, is_partner: e.target.checked })} />
+                      <span className="font-bold text-amber-900 text-sm">🤝 C'est un code Partenaire</span>
+                    </label>
+                    {newVoucher.is_partner && (
+                      <div className="pt-2 border-t border-amber-200/50">
+                        <label className="text-[10px] font-black uppercase text-amber-700 ml-2">Montant à facturer au partenaire par vol (€) - Optionnel</label>
+                        <input type="number" placeholder="Ex: 50" className="w-full border-2 border-amber-200/50 rounded-xl p-3 font-bold bg-white outline-none" value={newVoucher.partner_amount} onChange={e => setNewVoucher({ ...newVoucher, partner_amount: e.target.value })} />
+                      </div>
+                    )}
+                  </div>
+
                 </>
               )}
 

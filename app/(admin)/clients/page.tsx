@@ -2,25 +2,24 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiFetch } from '../../../lib/api';
 
-// 🎯 NOUVEAU COMPOSANT : Menu déroulant à cases à cocher (Multi-Sélection Fluide)
+const extractVoucherCode = (status: string) => {
+  if (!status) return null;
+  const match = status.match(/(?:Code|Promo|Cadeau)\s*:\s*([a-zA-Z0-9_-]+)/i);
+  return match ? match[1].toUpperCase() : null;
+};
+
 const MultiSelectDropdown = ({ label, icon, options, selected, onChange }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 🎯 Écouteur intelligent : ferme le menu si on clique ailleurs, SANS bloquer le scroll !
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   return (
@@ -66,7 +65,6 @@ export default function ClientsPage() {
   const [monitors, setMonitors] = useState<any[]>([]);
   const [flightTypes, setFlightTypes] = useState<any[]>([]);
   
-  // 🎯 MODIFICATION : Les filtres deviennent des tableaux (arrays) pour stocker plusieurs choix
   const [filterMonitors, setFilterMonitors] = useState<string[]>([]);
   const [filterFlights, setFilterFlights] = useState<string[]>([]);
   const [filterPayments, setFilterPayments] = useState<string[]>([]);
@@ -89,15 +87,14 @@ export default function ClientsPage() {
     clients.forEach(c => {
       c.flights.forEach((f: any) => {
         if (f.payment_status && f.payment_status.includes('Promo')) {
-          const match = f.payment_status.match(/(?:Promo\s*:\s*|Code:\s*)([a-zA-Z0-9_-]+)/i);
-          if (match) codes.add(match[1].toUpperCase());
+          const code = extractVoucherCode(f.payment_status);
+          if (code) codes.add(code);
         }
       });
     });
     return Array.from(codes).sort();
   }, [clients]);
 
-  // 🎯 PRÉPARATION DES OPTIONS POUR LES MENUS DÉROULANTS
   const monitorOptions = monitors.map(m => ({ label: m.first_name, value: m.first_name }));
   const flightOptions = flightTypes.map(f => ({ label: f.name, value: f.name }));
   const paymentOptions = [
@@ -177,14 +174,9 @@ export default function ClientsPage() {
 
   const filtered = clients.map(c => {
     const matchingFlights = c.flights.filter((f: any) => {
-      
-      // 🎯 MODIFICATION : On vérifie si le pilote est dans la liste cochée (ou si la liste est vide)
       const matchMon = filterMonitors.length === 0 || filterMonitors.includes(f.monitor_name);
-      
-      // 🎯 MODIFICATION : Pareil pour les prestations
       const matchFli = filterFlights.length === 0 || filterFlights.includes(f.flight_name);
       
-      // 🎯 MODIFICATION : Logique de panachage pour les paiements
       let matchPay = filterPayments.length === 0;
       if (filterPayments.length > 0) {
         matchPay = filterPayments.some(fp => {
@@ -222,11 +214,15 @@ export default function ClientsPage() {
 
   const renderPaymentBadge = (status: string) => {
     if (!status) return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 block w-fit">🏢 Backoffice</span>;
-    if (status.includes('Bon Cadeau')) return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 block w-fit">🎁 Bon</span>;
+    
+    const extractedCode = extractVoucherCode(status);
+
+    if (status.includes('Bon Cadeau')) {
+      return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 block w-fit">🎁 Bon {extractedCode ? `(${extractedCode})` : ''}</span>;
+    }
     
     if (status.includes('Promo')) {
-      const match = status.match(/(?:Promo\s*:\s*|Code:\s*)([a-zA-Z0-9_-]+)/i);
-      const code = match ? match[1].toUpperCase() : 'PROMO';
+      const code = extractedCode || 'PROMO';
       return <span className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-300 block w-fit shadow-sm">🏢 {code}</span>;
     }
 
@@ -279,6 +275,55 @@ export default function ClientsPage() {
         setSelectedIds([]);
       }
     } catch (err) { console.error(err); }
+  };
+
+  // 🎯 NOUVEAU : EXPORT EXCEL AVEC COLONNE FACTURATION PARTENAIRE
+  const handleExport = () => {
+    if (filtered.length === 0) return alert("Rien à exporter !");
+    
+    // 🎯 La nouvelle colonne Facturation
+    const headers = ["Date", "Client", "Email", "Telephone Passager", "Prestation", "Pilote", "Statut Paiement", "Code (Bon/Promo)", "Acheteur d'origine", "Téléphone Acheteur", "Facturation Partenaire"];
+    
+    const rows = filtered.flatMap(c => c.flights.map((f: any) => {
+      const code = extractVoucherCode(f.payment_status);
+      let buyerName = '';
+      let buyerPhone = '';
+      let partnerBilling = ''; // 👈 AJOUTÉ
+      
+      if (code) {
+        const gc = giftCards.find(g => g.code.toUpperCase() === code.toUpperCase());
+        if (gc) {
+          if (gc.buyer_name) buyerName = gc.buyer_name;
+          if (gc.buyer_phone) buyerPhone = `="${gc.buyer_phone}"`; 
+          // 🎯 AJOUTÉ : On récupère le montant à facturer
+          if (gc.is_partner && gc.partner_amount_cents) {
+            partnerBilling = `${gc.partner_amount_cents / 100}€`;
+          }
+        }
+      }
+
+      return [
+        new Date(f.start_time).toLocaleDateString('fr-FR'), 
+        `${c.last_name} ${c.first_name}`, 
+        c.email, 
+        c.phone ? `="${c.phone}"` : '', 
+        f.flight_name, 
+        f.monitor_name, 
+        f.payment_status || 'A régler',
+        code || '',         
+        buyerName,          
+        buyerPhone,         
+        partnerBilling // 👈 AJOUTÉ
+      ];
+    }));
+
+    const csvContent = [headers, ...rows].map((e: any[]) => e.map(String).map((v: string) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Export_Fluide_${new Date().toLocaleDateString('fr-FR')}.csv`;
+    link.click();
   };
 
   const renderClientTable = (title: string, clientsList: any[], icon: string, bgColor: string, textColor: string) => {
@@ -406,7 +451,7 @@ export default function ClientsPage() {
                                               .filter(gc => gc.status === 'valid')
                                               .map(gc => (
                                                 <option key={gc.id} value={gc.code}>
-                                                  {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
+                                                  {gc.code} {gc.buyer_name ? `(Offert par ${gc.buyer_name})` : ''}
                                                 </option>
                                               ))
                                             }
@@ -552,7 +597,7 @@ export default function ClientsPage() {
                                       .filter(gc => gc.status === 'valid')
                                       .map(gc => (
                                         <option key={gc.id} value={gc.code}>
-                                          {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
+                                          {gc.code} {gc.buyer_name ? `(Offert par ${gc.buyer_name})` : ''}
                                         </option>
                                       ))
                                     }
@@ -577,19 +622,6 @@ export default function ClientsPage() {
     );
   };
 
-  const handleExport = () => {
-    if (filtered.length === 0) return alert("Rien à exporter !");
-    const headers = ["Date", "Client", "Email", "Telephone", "Prestation", "Pilote", "Statut Paiement"];
-    const rows = filtered.flatMap(c => c.flights.map((f: any) => [new Date(f.start_time).toLocaleDateString('fr-FR'), `${c.last_name} ${c.first_name}`, c.email, c.phone ? `="${c.phone}"` : '', f.flight_name, f.monitor_name, f.payment_status || 'A régler']));
-    const csvContent = [headers, ...rows].map((e: any[]) => e.map(String).map((v: string) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Export_Fluide_${new Date().toLocaleDateString('fr-FR')}.csv`;
-    link.click();
-  };
-
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
@@ -599,7 +631,6 @@ export default function ClientsPage() {
           <div className="bg-white p-4 rounded-[25px] shadow-sm border border-slate-100 space-y-4">
             <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-4 font-bold outline-none focus:border-sky-500 transition-all text-sm" placeholder="Rechercher un passager..." value={search} onChange={(e) => setSearch(e.target.value)} />
             
-            {/* 🎯 INTÉGRATION DES NOUVEAUX FILTRES MULTI-SÉLECTION */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <MultiSelectDropdown 
                 label="Tous les pilotes" 
