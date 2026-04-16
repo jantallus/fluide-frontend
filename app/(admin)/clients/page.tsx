@@ -1,6 +1,62 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiFetch } from '../../../lib/api';
+
+// 🎯 NOUVEAU COMPOSANT : Menu déroulant à cases à cocher (Multi-Sélection Fluide)
+const MultiSelectDropdown = ({ label, icon, options, selected, onChange }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 🎯 Écouteur intelligent : ferme le menu si on clique ailleurs, SANS bloquer le scroll !
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs cursor-pointer flex justify-between items-center hover:border-sky-200 transition-colors"
+      >
+        <span className="truncate text-slate-700">
+          {icon} {selected.length === 0 ? label : `${selected.length} sélectionné(s)`}
+        </span>
+        <span className="text-slate-400 text-[10px]">{isOpen ? '▲' : '▼'}</span>
+      </div>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 max-h-64 overflow-y-auto p-2 flex flex-col gap-1 animate-in fade-in">
+          {options.map((o: any, idx: number) => (
+            <label key={idx} className="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer rounded-xl text-xs font-bold text-slate-700 transition-colors">
+              <input 
+                type="checkbox" 
+                className="w-4 h-4 accent-sky-500 rounded cursor-pointer" 
+                checked={selected.includes(o.value)} 
+                onChange={(e) => {
+                  if (e.target.checked) onChange([...selected, o.value]);
+                  else onChange(selected.filter((x: string) => x !== o.value));
+                }} 
+              />
+              {o.label}
+            </label>
+          ))}
+          {options.length === 0 && <p className="text-xs text-center text-slate-400 p-2">Aucune option</p>}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -9,9 +65,12 @@ export default function ClientsPage() {
 
   const [monitors, setMonitors] = useState<any[]>([]);
   const [flightTypes, setFlightTypes] = useState<any[]>([]);
-  const [filterMonitor, setFilterMonitor] = useState("");
-  const [filterFlight, setFilterFlight] = useState("");
-  const [filterPayment, setFilterPayment] = useState("");
+  
+  // 🎯 MODIFICATION : Les filtres deviennent des tableaux (arrays) pour stocker plusieurs choix
+  const [filterMonitors, setFilterMonitors] = useState<string[]>([]);
+  const [filterFlights, setFilterFlights] = useState<string[]>([]);
+  const [filterPayments, setFilterPayments] = useState<string[]>([]);
+  
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -22,8 +81,32 @@ export default function ClientsPage() {
   const [tempPayMethod, setTempPayMethod] = useState<string>("CB");
   const [tempPayAmount, setTempPayAmount] = useState<number>(0);
   const [tempPayCode, setTempPayCode] = useState<string>("");
-  // 🎯 NOUVEAU : On prépare la mémoire pour les codes existants
+  
   const [giftCards, setGiftCards] = useState<any[]>([]);
+
+  const usedPromoCodes = useMemo(() => {
+    const codes = new Set<string>();
+    clients.forEach(c => {
+      c.flights.forEach((f: any) => {
+        if (f.payment_status && f.payment_status.includes('Promo')) {
+          const match = f.payment_status.match(/(?:Promo\s*:\s*|Code:\s*)([a-zA-Z0-9_-]+)/i);
+          if (match) codes.add(match[1].toUpperCase());
+        }
+      });
+    });
+    return Array.from(codes).sort();
+  }, [clients]);
+
+  // 🎯 PRÉPARATION DES OPTIONS POUR LES MENUS DÉROULANTS
+  const monitorOptions = monitors.map(m => ({ label: m.first_name, value: m.first_name }));
+  const flightOptions = flightTypes.map(f => ({ label: f.name, value: f.name }));
+  const paymentOptions = [
+    { label: "🏢 À régler sur place", value: "backoffice" },
+    { label: "💳 Payés en CB", value: "cb" },
+    { label: "🎁 Bons Cadeaux", value: "cadeau" },
+    { label: "🏷️ Tous les Codes Promos", value: "promo" },
+    ...usedPromoCodes.map(code => ({ label: `🤝 Partenaire : ${code}`, value: `partenaire_${code}` }))
+  ];
 
   const saveQuickEdit = async (slotId: number, clientId: number) => {
     let payload: any = {};
@@ -32,12 +115,11 @@ export default function ClientsPage() {
     if (editType === 'monitor') {
       payload.monitor_id = tempMonitorId;
     } else if (editType === 'payment') {
-      // 🎯 NOUVEAU : Si c'est un bon ou une promo, on inclut le code dans le texte
       if (tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') {
         const codeText = tempPayCode ? ` - Code: ${tempPayCode.toUpperCase()}` : '';
-        newPaymentStatus = `Payé sur place (${tempPayMethod}${codeText} : ${tempPayAmount}€)`;
+        newPaymentStatus = `Payé sur place (${tempPayMethod}${codeText} - ${tempPayAmount}€)`;
       } else {
-        newPaymentStatus = `Payé sur place (${tempPayMethod} : ${tempPayAmount}€)`;
+        newPaymentStatus = `Payé sur place (${tempPayMethod} - ${tempPayAmount}€)`;
       }
       payload.payment_status = newPaymentStatus;
     }
@@ -82,12 +164,12 @@ export default function ClientsPage() {
           apiFetch('/api/clients'),
           apiFetch('/api/monitors'),
           apiFetch('/api/flight-types'),
-          apiFetch('/api/gift-cards') // 🎯 NOUVEAU : On récupère les codes
+          apiFetch('/api/gift-cards') 
         ]);
         if (resC.ok) setClients(await resC.json());
         if (resM.ok) setMonitors(await resM.json());
         if (resF.ok) setFlightTypes(await resF.json());
-        if (resG.ok) setGiftCards(await resG.json()); // 🎯 NOUVEAU : On stocke les codes
+        if (resG.ok) setGiftCards(await resG.json()); 
       } catch (err) { console.error("Erreur chargement:", err); }
     };
     fetchData();
@@ -95,13 +177,28 @@ export default function ClientsPage() {
 
   const filtered = clients.map(c => {
     const matchingFlights = c.flights.filter((f: any) => {
-      const matchMon = !filterMonitor || f.monitor_name === filterMonitor;
-      const matchFli = !filterFlight || f.flight_name === filterFlight;
-      let matchPay = true;
-      if (filterPayment === 'backoffice') matchPay = !f.payment_status;
-      if (filterPayment === 'promo') matchPay = f.payment_status?.includes('Promo');
-      if (filterPayment === 'cadeau') matchPay = f.payment_status?.includes('Bon Cadeau');
-      if (filterPayment === 'cb') matchPay = f.payment_status?.includes('CB');
+      
+      // 🎯 MODIFICATION : On vérifie si le pilote est dans la liste cochée (ou si la liste est vide)
+      const matchMon = filterMonitors.length === 0 || filterMonitors.includes(f.monitor_name);
+      
+      // 🎯 MODIFICATION : Pareil pour les prestations
+      const matchFli = filterFlights.length === 0 || filterFlights.includes(f.flight_name);
+      
+      // 🎯 MODIFICATION : Logique de panachage pour les paiements
+      let matchPay = filterPayments.length === 0;
+      if (filterPayments.length > 0) {
+        matchPay = filterPayments.some(fp => {
+          if (fp === 'backoffice') return !f.payment_status;
+          if (fp === 'cadeau') return !!f.payment_status && f.payment_status.includes('Bon Cadeau');
+          if (fp === 'cb') return !!f.payment_status && f.payment_status.includes('CB');
+          if (fp === 'promo') return !!f.payment_status && f.payment_status.includes('Promo');
+          if (fp.startsWith('partenaire_')) {
+            const codeToMatch = fp.replace('partenaire_', '');
+            return !!f.payment_status && f.payment_status.includes('Promo') && f.payment_status.toUpperCase().includes(codeToMatch);
+          }
+          return false;
+        });
+      }
 
       let matchStart = true;
       if (filterStartDate) {
@@ -126,7 +223,13 @@ export default function ClientsPage() {
   const renderPaymentBadge = (status: string) => {
     if (!status) return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 block w-fit">🏢 Backoffice</span>;
     if (status.includes('Bon Cadeau')) return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 block w-fit">🎁 Bon</span>;
-    if (status.includes('Promo')) return <span className="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-200 block w-fit">🏷️ Promo</span>;
+    
+    if (status.includes('Promo')) {
+      const match = status.match(/(?:Promo\s*:\s*|Code:\s*)([a-zA-Z0-9_-]+)/i);
+      const code = match ? match[1].toUpperCase() : 'PROMO';
+      return <span className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-300 block w-fit shadow-sm">🏢 {code}</span>;
+    }
+
     if (status.includes('CB')) return <span className="bg-sky-100 text-sky-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-sky-200 block w-fit">💳 CB</span>;
     if (status.includes('ANCV')) return <span className="bg-teal-100 text-teal-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-200 block w-fit">🎫 ANCV</span>;
     return <span className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-amber-200 block w-fit">🤝 {status}</span>;
@@ -188,12 +291,10 @@ export default function ClientsPage() {
         </div>
 
         {/* 💻 DESKTOP */}
-        {/* 🎯 CORRECTION 1 : On retire "overflow-hidden" de cette ligne pour laisser sortir la fenêtre */}
         <div className="hidden md:block bg-white rounded-[40px] shadow-sm border border-slate-100">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
-                {/* 🎯 CORRECTION 2 : On met les coins arrondis (rounded-tl) directement sur la 1ère case pour garder le design */}
                 <th className="p-6 w-12 text-center rounded-tl-[40px]">
                   <input type="checkbox" className="w-4 h-4 rounded" checked={clientsList.length > 0 && clientsList.every(c => selectedIds.includes(c.id))} onChange={(e) => {
                     const idsInList = clientsList.map(c => c.id);
@@ -203,7 +304,6 @@ export default function ClientsPage() {
                 <th className="p-6 text-xs">Nom / Prénom</th>
                 <th className="p-6 text-xs">Téléphone</th>
                 <th className="p-6 text-xs text-center">Vols</th>
-                {/* 🎯 CORRECTION 3 : Et on met l'autre coin arrondi (rounded-tr) sur la dernière case */}
                 <th className="p-6 text-xs text-right rounded-tr-[40px]">Détails</th>
               </tr>
             </thead>
@@ -229,7 +329,6 @@ export default function ClientsPage() {
                                 <div className="text-center min-w-[60px]">
                                   <p className="text-[9px] font-black uppercase text-slate-400">{new Date(f.start_time).toLocaleDateString('fr-FR', { weekday: 'short' })}</p>
                                   <p className="text-base font-black text-slate-800">{new Date(f.start_time).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</p>
-                                  {/* Heure de début (ex: 10:30) */}
                                   <p className="text-[11px] font-black bg-white rounded mt-0.5 py-0.5 text-slate-800 shadow-sm">
                                     {new Date(f.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
@@ -245,7 +344,7 @@ export default function ClientsPage() {
                                 <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
                                     setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
                                     setTempPayMethod("CB");
-                                    setTempPayCode(""); // 🎯 NOUVEAU : On vide la case du code
+                                    setTempPayCode(""); 
                                     setEditingSlotId(f.id);
                                     setEditType('payment');
                                   } }}>
@@ -258,32 +357,26 @@ export default function ClientsPage() {
                                   {editType === 'monitor' ? (
                                     <>
                                       <select 
-                                    className="bg-slate-50 border rounded-lg p-2 font-bold text-xs" 
-                                    value={tempMonitorId} 
-                                    onChange={e => setTempMonitorId(e.target.value)}
-                                  >
-                                    <option value="">Pilote...</option>
-                                    {monitors.map(m => {
-                                      // 🎯 VÉRIFICATION : Le pilote a-t-il un autre vol à cette heure exacte ?
-                                      const isBusy = clients.some(client => 
-                                        client.flights.some((flight: any) => 
-                                          flight.start_time === f.start_time && 
-                                          flight.monitor_id?.toString() === m.id.toString() && 
-                                          flight.id !== f.id // On exclut le vol actuel
-                                        )
-                                      );
-                                      return (
-                                        <option 
-                                          key={m.id} 
-                                          value={m.id} 
-                                          disabled={isBusy} 
-                                          className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
-                                        >
-                                          {m.first_name} {isBusy ? '(Occupé)' : ''}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
+                                        className="bg-slate-50 border rounded-lg p-2 font-bold text-xs" 
+                                        value={tempMonitorId} 
+                                        onChange={e => setTempMonitorId(e.target.value)}
+                                      >
+                                        <option value="">Pilote...</option>
+                                        {monitors.map(m => {
+                                          const isBusy = clients.some(client => 
+                                            client.flights.some((flight: any) => 
+                                              flight.start_time === f.start_time && 
+                                              flight.monitor_id?.toString() === m.id.toString() && 
+                                              flight.id !== f.id 
+                                            )
+                                          );
+                                          return (
+                                            <option key={m.id} value={m.id} disabled={isBusy} className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
+                                              {m.first_name} {isBusy ? '(Occupé)' : ''}
+                                            </option>
+                                          );
+                                        })}
+                                      </select>
                                       <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-black text-xs">OK</button>
                                     </>
                                   ) : (
@@ -302,24 +395,23 @@ export default function ClientsPage() {
                                           <option value="Promo">🏷️ Code Promo</option>
                                         </select>
 
-                                        {/* 🎯 NOUVEAU : La case devient un menu déroulant listant les codes existants */}
-                                      {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
-                                        <select 
-                                          value={tempPayCode} 
-                                          onChange={e => setTempPayCode(e.target.value)} 
-                                          className="w-32 bg-slate-50 border rounded-lg p-2 font-bold text-[10px] text-slate-700"
-                                        >
-                                          <option value="">Sélectionner...</option>
-                                          {giftCards
-                                            .filter(gc => gc.status === 'valid') // 🛡️ SÉCURITÉ : Ne montre que les codes non utilisés
-                                            .map(gc => (
-                                              <option key={gc.id} value={gc.code}>
-                                                {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
-                                              </option>
-                                            ))
-                                          }
-                                        </select>
-                                      )}
+                                        {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
+                                          <select 
+                                            value={tempPayCode} 
+                                            onChange={e => setTempPayCode(e.target.value)} 
+                                            className="w-32 bg-slate-50 border rounded-lg p-2 font-bold text-[10px] text-slate-700"
+                                          >
+                                            <option value="">Sélectionner...</option>
+                                            {giftCards
+                                              .filter(gc => gc.status === 'valid')
+                                              .map(gc => (
+                                                <option key={gc.id} value={gc.code}>
+                                                  {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
+                                                </option>
+                                              ))
+                                            }
+                                          </select>
+                                        )}
 
                                         <input 
                                           type="number" 
@@ -372,15 +464,12 @@ export default function ClientsPage() {
                       <div className="flex justify-between items-start">
                         <div className="flex gap-3">
                           <div className="bg-sky-50 text-sky-600 px-2 py-1 rounded-lg text-center min-w-[55px] border border-sky-100 flex flex-col justify-center">
-                            {/* Jour de la semaine (ex: lun.) */}
                             <p className="text-[7px] font-black uppercase leading-none mb-0.5">
                               {new Date(f.start_time).toLocaleDateString('fr-FR', { weekday: 'short' })}
                             </p>
-                            {/* Jour et Mois (ex: 14/04) */}
                             <p className="text-xs font-black leading-none mb-0.5">
                               {new Date(f.start_time).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                             </p>
-                            {/* Heure de début (ex: 10:30) */}
                             <p className="text-[9px] font-black bg-white rounded mt-0.5 py-0.5 text-sky-700 shadow-sm">
                               {new Date(f.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                             </p>
@@ -395,7 +484,7 @@ export default function ClientsPage() {
                       <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
                           setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
                           setTempPayMethod("CB");
-                          setTempPayCode(""); // 🎯 NOUVEAU : On vide la case du code
+                          setTempPayCode("");
                           setEditingSlotId(f.id);
                           setEditType('payment');
                         } }}>
@@ -406,34 +495,29 @@ export default function ClientsPage() {
                           <div className="flex justify-between mb-2"><p className="text-[8px] font-black uppercase text-slate-400">Modifier</p><button onClick={() => setEditingSlotId(null)}>✕</button></div>
                           {editType === 'monitor' ? (
                             <div className="flex gap-1">
-                        <select 
-                          className="flex-1 border rounded-lg p-2 font-bold text-xs" 
-                          value={tempMonitorId} 
-                          onChange={e => setTempMonitorId(e.target.value)}
-                        >
-                          <option value="">Pilote...</option>
-                          {monitors.map(m => {
-                            // 🎯 VÉRIFICATION MOBILE
-                            const isBusy = clients.some(client => 
-                              client.flights.some((flight: any) => 
-                                flight.start_time === f.start_time && 
-                                flight.monitor_id?.toString() === m.id.toString() && 
-                                flight.id !== f.id 
-                              )
-                            );
-                            return (
-                              <option 
-                                key={m.id} 
-                                value={m.id} 
-                                disabled={isBusy} 
-                                className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
+                              <select 
+                                className="flex-1 border rounded-lg p-2 font-bold text-xs" 
+                                value={tempMonitorId} 
+                                onChange={e => setTempMonitorId(e.target.value)}
                               >
-                                {m.first_name} {isBusy ? '(Occupé)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 rounded-lg font-black text-xs uppercase">OK</button></div>
+                                <option value="">Pilote...</option>
+                                {monitors.map(m => {
+                                  const isBusy = clients.some(client => 
+                                    client.flights.some((flight: any) => 
+                                      flight.start_time === f.start_time && 
+                                      flight.monitor_id?.toString() === m.id.toString() && 
+                                      flight.id !== f.id 
+                                    )
+                                  );
+                                  return (
+                                    <option key={m.id} value={m.id} disabled={isBusy} className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}>
+                                      {m.first_name} {isBusy ? '(Occupé)' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 rounded-lg font-black text-xs uppercase">OK</button>
+                            </div>
                           ) : (
                             <div className="space-y-2">
                               <div className="flex flex-wrap gap-2">
@@ -457,7 +541,6 @@ export default function ClientsPage() {
                                   className="w-16 border rounded-lg p-2 font-bold text-xs text-center" 
                                 />
 
-                                {/* 🎯 NOUVEAU : La case devient un menu déroulant listant les codes existants pour mobile */}
                                 {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
                                   <select 
                                     value={tempPayCode} 
@@ -466,7 +549,7 @@ export default function ClientsPage() {
                                   >
                                     <option value="">Sélectionner le code...</option>
                                     {giftCards
-                                      .filter(gc => gc.status === 'valid') // 🛡️ SÉCURITÉ : Ne montre que les codes non utilisés
+                                      .filter(gc => gc.status === 'valid')
                                       .map(gc => (
                                         <option key={gc.id} value={gc.code}>
                                           {gc.code} {gc.beneficiary_name ? `(${gc.beneficiary_name})` : ''}
@@ -515,19 +598,40 @@ export default function ClientsPage() {
           <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900 mb-8">Tes <span className="text-sky-500">Clients</span></h1>
           <div className="bg-white p-4 rounded-[25px] shadow-sm border border-slate-100 space-y-4">
             <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-4 font-bold outline-none focus:border-sky-500 transition-all text-sm" placeholder="Rechercher un passager..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            
+            {/* 🎯 INTÉGRATION DES NOUVEAUX FILTRES MULTI-SÉLECTION */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs" value={filterMonitor} onChange={e => setFilterMonitor(e.target.value)}><option value="">👨‍✈️ Tous les pilotes</option>{monitors.map(m => <option key={m.id} value={m.first_name}>{m.first_name}</option>)}</select>
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs" value={filterFlight} onChange={e => setFilterFlight(e.target.value)}><option value="">🪂 Toutes les prestations</option>{flightTypes.map(f => <option key={f.id} value={f.name}>{f.name}</option>)}</select>
-              <select className="bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-xs" value={filterPayment} onChange={e => setFilterPayment(e.target.value)}><option value="">💰 Tous les paiements</option><option value="backoffice">🏢 À régler</option><option value="cb">💳 Payés en CB</option><option value="cadeau">🎁 Bons Cadeaux</option><option value="promo">🏷️ Codes Promos</option></select>
+              <MultiSelectDropdown 
+                label="Tous les pilotes" 
+                icon="👨‍✈️" 
+                options={monitorOptions} 
+                selected={filterMonitors} 
+                onChange={setFilterMonitors} 
+              />
+              <MultiSelectDropdown 
+                label="Toutes les prestations" 
+                icon="🪂" 
+                options={flightOptions} 
+                selected={filterFlights} 
+                onChange={setFilterFlights} 
+              />
+              <MultiSelectDropdown 
+                label="Tous les paiements" 
+                icon="💰" 
+                options={paymentOptions} 
+                selected={filterPayments} 
+                onChange={setFilterPayments} 
+              />
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-center gap-3 bg-slate-50 border-2 border-slate-100 rounded-xl p-3"><span className="text-[10px] font-black uppercase text-slate-400">Du</span><input type="date" className="bg-transparent border-none outline-none font-bold text-xs w-full" value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} /></div>
               <div className="flex items-center gap-3 bg-slate-50 border-2 border-slate-100 rounded-xl p-3"><span className="text-[10px] font-black uppercase text-slate-400">Au</span><input type="date" className="bg-transparent border-none outline-none font-bold text-xs w-full" value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} /></div>
             </div>
             <div className="flex justify-between items-center mt-4 border-t border-slate-50 pt-4">
               <div className="flex gap-4 items-center">
-                {(filterMonitor || filterFlight || filterPayment || search || filterStartDate || filterEndDate) && (
-                  <button onClick={() => { setFilterMonitor(""); setFilterFlight(""); setFilterPayment(""); setSearch(""); setFilterStartDate(""); setFilterEndDate(""); }} className="text-[10px] font-black uppercase text-rose-500 hover:underline">✕ Reset</button>
+                {(filterMonitors.length > 0 || filterFlights.length > 0 || filterPayments.length > 0 || search || filterStartDate || filterEndDate) && (
+                  <button onClick={() => { setFilterMonitors([]); setFilterFlights([]); setFilterPayments([]); setSearch(""); setFilterStartDate(""); setFilterEndDate(""); }} className="text-[10px] font-black uppercase text-rose-500 hover:underline">✕ Reset</button>
                 )}
                 {selectedIds.length > 0 && (
                   <div className="flex flex-col items-end gap-1">

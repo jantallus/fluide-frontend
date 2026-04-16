@@ -12,6 +12,11 @@ export default function VouchersPage() {
   const [complements, setComplements] = useState<any[]>([]);
   const [giftCardMode, setGiftCardMode] = useState<'prestation' | 'value'>('prestation');
   const [selectedPrestation, setSelectedPrestation] = useState('');
+  
+  // 🎯 NOUVEAU : Les variables d'état pour les deux filtres
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+
   const [newVoucher, setNewVoucher] = useState({
     type: 'gift_card',
     custom_code: '',
@@ -78,7 +83,7 @@ export default function VouchersPage() {
       const [cRes, fRes, compRes] = await Promise.all([
         apiFetch('/api/gift-cards'),
         apiFetch('/api/flight-types'),
-        apiFetch('/api/complements') // 👈 On charge les options !
+        apiFetch('/api/complements')
       ]);
       if (cRes.ok) setCards(await cRes.json());
       if (fRes.ok) setFlights(await fRes.json());
@@ -94,9 +99,8 @@ export default function VouchersPage() {
 
   const toggleCardStatus = async (id: number, currentStatus: string) => {
     const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
-    if (!confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme utilisé ?")) return;
+    if (!confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme inactif/utilisé ?")) return;
 
-    // 🎯 Appel propre pour juste changer le statut
     const res = await apiFetch(`/api/gift-cards/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status: newStatus })
@@ -118,8 +122,8 @@ export default function VouchersPage() {
     };
 
     if (activeTab === 'gift_card') {
-      if (!newVoucher.gift_value || !newVoucher.buyer_name || !newVoucher.beneficiary_name) {
-        alert("Veuillez remplir tous les champs obligatoires du bon cadeau.");
+      if (!newVoucher.gift_value || !newVoucher.buyer_name) {
+        alert("Veuillez renseigner le nom de l'acheteur et le montant du bon.");
         return;
       }
 
@@ -138,21 +142,18 @@ export default function VouchersPage() {
         ...payload,
         flight_type_id: (giftCardMode === 'prestation' && selectedPrestation.startsWith('flight|')) ? newVoucher.flight_type_id : null,
         buyer_name: newVoucher.buyer_name,
-        beneficiary_name: newVoucher.beneficiary_name,
+        beneficiary_name: '', // 👈 On envoie une chaîne vide à la BDD
         price_paid_cents: Math.round(parseFloat(newVoucher.gift_value) * 100),
         notes: finalNotes,
         max_uses: 1,
-        discount_scope: 'both' // Un bon cadeau se comporte comme de l'argent liquide sur le total
+        discount_scope: 'both' 
       };
     } else {
-  
-      // --- LOGIQUE POUR LES CODES PROMO ---
       if (!newVoucher.discount_value) {
         alert("Veuillez indiquer la valeur de la réduction.");
         return;
       }
       
-      // SÉCURITÉ : Pas plus de 100% de réduction !
       if (newVoucher.discount_type === 'percentage' && parseFloat(newVoucher.discount_value) > 100) {
         alert("Une réduction en pourcentage ne peut pas dépasser 100 % !");
         return;
@@ -163,7 +164,7 @@ export default function VouchersPage() {
         flight_type_id: newVoucher.flight_type_id || null,
         discount_type: newVoucher.discount_type,
         discount_value: parseFloat(newVoucher.discount_value),
-        discount_scope: newVoucher.discount_scope, // 👈 LE VOILÀ AU BON ENDROIT !
+        discount_scope: newVoucher.discount_scope, 
         max_uses: newVoucher.is_unlimited ? null : parseInt(newVoucher.max_uses) || 1,
         valid_from: newVoucher.valid_from || null,
         valid_until: newVoucher.valid_until || null,
@@ -171,32 +172,21 @@ export default function VouchersPage() {
       };
     }
 
-    const res = await apiFetch('/api/gift-cards', {
-      method: 'POST',
+    const res = await apiFetch(editingCardId ? `/api/gift-cards/${editingCardId}` : '/api/gift-cards', {
+      method: editingCardId ? 'PUT' : 'POST',
       body: JSON.stringify(payload)
     });
 
     if (res.ok) {
       setShowModal(false);
       setNewVoucher({
-        type: 'gift_card', 
-        custom_code: '', 
-        flight_type_id: '', 
-        buyer_name: '', 
-        beneficiary_name: '',
-        gift_value: '', 
-        discount_type: 'fixed', 
-        discount_value: '', 
-        discount_scope: 'both',
-        max_uses: '1', 
-        is_unlimited: false, 
-        valid_from: '', 
-        valid_until: ''
+        type: 'gift_card', custom_code: '', flight_type_id: '', buyer_name: '', beneficiary_name: '',
+        gift_value: '', discount_type: 'fixed', discount_value: '', discount_scope: 'both',
+        max_uses: '1', is_unlimited: false, valid_from: '', valid_until: ''
       });
-      
       setSelectedPrestation(''); 
       setGiftCardMode('prestation');
-
+      setEditingCardId(null);
       loadData();
     } else {
       const errorMsg = await res.json();
@@ -211,7 +201,7 @@ export default function VouchersPage() {
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
-      <header className="flex justify-between items-center mb-12">
+      <header className="flex justify-between items-center mb-6">
         <div>
           <p className="text-indigo-500 font-black uppercase text-xs tracking-widest mb-2">Ventes & Boutique</p>
           <h1 className="text-4xl font-black uppercase italic tracking-tighter text-slate-900">
@@ -223,25 +213,63 @@ export default function VouchersPage() {
         </button>
       </header>
 
+      {/* 🎯 NOUVEAU : LA BARRE DE FILTRES */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <select
+          className="bg-white border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 shadow-sm outline-none w-full md:w-auto"
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+        >
+          <option value="all">🎟️ Tous les types</option>
+          <option value="gift_card">🎁 Bons Cadeaux</option>
+          <option value="promo">✂️ Tous les Codes Promos</option>
+          <option value="promo_campaign">📢 Campagnes Promotionnelles (Limités)</option>
+          <option value="promo_partner">🤝 Codes Partenaires (Illimités)</option>
+        </select>
+
+        <select
+          className="bg-white border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 shadow-sm outline-none w-full md:w-auto"
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+        >
+          <option value="all">🌟 Tous les statuts</option>
+          <option value="active">● Actifs</option>
+          <option value="inactive">✕ Inactifs / Utilisés</option>
+        </select>
+      </div>
+
       <div className="grid gap-4">
         {loading ? (
           <div className="text-center py-12 font-bold text-slate-400 animate-pulse">Chargement...</div>
         ) : [...cards]
+            .filter(c => {
+              // 🎯 NOUVEAU : Logique de filtrage par Statut
+              if (filterStatus === 'active' && c.status !== 'valid') return false;
+              if (filterStatus === 'inactive' && c.status === 'valid') return false;
+
+              // 🎯 NOUVEAU : Logique de filtrage par Type
+              if (filterType === 'gift_card' && c.type !== 'gift_card') return false;
+              if (filterType === 'promo' && c.type !== 'promo') return false;
+              // Campagne = Promo avec une limite d'utilisation
+              if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.max_uses === null)) return false;
+              // Partenaire = Promo illimitée
+              if (filterType === 'promo_partner' && (c.type !== 'promo' || c.max_uses !== null)) return false;
+
+              return true;
+            })
             .sort((a, b) => {
-              // 1. On met les promos en haut
               if (a.type === 'promo' && b.type !== 'promo') return -1;
               if (a.type !== 'promo' && b.type === 'promo') return 1;
-              // 2. À l'intérieur du même groupe, on met les plus récents en premier
               return b.id - a.id;
             })
             .map(c => {
           const isPromo = c.type === 'promo';
           return (
-            <div key={c.id} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
+            <div key={c.id} className={`bg-white p-6 rounded-[30px] shadow-sm border flex justify-between items-center group transition-all ${c.status !== 'valid' ? 'opacity-60 border-slate-100 grayscale-[0.5]' : 'border-slate-100 hover:border-indigo-200'}`}>
               <div className="flex gap-6 items-center">
                 <div className={`p-4 rounded-2xl text-center min-w-[120px] ${isPromo ? 'bg-amber-50' : 'bg-indigo-50'}`}>
                   <p className={`text-[10px] font-black uppercase ${isPromo ? 'text-amber-400' : 'text-indigo-400'}`}>
-                    {isPromo ? 'Promo' : 'Bon Cadeau'}
+                    {isPromo ? (c.max_uses === null ? 'Partenaire' : 'Campagne') : 'Bon Cadeau'}
                   </p>
                   <p className={`font-black ${isPromo ? 'text-amber-600' : 'text-indigo-600'}`}>{c.code}</p>
                 </div>
@@ -254,7 +282,6 @@ export default function VouchersPage() {
                       <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
                         {c.flight_name ? `Uniquement sur : ${c.flight_name}` : '✅ Valable sur toutes les prestations'}
                       </p>
-                      {/* Affichage des limites */}
                       <div className="flex gap-3 mt-2">
                         {c.max_uses ? (
                           <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold">🎯 {c.current_uses || 0} / {c.max_uses} utilisations</span>
@@ -270,37 +297,37 @@ export default function VouchersPage() {
                     </>
                   ) : (
                     <>
-                      <h3 className="text-xl font-black uppercase italic text-slate-800">{c.beneficiary_name}</h3>
-                      <p className="text-sm text-slate-400 font-bold uppercase tracking-tight">
-                        {c.notes && c.notes !== 'Avoir libre' ? c.notes : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
+                      <h3 className="text-xl font-black uppercase italic text-slate-800">
+                        De la part de : {c.buyer_name}
+                      </h3>
+                      <p className="text-sm text-slate-400 font-bold uppercase tracking-tight mt-1">
+                        {c.flight_name ? `Vol : ${c.flight_name}` : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
                       </p>
-                      <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Acheteur : {c.buyer_name}</p>
                     </>
                   )}
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-end">
-                {/* 🎯 NOUVEAU : On cache le bouton "Utilisé" pour les promos */}
-                {!isPromo && (
+                
+                <button
+                  onClick={() => toggleCardStatus(c.id, c.status)}
+                  className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all shadow-sm ${
+                    c.status === 'valid'
+                      ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105'
+                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  {c.status === 'valid' ? '● Actif' : '✕ Inactif'}
+                </button>
+
+                {isPromo && (
                   <button
-                    onClick={() => toggleCardStatus(c.id, c.status)}
-                    className={`px-6 py-2 rounded-full font-black uppercase text-xs transition-all shadow-sm ${
-                      c.status === 'valid'
-                        ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105'
-                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                    }`}
+                    onClick={() => handleEdit(c)}
+                    className="px-6 py-2 rounded-full font-black uppercase text-xs bg-sky-100 text-sky-600 hover:bg-sky-200 transition-all shadow-sm mt-1"
                   >
-                    {c.status === 'valid' ? '● Valide' : '✕ Utilisé'}
+                    ✏️ Modifier
                   </button>
                 )}
-
-                {/* 🎯 NOUVEAU : Le bouton Modifier pour tout le monde */}
-                <button
-                  onClick={() => handleEdit(c)}
-                  className="px-6 py-2 rounded-full font-black uppercase text-xs bg-sky-100 text-sky-600 hover:bg-sky-200 transition-all shadow-sm mt-1"
-                >
-                  ✏️ Modifier
-                </button>
 
                 <button
                   onClick={() => deleteCard(c.id)}
@@ -387,23 +414,15 @@ export default function VouchersPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>
-                      <input type="text" placeholder="Nom" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={newVoucher.buyer_name} onChange={e => setNewVoucher({ ...newVoucher, buyer_name: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Bénéficiaire</label>
-                      <input type="text" placeholder="Nom" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={newVoucher.beneficiary_name} onChange={e => setNewVoucher({ ...newVoucher, beneficiary_name: e.target.value })} />
-                    </div>
+                  <div className="mt-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>
+                    <input type="text" placeholder="Nom de la personne qui offre" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={newVoucher.buyer_name} onChange={e => setNewVoucher({ ...newVoucher, buyer_name: e.target.value })} />
                   </div>
                 </>
               )}
 
-              {/* FORMULAIRE CODE PROMO */}
               {activeTab === 'promo' && (
                 <>
-                  {/* 1. LE CHOIX DU VOL (Toutes les prestations ou une seule) */}
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Prestation applicable</label>
                     <select
@@ -416,7 +435,6 @@ export default function VouchersPage() {
                     </select>
                   </div>
 
-                  {/* 2. LE CHOIX DE LA CIBLE (Le Vol, les Options, ou Tout) */}
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-4">La réduction s'applique sur :</label>
                     <select
@@ -430,7 +448,6 @@ export default function VouchersPage() {
                     </select>
                   </div>
 
-                  {/* 3. VALEUR DE LA RÉDUCTION */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Type de réduction</label>
@@ -454,7 +471,6 @@ export default function VouchersPage() {
                     </div>
                   </div>
 
-                  {/* NOUVELLE SECTION : LIMITES */}
                   <div className="p-4 bg-slate-100 rounded-2xl space-y-4 border border-slate-200">
                     <p className="text-xs font-black uppercase text-slate-500">Limites d'utilisation</p>
                     

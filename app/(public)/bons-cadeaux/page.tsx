@@ -9,7 +9,7 @@ export default function CadeauPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
   // Formulaire de l'acheteur
-  const [buyer, setBuyer] = useState({ name: '', email: '', phone: '', beneficiaryName: '' });
+  const [buyer, setBuyer] = useState({ name: '', email: '', phone: '' });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Chargement des modèles depuis l'API publique
@@ -31,7 +31,7 @@ export default function CadeauPage() {
     fetchTemplates();
   }, []);
 
-  const isFormValid = buyer.name && buyer.email && buyer.phone && buyer.beneficiaryName;
+  const isFormValid = buyer.name && buyer.email && buyer.phone;
 
   const handleCheckout = async () => {
     if (!isFormValid || !selectedTemplate) return;
@@ -289,10 +289,6 @@ export default function CadeauPage() {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Qui offre ? (Acheteur)</label>
                   <input type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 700, outline: 'none' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#f026b8', textTransform: 'uppercase', marginBottom: '8px' }}>Pour qui ? (Bénéficiaire)</label>
-                  <input type="text" placeholder="Ex: Marie (Celui qui vole)" value={buyer.beneficiaryName} onChange={e => setBuyer({...buyer, beneficiaryName: e.target.value})} style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #fbcfe8', backgroundColor: '#fdf2f8', color: '#9d174d', fontSize: '1rem', fontWeight: 700, outline: 'none' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Email (Réception du bon)</label>
