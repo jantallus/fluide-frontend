@@ -980,6 +980,12 @@ export default function PlanningAdmin() {
       
       {/* 🎯 NOUVEAU : Optimisation de l'en-tête du calendrier pour les petits écrans */}
       <style dangerouslySetInnerHTML={{ __html: `
+        /* 🎯 FIX MOBILE : Empêche l'en-tête (pilotes) de scroller dans le vide et de se désynchroniser */
+        .fc-scrollgrid-section-header .fc-scroller {
+          overflow-x: hidden !important;
+          touch-action: pan-y !important;
+        }
+
         @media (max-width: 768px) {
           .fc-header-toolbar { flex-direction: column !important; gap: 12px; }
           .fc-toolbar-title { font-size: 1.2rem !important; }
