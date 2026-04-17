@@ -75,7 +75,6 @@ export default function ClientsPage() {
 
   const [filtersLoaded, setFiltersLoaded] = useState(false);
 
-  // 1. CHARGEMENT DE LA MÉMOIRE AU DÉMARRAGE
   useEffect(() => {
     try {
       const userStr = localStorage.getItem('user');
@@ -94,17 +93,13 @@ export default function ClientsPage() {
       }
     } catch (e) { console.error("Erreur chargement filtres", e); }
     
-    // 🎯 LA CORRECTION EST ICI : 
-    // On bloque la sauvegarde pendant 500ms au démarrage.
-    // Ça empêche l'app d'écraser la mémoire avec du "vide" quand on l'ouvre à froid !
     setTimeout(() => {
       setFiltersLoaded(true); 
     }, 500);
   }, []);
 
-  // 2. SAUVEGARDE AUTOMATIQUE À CHAQUE CLIC
   useEffect(() => {
-    if (!filtersLoaded) return; // Ne sauvegarde rien les premières 500 millisecondes
+    if (!filtersLoaded) return; 
     try {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
@@ -319,27 +314,37 @@ export default function ClientsPage() {
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 NOUVEAU : EXPORT EXCEL AVEC COLONNE FACTURATION PARTENAIRE
   const handleExport = () => {
     if (filtered.length === 0) return alert("Rien à exporter !");
     
-    // 🎯 La nouvelle colonne Facturation
-    const headers = ["Date", "Client", "Email", "Telephone Passager", "Prestation", "Pilote", "Statut Paiement", "Code (Bon/Promo)", "Acheteur d'origine", "Téléphone Acheteur", "Facturation Partenaire"];
+    const headers = ["Date", "Client", "Email", "Telephone Passager", "Prestation", "Pilote", "Statut Paiement", "Code (Bon/Promo)", "Acheteur d'origine", "Téléphone Acheteur", "Net à facturer Partenaire"];
     
     const rows = filtered.flatMap(c => c.flights.map((f: any) => {
       const code = extractVoucherCode(f.payment_status);
       let buyerName = '';
       let buyerPhone = '';
-      let partnerBilling = ''; // 👈 AJOUTÉ
+      let partnerBilling = ''; 
       
       if (code) {
         const gc = giftCards.find(g => g.code.toUpperCase() === code.toUpperCase());
         if (gc) {
           if (gc.buyer_name) buyerName = gc.buyer_name;
           if (gc.buyer_phone) buyerPhone = `="${gc.buyer_phone}"`; 
-          // 🎯 AJOUTÉ : On récupère le montant à facturer
+          
+          // 🎯 NOUVEAU : Calcul Dynamique du NET à facturer (Prix du vol - Commission)
           if (gc.is_partner && gc.partner_amount_cents) {
-            partnerBilling = `${gc.partner_amount_cents / 100}€`;
+            const flightPriceEuro = (f.price_cents || 0) / 100;
+            
+            if (gc.partner_billing_type === 'percentage') {
+              const commPct = gc.partner_amount_cents / 100; // Ex: 12 (pour 12%)
+              const commValue = (flightPriceEuro * commPct) / 100; // Ex: 10.80€
+              const netToBill = flightPriceEuro - commValue; // Ex: 79.20€
+              
+              partnerBilling = `${netToBill.toFixed(2)}€ (Déduit de ${commPct}% comm)`;
+            } else {
+              // Si c'est fixe, on considère que vous avez rentré le montant net exact.
+              partnerBilling = `${gc.partner_amount_cents / 100}€`;
+            }
           }
         }
       }
@@ -355,7 +360,7 @@ export default function ClientsPage() {
         code || '',         
         buyerName,          
         buyerPhone,         
-        partnerBilling // 👈 AJOUTÉ
+        partnerBilling 
       ];
     }));
 
