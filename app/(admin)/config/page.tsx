@@ -295,41 +295,49 @@ export default function ConfigPage() {
             </div>
 
             <div>
-            <h3 className="font-black text-sky-900 uppercase tracking-widest text-sm mb-6 border-b-2 border-slate-100 pb-4">🪂 Personnalisation par type de vol</h3>
-            <div className="grid grid-cols-1 gap-8">
-              {flights.map(flight => (
-                <div key={flight.id} className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
-                  <h4 className="font-black text-slate-800 uppercase italic mb-6 text-xl">{flight.name}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-1 block">📧 Contenu du bloc "Conseils" (Email)</label>
-                      <textarea
-                        className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 text-sm min-h-[120px] text-slate-600"
-                        value={settings[`email_flight_${flight.id}`] || ''}
-                        onChange={(e) => setSettings({...settings, [`email_flight_${flight.id}`]: e.target.value})}
-                      />
-                      <button onClick={() => saveEmailSetting(`email_flight_${flight.id}`, settings[`email_flight_${flight.id}`])} className="mt-3 bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 transition-colors shadow-sm">
-                        Enregistrer l'Email
-                      </button>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-1 block">📱 Message SMS (Court)</label>
-                      <textarea
-                        className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-sm min-h-[120px] text-slate-600"
-                        maxLength={160}
-                        value={settings[`sms_flight_${flight.id}`] || ''}
-                        onChange={(e) => setSettings({...settings, [`sms_flight_${flight.id}`]: e.target.value})}
-                      />
-                      <div className="flex justify-between items-center mt-3">
-                        <button onClick={() => saveEmailSetting(`sms_flight_${flight.id}`, settings[`sms_flight_${flight.id}`])} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
-                          Enregistrer le SMS
+              <div className="mb-6 border-b-2 border-slate-100 pb-4">
+                <h3 className="font-black text-sky-900 uppercase tracking-widest text-sm mb-2">🪂 Personnalisation par type de vol</h3>
+                <p className="text-xs text-slate-500 font-bold">
+                  💡 Astuce : Vous pouvez utiliser les balises <span className="text-sky-500 px-1 bg-sky-50 rounded">[PRENOM]</span>, <span className="text-sky-500 px-1 bg-sky-50 rounded">[DATE]</span> et <span className="text-sky-500 px-1 bg-sky-50 rounded">[HEURE]</span>. Elles seront remplacées automatiquement lors de l'envoi !
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-8">
+                {flights.map(flight => (
+                  <div key={flight.id} className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
+                    <h4 className="font-black text-slate-800 uppercase italic mb-6 text-xl">{flight.name}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-indigo-500 ml-4 mb-1 block">📧 Contenu du bloc "Conseils" (Email)</label>
+                        <textarea
+                          className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 text-sm min-h-[120px] text-slate-600"
+                          placeholder="Ex: Prévoyez de bonnes chaussures et un coupe-vent. Balises utiles : [PRENOM], [DATE], [HEURE]"
+                          value={settings[`email_flight_${flight.id}`] || ''}
+                          onChange={(e) => setSettings({...settings, [`email_flight_${flight.id}`]: e.target.value})}
+                        />
+                        <button onClick={() => saveEmailSetting(`email_flight_${flight.id}`, settings[`email_flight_${flight.id}`])} className="mt-3 bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 transition-colors shadow-sm">
+                          Enregistrer l'Email
                         </button>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-emerald-500 ml-4 mb-1 block">📱 Message SMS (Court)</label>
+                        <textarea
+                          className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-emerald-500 text-sm min-h-[120px] text-slate-600"
+                          maxLength={160}
+                          placeholder="Ex: Bonjour [PRENOM], votre vol le [DATE] à [HEURE] est confirmé ! À très vite - L'équipe Fluide."
+                          value={settings[`sms_flight_${flight.id}`] || ''}
+                          onChange={(e) => setSettings({...settings, [`sms_flight_${flight.id}`]: e.target.value})}
+                        />
+                        <div className="flex justify-between items-center mt-3">
+                          <button onClick={() => saveEmailSetting(`sms_flight_${flight.id}`, settings[`sms_flight_${flight.id}`])} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
+                            Enregistrer le SMS
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
