@@ -314,6 +314,7 @@ export default function ClientsPage() {
     } catch (err) { console.error(err); }
   };
 
+  // 🎯 EXPORT EXCEL CORRIGÉ (Force la lecture des accents sur Excel)
   const handleExport = () => {
     if (filtered.length === 0) return alert("Rien à exporter !");
     
@@ -326,23 +327,19 @@ export default function ClientsPage() {
       let partnerBilling = ''; 
       
       if (code) {
-        const gc = giftCards.find(g => g.code.toUpperCase() === code.toUpperCase());
+        const gc = giftCards.find((g: any) => g.code.toUpperCase() === code.toUpperCase());
         if (gc) {
           if (gc.buyer_name) buyerName = gc.buyer_name;
           if (gc.buyer_phone) buyerPhone = `="${gc.buyer_phone}"`; 
           
-          // 🎯 NOUVEAU : Calcul Dynamique du NET à facturer (Prix du vol - Commission)
           if (gc.is_partner && gc.partner_amount_cents) {
             const flightPriceEuro = (f.price_cents || 0) / 100;
-            
             if (gc.partner_billing_type === 'percentage') {
-              const commPct = gc.partner_amount_cents / 100; // Ex: 12 (pour 12%)
-              const commValue = (flightPriceEuro * commPct) / 100; // Ex: 10.80€
-              const netToBill = flightPriceEuro - commValue; // Ex: 79.20€
-              
+              const commPct = gc.partner_amount_cents / 100; 
+              const commValue = (flightPriceEuro * commPct) / 100; 
+              const netToBill = flightPriceEuro - commValue; 
               partnerBilling = `${netToBill.toFixed(2)}€ (Déduit de ${commPct}% comm)`;
             } else {
-              // Si c'est fixe, on considère que vous avez rentré le montant net exact.
               partnerBilling = `${gc.partner_amount_cents / 100}€`;
             }
           }
@@ -365,7 +362,11 @@ export default function ClientsPage() {
     }));
 
     const csvContent = [headers, ...rows].map((e: any[]) => e.map(String).map((v: string) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // 🎯 LA CORRECTION EST ICI : Ajout du BOM UTF-8 strict pour forcer Excel à comprendre les accents
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); 
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+    
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
