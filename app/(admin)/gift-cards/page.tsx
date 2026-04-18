@@ -234,8 +234,8 @@ export default function VouchersPage() {
           <option value="all">🎟️ Tous les types</option>
           <option value="gift_card">🎁 Bons Cadeaux</option>
           <option value="promo">✂️ Tous les Codes Promos</option>
-          <option value="promo_campaign">📢 Campagnes Promotionnelles (Limités)</option>
-          <option value="promo_partner">🤝 Codes Partenaires (Illimités)</option>
+          <option value="promo_campaign">📢 Codes Promos Classiques</option>
+          <option value="promo_partner">🤝 Codes Partenaires</option> 
         </select>
 
         <select
@@ -259,8 +259,8 @@ export default function VouchersPage() {
 
               if (filterType === 'gift_card' && c.type !== 'gift_card') return false;
               if (filterType === 'promo' && c.type !== 'promo') return false;
-              if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.max_uses === null)) return false;
-              if (filterType === 'promo_partner' && (c.type !== 'promo' || c.max_uses !== null)) return false;
+              if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.is_partner)) return false;
+              if (filterType === 'promo_partner' && (c.type !== 'promo' || !c.is_partner)) return false;
 
               return true;
             })
@@ -271,15 +271,18 @@ export default function VouchersPage() {
             })
             .map(c => {
           const isPromo = c.type === 'promo';
+          const isPartner = isPromo && c.is_partner;
+          const isClassicPromo = isPromo && !c.is_partner;
+          
           return (
             <div key={c.id} className={`bg-white p-5 md:p-6 rounded-[30px] shadow-sm border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 group transition-all ${c.status !== 'valid' ? 'opacity-60 border-slate-100 grayscale-[0.5]' : 'border-slate-100 hover:border-indigo-200'}`}>
               
               <div className="flex flex-col sm:flex-row gap-4 md:gap-6 items-start sm:items-center w-full">
-                <div className={`p-4 rounded-2xl text-center w-full sm:w-auto min-w-[120px] ${isPromo ? 'bg-amber-50' : 'bg-indigo-50'}`}>
-                  <p className={`text-[10px] font-black uppercase ${isPromo ? 'text-amber-400' : 'text-indigo-400'}`}>
-                    {isPromo ? (c.max_uses === null ? 'Partenaire' : 'Campagne') : 'Bon Cadeau'}
+                <div className={`p-4 rounded-2xl text-center w-full sm:w-auto min-w-[120px] ${isPartner ? 'bg-amber-50' : isClassicPromo ? 'bg-emerald-50' : 'bg-indigo-50'}`}>
+                  <p className={`text-[10px] font-black uppercase ${isPartner ? 'text-amber-400' : isClassicPromo ? 'text-emerald-500' : 'text-indigo-400'}`}>
+                    {isPartner ? 'Partenaire' : isClassicPromo ? 'Promo' : 'Bon Cadeau'}
                   </p>
-                  <p className={`font-black ${isPromo ? 'text-amber-600' : 'text-indigo-600'} break-all`}>{c.code}</p>
+                  <p className={`font-black break-all ${isPartner ? 'text-amber-600' : isClassicPromo ? 'text-emerald-600' : 'text-indigo-600'}`}>{c.code}</p>
                 </div>
                 
                 <div className="w-full">
