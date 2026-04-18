@@ -19,7 +19,6 @@ export default function PlanningAdmin() {
   const [slotDuration, setSlotDuration] = useState<number>(0); 
   const [availablePlans, setAvailablePlans] = useState<string[]>(['Standard']);
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
-  // 🎯 NOUVEAU : On mémorise l'heure de fin exacte du blocage (en ms)
   const [blockUntilMs, setBlockUntilMs] = useState<number>(0);
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [timeBounds, setTimeBounds] = useState({ min: "08:00:00", max: "20:00:00" });
@@ -30,10 +29,11 @@ export default function PlanningAdmin() {
     time: '',
     monitorId: 'random'
   });
-  // 🎯 NOUVEAU : Option pour déplacer tout le groupe
   const [moveGroup, setMoveGroup] = useState(false);
-  // 🎯 NOUVEAU : On mémorise qui est connecté pour adapter l'interface
   const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  const dateRangeRef = useRef({ start: '', end: '' });
+
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setCurrentUser(JSON.parse(u));
@@ -49,12 +49,10 @@ export default function PlanningAdmin() {
     startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all' 
   });
 
-  // 🎯 1. ÉTATS DU GROUPE (Manuel vs Auto)
   const [groupSize, setGroupSize] = useState<number>(1);
   const [manualCounts, setManualCounts] = useState<Record<string, number>>({});
   const [isManual, setIsManual] = useState(false);
 
-  // 🎯 2. MÉMOIRE : Tous les groupes de créneaux disponibles chronologiquement
   const availableTimeGroups = useMemo(() => {
     if (!selectedEvent || !formData.flight_type_id) return [];
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
@@ -91,14 +89,12 @@ export default function PlanningAdmin() {
     return Object.keys(groups).map(time => ({ time, capacity: groups[time].length, slots: groups[time] })).sort((a, b) => a.time.localeCompare(b.time));
   }, [selectedEvent, formData.flight_type_id, appointments, flightTypes, slotDuration]);
 
-  // 🎯 3. MÉMOIRE : La répartition finale à afficher (gère l'Auto et le Manuel)
   const displayDistribution = useMemo(() => {
      let remaining = groupSize;
      const result: {time: string, count: number, capacity: number, slots: any[]}[] = [];
      let canFit = true;
 
      if (!isManual) {
-         // --- MODE AUTO ---
          for (const group of availableTimeGroups) {
              if (remaining <= 0) break;
              const take = Math.min(remaining, group.capacity);
@@ -107,12 +103,10 @@ export default function PlanningAdmin() {
          }
          if (remaining > 0) canFit = false;
          
-         // On ajoute le prochain créneau vide pour permettre de l'étendre manuellement
          if (remaining <= 0 && availableTimeGroups[result.length]) {
              result.push({ ...availableTimeGroups[result.length], count: 0 });
          }
      } else {
-         // --- MODE MANUEL ---
          let lastNonZeroIndex = -1;
          for (let i = 0; i < availableTimeGroups.length; i++) {
              if ((manualCounts[availableTimeGroups[i].time] || 0) > 0) lastNonZeroIndex = i;
@@ -130,24 +124,22 @@ export default function PlanningAdmin() {
      return { items: result, canFit, slotsToUse };
   }, [availableTimeGroups, groupSize, manualCounts, isManual]);
 
-  // 🎯 4. FONCTIONS DE CONTRÔLE (Boutons + et -)
   const handleMainChange = (delta: number) => {
       setGroupSize(prev => Math.max(1, prev + delta));
-      setIsManual(false); // Le bouton principal remet en AUTO
+      setIsManual(false); 
   };
 
   const handleSubChange = (time: string, delta: number) => {
       setManualCounts(prev => {
           const newCounts = { ...prev };
-          // Si on était en auto, on "fossilise" la répartition actuelle avant de la modifier
           if (!isManual) displayDistribution.items.forEach((item: any) => newCounts[item.time] = item.count);
           
           const current = newCounts[time] || 0;
           const capacity = availableTimeGroups.find((g: any) => g.time === time)?.capacity || 0;
           newCounts[time] = Math.max(0, Math.min(capacity, current + delta));
           
-          setGroupSize(Object.values(newCounts).reduce((a, b) => a + b, 0)); // Met à jour le total
-          setIsManual(true); // Bascule en MANUEL
+          setGroupSize(Object.values(newCounts).reduce((a, b) => a + b, 0)); 
+          setIsManual(true); 
           return newCounts;
       });
   };
@@ -155,10 +147,33 @@ export default function PlanningAdmin() {
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  const loadAppointments = async () => {
+    const { start, end } = dateRangeRef.current;
+    const url = start && end ? `/api/slots?start=${start}&end=${end}` : '/api/slots';
+    try {
+      const res = await apiFetch(url);
+      if (res.ok) {
+        const appts = await res.json();
+        setAppointments(appts);
+        
+        if (appts.length > 0) {
+          let minHour = 24; let maxHour = 0;
+          appts.forEach((a: any) => {
+            const s = new Date(a.start_time).getHours();
+            const e = new Date(a.end_time);
+            const eH = e.getHours() + (e.getMinutes() > 0 ? 1 : 0);
+            if (s < minHour) minHour = s;
+            if (eH > maxHour) maxHour = eH;
+          });
+          setTimeBounds({ min: `${String(Math.max(0, minHour)).padStart(2, '0')}:00:00`, max: `${String(Math.min(24, maxHour)).padStart(2, '0')}:00:00` });
+        }
+      }
+    } catch(e) { console.error("Erreur chargement créneaux:", e); }
+  };
+
   const loadData = async () => {
     try {
-      const [apptsRes, monRes, flightRes, settingsRes, defsRes] = await Promise.all([
-        apiFetch('/api/slots'),
+      const [monRes, flightRes, settingsRes, defsRes] = await Promise.all([
         apiFetch('/api/monitors-admin'), 
         apiFetch('/api/flight-types'),
         apiFetch('/api/settings'),
@@ -179,29 +194,6 @@ export default function PlanningAdmin() {
           try { setOpeningPeriods(JSON.parse(periodsSetting.value)); } catch (e) {}
         }
       }
-
-      if (apptsRes.ok) {
-        const appts = await apptsRes.json();
-        setAppointments(appts);
-
-        if (appts.length > 0) {
-          let minHour = 24;
-          let maxHour = 0;
-          
-          appts.forEach((a: any) => {
-            const start = new Date(a.start_time);
-            const end = new Date(a.end_time);
-            if (start.getHours() < minHour) minHour = start.getHours();
-            let endH = end.getHours() + (end.getMinutes() > 0 ? 1 : 0);
-            if (endH > maxHour) maxHour = endH;
-          });
-          
-          minHour = Math.max(0, minHour);
-          maxHour = Math.min(24, maxHour);
-
-          setTimeBounds({ min: `${String(minHour).padStart(2, '0')}:00:00`, max: `${String(maxHour).padStart(2, '0')}:00:00` });
-        }
-      }
       
       if (monRes.ok) {
         const mons = await monRes.json();
@@ -214,12 +206,9 @@ export default function PlanningAdmin() {
 
   useEffect(() => { loadData(); }, []);
 
-  // 🎯 NOUVEAU : On fige la fonction pour le calendrier
   const handleEventClick = useCallback((info: any) => {
-    // 🛡️ BOUCLIER UI : Moniteur Journée = Ne rien faire du tout (il regarde juste)
     if (currentUser?.role === 'monitor') return;
     
-    // 🛡️ BOUCLIER UI : Permanent sur une autre colonne = Bloqué
     if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
       alert("Vous ne pouvez agir que sur votre propre colonne.");
       return;
@@ -253,12 +242,11 @@ export default function PlanningAdmin() {
     });
 
     const dStr = start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-    // 🎯 NOUVEAU : On récupère l'heure exacte et l'ID du pilote actuel
     const tStr = start.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
     const mId = event.getResources()[0]?.id || 'random';
     
     setMoveConfig({ date: dStr, time: tStr, monitorId: mId });
-    setActiveTab(currentUser?.role === 'admin' ? 'client' : 'note'); // 🎯 On adapte l'onglet
+    setActiveTab(currentUser?.role === 'admin' ? 'client' : 'note'); 
     setBlockType('none');
     setSelectedMonitors([]);
     setBlockUntilMs(end.getTime());
@@ -278,7 +266,6 @@ export default function PlanningAdmin() {
     let selectedFlight: any = null;
     let slotsNeeded = 1;
 
-    // --- VALIDATIONS ---
     if (activeTab === 'note') {
       isNonBlockingNote = (formData.title !== 'NON DISPO');
       targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
@@ -290,10 +277,12 @@ export default function PlanningAdmin() {
       });
 
       if (!isNonBlockingNote) {
-        const hasClientBooking = slotsToUpdate.some(slot => slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌'));
+        // 🎯 FIX: Syntaxe TypeScript sécurisée
+        const hasClientBooking = slotsToUpdate.some(slot => slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some(t => slot.title?.includes(t)) && !slot.title?.includes('❌'));
         if (hasClientBooking) return alert("❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.");
       }
     } else {
+      if (!formData.title || formData.title.trim() === '') return alert("❌ Le nom du contact est obligatoire pour une réservation.");
       if (!formData.flight_type_id) return alert("❌ Veuillez choisir un type de vol.");
       if (!formData.phone || formData.phone.trim() === '') return alert("❌ Le numéro de téléphone est obligatoire.");
       selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
@@ -301,21 +290,18 @@ export default function PlanningAdmin() {
       slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
     }
 
-    // 🎯 1. ON PRÉPARE LES DONNÉES LOCALEMENT
     const updatesToApply: any[] = [];
 
     if (activeTab === 'note') {
       slotsToUpdate.forEach(slot => {
         let payload: any = { title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
         if (isNonBlockingNote) {
-          const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+          // 🎯 FIX: Syntaxe TypeScript sécurisée
+          const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some(t => slot.title?.includes(t)) && !slot.title?.includes('❌');
           if (isClientSlot) {
             payload.title = slot.title; 
             payload.status = slot.status;
-            
-            // 🎯 CORRECTION 1 : On remplace strictement la note au lieu de l'ajouter à la suite !
             payload.notes = formData.notes;
-            
             payload.flight_type_id = slot.flight_type_id; 
             payload.phone = slot.phone; 
             payload.email = slot.email; 
@@ -332,41 +318,33 @@ export default function PlanningAdmin() {
         updatesToApply.push({ id: slot.id, data: payload });
       });
     } else {
-      
-      // 🚀 LOGIQUE DE GROUPE ICI !
       if (groupSize > 1 || isManual) {
         if (!displayDistribution || !displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) {
           return alert("❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.");
         }
         displayDistribution.slotsToUse.forEach((baseSlot: any, index: number) => {
-          
-          // 🎯 NOUVEAU : Découpage intelligent (Le contact entre parenthèses)
           let passengerTitle = '';
           const namesList = formData.title.split(',').map(n => n.trim()).filter(n => n);
 
           if (namesList.length === groupSize + 1) {
-            // CAS 2 : L'organisateur NE vole PAS (Il y a 1 nom de plus que le nombre de passagers)
-            const booker = namesList[0]; // Le premier est le contact
-            const passName = namesList[index + 1]; // On décale d'un cran
+            const booker = namesList[0]; 
+            const passName = namesList[index + 1]; 
             passengerTitle = `${passName} (${booker})`;
           } else if (namesList.length > 0) {
-            // CAS 1 : L'organisateur VOLE
             const booker = namesList[0];
             if (index === 0) {
-              passengerTitle = booker; // Le contact lui-même (pas besoin de parenthèses)
+              passengerTitle = booker; 
             } else if (namesList[index]) {
-              passengerTitle = `${namesList[index]} (${booker})`; // Passager suivant
+              passengerTitle = `${namesList[index]} (${booker})`; 
             } else {
-              passengerTitle = `Passager ${index + 1} (${booker})`; // S'il manque des prénoms
+              passengerTitle = `Passager ${index + 1} (${booker})`; 
             }
           } else {
-            // Si le champ est totalement vide
             passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (formData.title || '');
           }
               
           updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked' } });
 
-          // S'il faut plusieurs créneaux pour ce vol
           if (slotsNeeded > 1) {
             const baseStartMs = new Date(baseSlot.start_time).getTime();
             for (let i = 1; i < slotsNeeded; i++) {
@@ -377,8 +355,6 @@ export default function PlanningAdmin() {
           }
         });
       } else {
-        // Mode solo classique (ne change pas)
-        // Mode solo classique
         if (slotsNeeded > 1) {
           updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
           const startMs = new Date(selectedEvent.start).getTime();
@@ -393,24 +369,20 @@ export default function PlanningAdmin() {
       }
     }
 
-    // 🚀 2. LA MAGIE : On met à jour le calendrier IMMÉDIATEMENT à l'écran !
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
     }));
     setShowEditModal(false);
 
-    // 🚀 3. On envoie au serveur en silence
     try {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
-      const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json()); 
+      await loadAppointments(); 
     } catch (err) { console.error("Erreur de sauvegarde silencieuse"); }
   };
 
   const handleRelease = async () => {
-    // 🎯 Le message s'adapte si c'est juste une note ou un client
     const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
     const confirmMsg = isNoteOnly 
       ? "🗑️ Voulez-vous vraiment effacer cette note ?"
@@ -434,8 +406,8 @@ export default function PlanningAdmin() {
       );
       
       if (slotToFree) {
-        // 🎯 NOUVEAU : On détecte s'il faut préserver une note !
-        const isClientSlot = slotToFree.status === 'booked' && slotToFree.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slotToFree.title) && !slotToFree.title.includes('❌');
+        // 🎯 FIX: Syntaxe TypeScript sécurisée
+        const isClientSlot = slotToFree.status === 'booked' && slotToFree.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some(t => slotToFree.title?.includes(t)) && !slotToFree.title?.includes('❌');
         
         let newTitle = '';
         let newNotes = '';
@@ -452,7 +424,6 @@ export default function PlanningAdmin() {
       }
     }
 
-    // 🚀 MAGIE : Effacement instantané à l'écran !
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -462,12 +433,10 @@ export default function PlanningAdmin() {
     try {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
-      const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json());
+      await loadAppointments(); 
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 NOUVEAU : Libérer le groupe complet instantanément
   const handleReleaseGroup = async () => {
     if (!selectedEvent || !confirm(`🧹 Action irréversible. Libérer les ${groupRootSlots.length} créneaux de ce groupe ?`)) return;
 
@@ -495,7 +464,6 @@ export default function PlanningAdmin() {
       }
     });
 
-    // 🚀 MAGIE : Effacement instantané !
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -505,21 +473,17 @@ export default function PlanningAdmin() {
     try {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
-      const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json());
+      await loadAppointments(); 
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 NOUVEAU : Fonction adaptative pour effacer/libérer (Solo ou Lot complet)
   const handleBulkRelease = async () => {
     if (!selectedEvent) return;
 
-    // On analyse ce que l'utilisateur a sélectionné dans les menus déroulants
     const isPlural = blockType === 'all' || 
                      (blockType === 'specific' && selectedMonitors.length > 1) || 
                      (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
 
-    // Le message s'adapte au contexte
     const confirmMsg = isPlural 
       ? "🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection (Pilotes + Durée) ?\n\n(Les réservations clients existantes seront conservées, seules les notes/blocages seront retirés)."
       : "🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).";
@@ -537,23 +501,15 @@ export default function PlanningAdmin() {
 
     const updatesToApply: any[] = [];
     slotsToUpdate.forEach(slot => {
-      const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].includes(slot.title) && !slot.title.includes('❌');
+      // 🎯 FIX: Syntaxe TypeScript sécurisée
+      const isClientSlot = slot.status === 'booked' && slot.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some(t => slot.title?.includes(t)) && !slot.title?.includes('❌');
       
       if (isClientSlot) {
-        // 🎯 CORRECTION 2 : On envoie un objet parfaitement propre au serveur pour garantir l'effacement
         updatesToApply.push({ 
           id: slot.id, 
           data: { 
-            title: slot.title,
-            status: slot.status,
-            notes: '', // <-- L'effacement radical est ici
-            flight_type_id: slot.flight_type_id,
-            phone: slot.phone,
-            email: slot.email,
-            weightChecked: slot.weight_checked || slot.weightChecked,
-            booking_options: slot.booking_options,
-            client_message: slot.client_message,
-            weight: slot.weight 
+            title: slot.title, status: slot.status, notes: '', flight_type_id: slot.flight_type_id, phone: slot.phone,
+            email: slot.email, weightChecked: slot.weight_checked || slot.weightChecked, booking_options: slot.booking_options, client_message: slot.client_message, weight: slot.weight 
           } 
         });
       } else {
@@ -561,7 +517,6 @@ export default function PlanningAdmin() {
       }
     });
 
-    // 🚀 MAGIE : Effacement instantané !
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -571,12 +526,10 @@ export default function PlanningAdmin() {
     try {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
-      const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json());
+      await loadAppointments(); 
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 NOUVEAU : Mémoire qui trouve tous les membres du même groupe (même téléphone + même date)
   const groupRootSlots = useMemo(() => {
     if (!selectedEvent || selectedEvent.status !== 'booked' || selectedEvent.title?.startsWith('↪️ Suite')) return [];
     const phone = selectedEvent.phone;
@@ -597,7 +550,6 @@ export default function PlanningAdmin() {
     return rootSlots;
   }, [appointments, selectedEvent]);
 
-  // 🎯 1. Mémoire : Créneaux liés à la réservation
   const currentBookingSlotIds = useMemo(() => {
     if (!selectedEvent) return [];
     const flight = flightTypes.find(f => f.id?.toString() === selectedEvent.flight_type_id?.toString());
@@ -617,20 +569,25 @@ export default function PlanningAdmin() {
     return ids;
   }, [selectedEvent, flightTypes, slotDuration, appointments]);
 
-  // 🎯 2. Mémoire : Créneaux de destination (Déplacement)
+  const parsedOpeningPeriods = useMemo(() => {
+    return openingPeriods.map(p => {
+      if (!p.start || !p.end) return null;
+      const s = new Date(p.start); s.setHours(0, 0, 0, 0);
+      const e = new Date(p.end); e.setHours(23, 59, 59, 999);
+      return { start: s, end: e };
+    }).filter(Boolean);
+  }, [openingPeriods]);
+
   const availableTargetSlots = useMemo(() => {
     return appointments.filter(a => {
       if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false; 
-      if (openingPeriods.length > 0) {
+      
+      if (parsedOpeningPeriods.length > 0) {
         const slotDate = new Date(a.start_time);
-        const inSeason = openingPeriods.some((p: any) => {
-          if (!p.start || !p.end) return false;
-          const start = new Date(p.start); start.setHours(0, 0, 0, 0);
-          const end = new Date(p.end); end.setHours(23, 59, 59, 999);
-          return slotDate >= start && slotDate <= end;
-        });
+        const inSeason = parsedOpeningPeriods.some(p => p && slotDate >= p.start && slotDate <= p.end);
         if (!inSeason) return false;
       }
+      
       const d = new Date(a.start_time);
       const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
       if (dateStr !== moveConfig.date) return false;
@@ -663,9 +620,8 @@ export default function PlanningAdmin() {
       }
       return true;
     });
-  }, [appointments, currentBookingSlotIds, openingPeriods, moveConfig, formData.flight_type_id, flightTypes, slotDuration]);
+  }, [appointments, currentBookingSlotIds, parsedOpeningPeriods, moveConfig, formData.flight_type_id, flightTypes, slotDuration]);
 
-  // 🎯 3. Mémoire : Heures disponibles
   const availableTimes = useMemo(() => {
     return Array.from(new Set(availableTargetSlots.map(a => {
       const d = new Date(a.start_time);
@@ -673,14 +629,12 @@ export default function PlanningAdmin() {
     }))).sort();
   }, [availableTargetSlots]);
 
-  // 🎯 NOUVEAU : Auto-nettoyage de l'heure UNIQUEMENT si elle n'est plus dispo à la nouvelle date
   useEffect(() => {
     if (moveConfig.time && !availableTimes.includes(moveConfig.time)) {
       setMoveConfig(prev => ({ ...prev, time: '' }));
     }
   }, [availableTimes]);
 
-  // 🎯 4. Mémoire : Liste intelligente des vols
   const smartFlightOptions = useMemo(() => {
     const dateStr = selectedEvent?.start ? selectedEvent.start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
     const planSchedules: Record<string, Set<string>> = {};
@@ -712,7 +666,6 @@ export default function PlanningAdmin() {
     }) || [];
   }, [selectedEvent, slotDefs, appointments, flightTypes]);
 
-  // 🎯 5. Mémoire : Créneaux de la journée pour l'onglet Note
   const upcomingBlockingSlots = useMemo(() => {
     if (!selectedEvent) return [];
     const startMs = new Date(selectedEvent.start).getTime();
@@ -736,7 +689,6 @@ export default function PlanningAdmin() {
     const updatesToApply: any[] = [];
 
     if (moveGroup && groupRootSlots.length > 1) {
-      // 1. On libère virtuellement les créneaux actuels pour faire de la place
       const slotsToFree: any[] = [];
       groupRootSlots.forEach(baseSlot => {
         slotsToFree.push(baseSlot.id);
@@ -750,7 +702,6 @@ export default function PlanningAdmin() {
         }
       });
 
-      // 2. On scanne la nouvelle date à la recherche de créneaux simultanés
       const targetDateStr = moveConfig.date;
       const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
       const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
@@ -778,7 +729,6 @@ export default function PlanningAdmin() {
 
       validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
-      // 3. On tente de placer tout le monde sans conflit
       let remaining = groupRootSlots.length;
       const assignedSlots: any[] = [];
       
@@ -790,20 +740,17 @@ export default function PlanningAdmin() {
       }
 
       if (remaining > 0) return alert(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`);
-      // 🎯 SÉCURITÉ : On empêche le transfert si rien n'a changé
+      
       const isExactlySame = assignedSlots.length === groupRootSlots.length && assignedSlots.every((s, i) => s.id === groupRootSlots[i].id);
       if (isExactlySame) return alert("ℹ️ Le groupe est déjà assigné exactement à ces mêmes créneaux et pilotes.");
 
-      // On vide les anciens
       slotsToFree.forEach(id => {
         updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } });
       });
 
-      // 4. On réserve les nouvelles places
       groupRootSlots.forEach((oldSlot, g) => {
         const newBaseSlot = assignedSlots[g];
         const passengerTitle = oldSlot.title || formData.title;
-        // 🎯 CORRECTION : On conserve payment_status
         updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes, payment_status: oldSlot.payment_status } });
 
         if (slotsNeeded > 1) {
@@ -817,7 +764,6 @@ export default function PlanningAdmin() {
       });
 
     } else {
-      // --- 👤 DÉPLACEMENT SOLO CLASSIQUE ---
       const targetDateStr = moveConfig.date;
       const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
       const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
@@ -830,12 +776,11 @@ export default function PlanningAdmin() {
       });
 
       if (!targetSlot) return alert("❌ Le créneau cible n'est plus disponible.");
-      // 🎯 SÉCURITÉ : On empêche le transfert si c'est le même emplacement
+      
       if (targetSlot.id === selectedEvent.id) {
           return alert("ℹ️ Le créneau est déjà à cet emplacement avec ce pilote.");
       }
 
-      // On libère les anciens
       currentBookingSlotIds.forEach(id => {
         updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } });
       });
@@ -853,7 +798,6 @@ export default function PlanningAdmin() {
               title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, 
               status: 'booked', 
               notes: i === 0 ? formData.notes : 'Extension auto',
-              // 🎯 CORRECTION : On conserve payment_status
               payment_status: selectedEvent.payment_status
             } 
           });
@@ -861,7 +805,6 @@ export default function PlanningAdmin() {
       }
     }
 
-    // 🚀 MAGIE : Mise à jour instantanée de la grille
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -871,8 +814,7 @@ export default function PlanningAdmin() {
     try {
       const promises = updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) }));
       await Promise.all(promises);
-      const res = await apiFetch('/api/slots');
-      if (res.ok) setAppointments(await res.json());
+      await loadAppointments(); 
     } catch (err) { console.error(err); }
   };
 
@@ -885,26 +827,19 @@ export default function PlanningAdmin() {
 
   const isOutOfSeason = selectedEvent?.isOutOfSeason === true;
   const isClientLocked = isEventBlocked || isOutOfSeason;
-  // 🎯 NOUVEAU : Variables pour griser l'interface des permanents
   const isClientSlotLocal = selectedEvent?.status === 'booked' && selectedEvent?.title && !['NOTE', '☕ PAUSE', 'NON DISPO'].some((t: string) => selectedEvent?.title?.includes(t)) && !selectedEvent?.title?.includes('❌');
   const isAdminBlockLocal = selectedEvent?.title?.includes('(Admin)');
   const isLockedForMe = currentUser?.role === 'permanent' && (isClientSlotLocal || isAdminBlockLocal);
 
-  // 🎯 1. On "mémorise" les événements du calendrier
   const calendarEvents = useMemo(() => {
     return appointments.map(a => {
       const flight = flightTypes?.find(f => f.id === a.flight_type_id);
       const flightColor = flight?.color_code || '#0ea5e9'; 
 
       let isSlotOutOfSeason = false;
-      if (openingPeriods.length > 0) {
+      if (parsedOpeningPeriods.length > 0) {
         const slotDate = new Date(a.start_time);
-        isSlotOutOfSeason = !openingPeriods.some((p: any) => {
-          if (!p.start || !p.end) return false;
-          const start = new Date(p.start); start.setHours(0, 0, 0, 0);
-          const end = new Date(p.end); end.setHours(23, 59, 59, 999);
-          return slotDate >= start && slotDate <= end;
-        });
+        isSlotOutOfSeason = !parsedOpeningPeriods.some(p => p && slotDate >= p.start && slotDate <= p.end);
       }
 
       const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
@@ -939,10 +874,8 @@ export default function PlanningAdmin() {
         extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason }
       };
     });
-  }, [appointments, flightTypes, openingPeriods]);
+  }, [appointments, flightTypes, parsedOpeningPeriods]);
 
-
-  // 🎯 2. LE BOUCLIER ANTI-LATENCE : On isole le calendrier en dessous !
   const memoizedCalendar = useMemo(() => {
     return (
         <FullCalendar
@@ -953,6 +886,14 @@ export default function PlanningAdmin() {
           resources={monitors}
           datesSet={(arg) => {
             setCurrentDate(arg.startStr.split('T')[0]);
+            
+            const start = new Date(arg.view.activeStart);
+            start.setDate(start.getDate() - 15);
+            const end = new Date(arg.view.activeEnd);
+            end.setDate(end.getDate() + 15);
+
+            dateRangeRef.current = { start: start.toISOString(), end: end.toISOString() };
+            loadAppointments(); 
           }}
           events={calendarEvents}
           locale={frLocale}
@@ -969,7 +910,7 @@ export default function PlanningAdmin() {
           slotEventOverlap={false}
           displayEventTime={true}
           eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
-          dayMinWidth={130} /* 🎯 NOUVEAU : Force une largeur minimum par moniteur (active le scroll horizontal sur mobile) */
+          dayMinWidth={130} 
         />
     );
   }, [calendarEvents, monitors, timeBounds, handleEventClick]);
@@ -978,9 +919,7 @@ export default function PlanningAdmin() {
     return (
     <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
       
-      {/* 🎯 NOUVEAU : Optimisation de l'en-tête du calendrier pour les petits écrans */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 🎯 FIX MOBILE : Empêche l'en-tête (pilotes) de scroller dans le vide et de se désynchroniser */
         .fc-scrollgrid-section-header .fc-scroller {
           overflow-x: hidden !important;
           touch-action: pan-y !important;
@@ -1032,7 +971,7 @@ export default function PlanningAdmin() {
 
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl max-h-[95vh] overflow-y-auto">
+          <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl max-h-[95vh] overflow-y-auto custom-scrollbar">
             <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
             
             <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
@@ -1049,7 +988,6 @@ export default function PlanningAdmin() {
 
             <div className="space-y-4">
               
-              {/* ONGLET 1 : CLIENT */}
               {activeTab === 'client' && (
                 isEventBlocked ? (
                   <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
@@ -1080,8 +1018,6 @@ export default function PlanningAdmin() {
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
                       <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.flight_type_id} onChange={e => setFormData({...formData, flight_type_id: e.target.value})}>
                         <option value="">Choisir un vol...</option>
-                        
-                        {/* 🎯 On utilise la liste intelligente en mémoire ! */}
                         {smartFlightOptions.map(f => {
                           const flightDuration = f.duration_minutes || f.duration || 0; 
                           const isMultiSlotAllowed = f.allow_multi_slots === true;
@@ -1121,7 +1057,6 @@ export default function PlanningAdmin() {
                       </select>
                     </div>
 
-                    {/* 🎯 CHOIX DU NOMBRE DE PERSONNES ET RÉPARTITION */}
                     {formData.flight_type_id && (
                       <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
                         <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe (Total)</label>
@@ -1193,60 +1128,27 @@ export default function PlanningAdmin() {
                     })()}
 
                     <div className="grid grid-cols-2 gap-4">
-                      {/* COLONNE TÉLÉPHONE */}
                       <div className="flex flex-col gap-1.5">
                         {formData.phone ? (
                           <div className="flex gap-2 w-full">
-                            <a 
-                              href={`tel:${formData.phone.replace(/\s+/g, '')}`} 
-                              className="flex-1 flex items-center justify-center text-[14px] bg-emerald-100 text-emerald-700 py-2 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm"
-                              title="Appeler"
-                            >
-                              📞
-                            </a>
-                            <a 
-                              href={`sms:${formData.phone.replace(/\s+/g, '')}`} 
-                              className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm"
-                              title="Envoyer un SMS"
-                            >
-                              💬 SMS
-                            </a>
+                            <a href={`tel:${formData.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center text-[14px] bg-emerald-100 text-emerald-700 py-2 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm">📞</a>
+                            <a href={`sms:${formData.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm">💬 SMS</a>
                           </div>
                         ) : (
                           <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">
                             📞 Téléphone <span className="text-rose-500 -ml-1">*</span>
                           </div>
                         )}
-                        <input 
-                          type="tel" 
-                          className="w-full bg-slate-50 border-2 border-slate-100 focus:border-emerald-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" 
-                          value={formData.phone} 
-                          onChange={e => setFormData({...formData, phone: e.target.value})} 
-                          placeholder="06 12 34 56 78" 
-                        />
+                        <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-emerald-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="06 12 34 56 78" />
                       </div>
 
-                      {/* COLONNE EMAIL */}
                       <div className="flex flex-col gap-1.5">
                         {formData.email ? (
-                          <a 
-                            href={`mailto:${formData.email}`} 
-                            className="w-full flex items-center justify-center gap-2 text-[10px] bg-sky-100 text-sky-700 py-2 rounded-xl font-black uppercase hover:bg-sky-200 transition-colors shadow-sm"
-                          >
-                            ✉️ Écrire
-                          </a>
+                          <a href={`mailto:${formData.email}`} className="w-full flex items-center justify-center gap-2 text-[10px] bg-sky-100 text-sky-700 py-2 rounded-xl font-black uppercase hover:bg-sky-200 transition-colors shadow-sm">✉️ Écrire</a>
                         ) : (
-                          <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">
-                            ✉️ Écrire
-                          </div>
+                          <div className="w-full flex items-center justify-center gap-2 text-[10px] bg-slate-100 text-slate-400 py-2 rounded-xl font-black uppercase">✉️ Écrire</div>
                         )}
-                        <input 
-                          type="email" 
-                          className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" 
-                          value={formData.email} 
-                          onChange={e => setFormData({...formData, email: e.target.value})} 
-                          placeholder="Email (Optionnel)" 
-                        />
+                        <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Email (Optionnel)" />
                       </div>
                     </div>
 
@@ -1276,33 +1178,18 @@ export default function PlanningAdmin() {
                 )
               )}
 
-              {/* ONGLET 2 : NOTE ET BLOCAGE */}
               {activeTab === 'note' && (
                 isLockedForMe ? (
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center mt-4 shadow-inner">
                     <span className="text-3xl block mb-2">🔒</span>
-                    <p className="text-slate-700 font-bold text-[11px] uppercase tracking-widest">
-                      {isAdminBlockLocal ? "Verrouillé par la direction" : "Réservation Client"}
-                    </p>
+                    <p className="text-slate-700 font-bold text-[11px] uppercase tracking-widest">{isAdminBlockLocal ? "Verrouillé par la direction" : "Réservation Client"}</p>
                     <p className="text-slate-500 text-[10px] mt-2 font-medium">Vous ne pouvez pas modifier ce créneau.</p>
                   </div>
                 ) : (
                 <>
                   <div className="flex gap-2 mb-4">
-                    <button 
-                      disabled={isOutOfSeason} 
-                      onClick={() => setFormData({...formData, title: 'NOTE'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}
-                    >
-                      📝 Note simple (Reste libre)
-                    </button>
-                    <button 
-                      disabled={isOutOfSeason} 
-                      onClick={() => setFormData({...formData, title: 'NON DISPO'})} 
-                      className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}
-                    >
-                      ❌ Bloquer (Non dispo)
-                    </button>
+                    <button disabled={isOutOfSeason} onClick={() => setFormData({...formData, title: 'NOTE'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}>📝 Note simple (Reste libre)</button>
+                    <button disabled={isOutOfSeason} onClick={() => setFormData({...formData, title: 'NON DISPO'})} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}>❌ Bloquer (Non dispo)</button>
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Note interne au pilote</label>
@@ -1310,19 +1197,10 @@ export default function PlanningAdmin() {
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
-                    <select 
-                      className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
-                      value={blockType} 
-                      onChange={(e: any) => setBlockType(e.target.value)} 
-                      disabled={isOutOfSeason || currentUser?.role !== 'admin'}
-                    >
+                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isOutOfSeason || currentUser?.role !== 'admin'}>
                       <option value="none">Ce pilote uniquement</option>
-                      {/* 🎯 NOUVEAU : Seul l'admin voit les autres options */}
                       {currentUser?.role === 'admin' && (
-                        <>
-                          <option value="all">🚫 TOUS les pilotes</option>
-                          <option value="specific">👥 Certains pilotes</option>
-                        </>
+                        <><option value="all">🚫 TOUS les pilotes</option><option value="specific">👥 Certains pilotes</option></>
                       )}
                     </select>
 
@@ -1339,20 +1217,13 @@ export default function PlanningAdmin() {
 
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Durée (Jusqu'à quand ?)</label>
                     {selectedEvent && (
-                        <select 
-                          className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} 
-                          value={blockUntilMs} 
-                          onChange={(e: any) => setBlockUntilMs(Number(e.target.value))} 
-                          disabled={isOutOfSeason}
-                        >
+                        <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockUntilMs} onChange={(e: any) => setBlockUntilMs(Number(e.target.value))} disabled={isOutOfSeason}>
                           {upcomingBlockingSlots.map((slot, index) => {
                             const end = new Date(slot.end_time);
                             const timeStr = end.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-                            
                             let label = `Jusqu'à ${timeStr}`;
                             if (index === 0) label = `Ce créneau uniquement (Jusqu'à ${timeStr})`;
                             else if (index === upcomingBlockingSlots.length - 1) label = `Toute la fin de journée (Jusqu'à ${timeStr})`;
-                            
                             return <option key={slot.id} value={end.getTime()}>{label}</option>;
                           })}
                         </select>
@@ -1362,44 +1233,20 @@ export default function PlanningAdmin() {
                 )
               )}
 
-              {/* BOUTONS PARTAGÉS */}
               {(activeTab === 'client' || activeTab === 'note') && (
                 <div className="pt-4 space-y-3 border-t border-slate-100">
                   {!(activeTab === 'client' && isClientLocked) && !isLockedForMe && (
                     <>
-                      <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">
-                        Enregistrer la modification
-                      </button>
-                      
-                      {/* 🎯 NOUVEAU : Boutons de libération intelligents */}
+                      <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">Enregistrer la modification</button>
                       {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
                         activeTab === 'note' ? (
                           <div className="pt-2">
                             {(() => {
-                              // 1. On détecte si on cible plusieurs créneaux/pilotes
-                              const isPlural = blockType === 'all' || 
-                                               (blockType === 'specific' && selectedMonitors.length > 1) || 
-                                               (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
-                              
-                              // 2. On détecte si c'est un vrai blocage dur (NON DISPO/PAUSE) ou juste une note
-                              const isBlock = ['NON DISPO', '☕ PAUSE'].includes(selectedEvent?.title) || selectedEvent?.title?.includes('❌');
-                              
-                              // 3. On génère le texte parfait
-                              const btnText = !isBlock 
-                                ? (isPlural ? "🧹 Effacer les notes sélectionnées" : "🗑️ Effacer la note")
-                                : (isPlural ? "🧹 Libérer les créneaux sélectionnés" : "🗑️ Libérer le créneau");
-                              
+                              const isPlural = blockType === 'all' || (blockType === 'specific' && selectedMonitors.length > 1) || (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
+                              const isBlock = ['NON DISPO', '☕ PAUSE'].some(t => selectedEvent?.title?.includes(t)) || selectedEvent?.title?.includes('❌');
+                              const btnText = !isBlock ? (isPlural ? "🧹 Effacer les notes sélectionnées" : "🗑️ Effacer la note") : (isPlural ? "🧹 Libérer les créneaux sélectionnés" : "🗑️ Libérer le créneau");
                               return (
-                                <button 
-                                  onClick={handleBulkRelease} 
-                                  className={`w-full font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${
-                                    isPlural 
-                                      ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' 
-                                      : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'
-                                  }`}
-                                >
-                                  {btnText}
-                                </button>
+                                <button onClick={handleBulkRelease} className={`w-full font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${isPlural ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'}`}>{btnText}</button>
                               );
                             })()}
                           </div>
@@ -1408,19 +1255,10 @@ export default function PlanningAdmin() {
                             {(() => {
                               const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
                               const hasNote = !!selectedEvent?.notes && selectedEvent?.notes !== 'Extension auto';
-                              
                               return (
                                 <>
-                                  <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">
-                                    {isNoteOnly 
-                                      ? "🗑️ Effacer la note" 
-                                      : (hasNote ? "🗑️ Libérer (Garder note)" : "🗑️ Libérer ce créneau")}
-                                  </button>
-                                  {groupRootSlots.length > 1 && (
-                                    <button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">
-                                      🧹 Libérer groupe ({groupRootSlots.length})
-                                    </button>
-                                  )}
+                                  <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">{isNoteOnly ? "🗑️ Effacer la note" : (hasNote ? "🗑️ Libérer (Garder note)" : "🗑️ Libérer ce créneau")}</button>
+                                  {groupRootSlots.length > 1 && (<button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">🧹 Libérer groupe ({groupRootSlots.length})</button>)}
                                 </>
                               );
                             })()}
@@ -1433,7 +1271,6 @@ export default function PlanningAdmin() {
                 </div>
               )}
 
-              {/* ONGLET 3 : MOVE */}
               {activeTab === 'move' && (
                 isClientLocked ? (
                   <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100 mt-4">
@@ -1443,13 +1280,10 @@ export default function PlanningAdmin() {
                   </div>
                 ) : (
                   <>
-                    {/* 🎯 NOUVEAU : Option pour déplacer le groupe complet */}
                     {groupRootSlots.length > 1 && (
                       <div className="mb-4 bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex items-center gap-3">
                         <input type="checkbox" className="w-5 h-5 accent-emerald-500 cursor-pointer" checked={moveGroup} onChange={e => setMoveGroup(e.target.checked)} />
-                        <label className="text-xs font-bold text-emerald-900 cursor-pointer select-none" onClick={() => setMoveGroup(!moveGroup)}>
-                          Déplacer TOUT le groupe ({groupRootSlots.length} passagers)
-                        </label>
+                        <label className="text-xs font-bold text-emerald-900 cursor-pointer select-none" onClick={() => setMoveGroup(!moveGroup)}>Déplacer TOUT le groupe ({groupRootSlots.length} passagers)</label>
                       </div>
                     )}
                     
@@ -1468,64 +1302,32 @@ export default function PlanningAdmin() {
 
                     <div>
                       <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pilote</label>
-                      <select 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" 
-                        value={moveConfig.monitorId} 
-                        onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})}
-                      >
+                      <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={moveConfig.monitorId} onChange={e => setMoveConfig({...moveConfig, monitorId: e.target.value})}>
                         <option value="random">🎲 Aléatoire (Peu importe)</option>
                         {monitors.map(m => {
                           let isBusy = false;
-                          
                           if (moveConfig.date && moveConfig.time) {
-                            // 🎯 1. Calcul des besoins en créneaux selon la durée du vol
                             const flight = flightTypes.find(f => f.id?.toString() === formData.flight_type_id?.toString());
                             const flightDur = flight?.duration_minutes || flight?.duration || 0;
                             const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-
-                            // 🎯 2. On cible le créneau exact de ce pilote
                             const targetSlot = appointments.find(a => {
                               if (a.monitor_id?.toString() !== m.id.toString()) return false;
                               const d = new Date(a.start_time);
-                              const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-                              const timeStr = d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
-                              return dateStr === moveConfig.date && timeStr === moveConfig.time;
+                              return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === moveConfig.date && d.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }) === moveConfig.time;
                             });
 
-                            if (!targetSlot) {
-                              // Cas A : Le pilote ne travaille pas à cette heure-là
-                              isBusy = true; 
-                            } else if (targetSlot.status !== 'available' && !currentBookingSlotIds.includes(targetSlot.id)) {
-                              // Cas B : Le pilote a déjà un client (et ce n'est pas le client qu'on est en train de déplacer)
-                              isBusy = true; 
-                            } else if (slotsNeeded > 1) {
-                              // Cas C : Le vol est long (ex: Prestige), on vérifie que les créneaux SUIVANTS sont aussi libres
+                            if (!targetSlot) isBusy = true; 
+                            else if (targetSlot.status !== 'available' && !currentBookingSlotIds.includes(targetSlot.id)) isBusy = true; 
+                            else if (slotsNeeded > 1) {
                               const startMs = new Date(targetSlot.start_time).getTime();
                               for (let i = 1; i < slotsNeeded; i++) {
                                 const nextMs = startMs + (i * slotDuration * 60000);
-                                const nextSlot = appointments.find(a => 
-                                  a.monitor_id?.toString() === m.id.toString() && 
-                                  new Date(a.start_time).getTime() === nextMs && 
-                                  (a.status === 'available' || currentBookingSlotIds.includes(a.id))
-                                );
-                                if (!nextSlot) {
-                                  isBusy = true; // Un des créneaux suivants est pris, il ne peut pas faire ce vol !
-                                  break;
-                                }
+                                const nextSlot = appointments.find(a => a.monitor_id?.toString() === m.id.toString() && new Date(a.start_time).getTime() === nextMs && (a.status === 'available' || currentBookingSlotIds.includes(a.id)));
+                                if (!nextSlot) { isBusy = true; break; }
                               }
                             }
                           }
-                          
-                          return (
-                            <option 
-                              key={m.id} 
-                              value={m.id} 
-                              disabled={isBusy} 
-                              className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}
-                            >
-                              {m.title} {isBusy ? '(Occupé)' : ''}
-                            </option>
-                          );
+                          return <option key={m.id} value={m.id} disabled={isBusy} className={isBusy ? "text-slate-300 bg-slate-100" : "text-slate-900"}>{m.title} {isBusy ? '(Occupé)' : ''}</option>;
                         })}
                       </select>
                     </div>
@@ -1542,7 +1344,6 @@ export default function PlanningAdmin() {
         </div>
       )}
 
-      {/* MODALE DE GÉNÉRATION */}
       {showGenModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
@@ -1551,70 +1352,37 @@ export default function PlanningAdmin() {
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, startDate: e.target.value})} />
               <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4" onChange={e => setGenConfig({...genConfig, endDate: e.target.value})} />
               
-              <select 
-                className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
-                value={genConfig.plan_name}
-                onChange={e => setGenConfig({...genConfig, plan_name: e.target.value})}
-              >
+              <select className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700" value={genConfig.plan_name} onChange={e => setGenConfig({...genConfig, plan_name: e.target.value})}>
                 <option value="" disabled>-- Choisir le Modèle --</option>
-                {availablePlans.map(plan => (
-                   <option key={plan} value={plan}>{plan}</option>
-                ))}
+                {availablePlans.map(plan => <option key={plan} value={plan}>{plan}</option>)}
               </select>
 
-              <select 
-                className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
-                value={genConfig.monitor_id}
-                onChange={e => setGenConfig({...genConfig, monitor_id: e.target.value})}
-              >
+              <select className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700" value={genConfig.monitor_id} onChange={e => setGenConfig({...genConfig, monitor_id: e.target.value})}>
                 <option value="all">👥 Tous les pilotes</option>
-                <optgroup label="Pilotes spécifiques">
-                  {monitors.map(m => (
-                    <option key={m.id} value={m.id}>{m.title}</option>
-                  ))}
-                </optgroup>
+                <optgroup label="Pilotes spécifiques">{monitors.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}</optgroup>
               </select>
 
               <button 
                 disabled={isGenerating}
                 onClick={async () => {
-                  if (!genConfig.startDate || !genConfig.endDate) {
-                    return alert("Veuillez sélectionner des dates.");
-                  }
-                  
+                  if (!genConfig.startDate || !genConfig.endDate) return alert("Veuillez sélectionner des dates.");
                   setIsGenerating(true); 
-                  
                   const sendGenerationRequest = async (force = false) => {
                     try {
-                      const res = await apiFetch('/api/generate-slots', { 
-                        method: 'POST', 
-                        body: JSON.stringify({ ...genConfig, forceOverwrite: force }) 
-                      });
-                      
+                      const res = await apiFetch('/api/generate-slots', { method: 'POST', body: JSON.stringify({ ...genConfig, forceOverwrite: force }) });
                       const data = await res.json();
-
                       if (res.status === 409 && data.warning) {
                         const userConfirmed = window.confirm(data.message);
-                        if (userConfirmed) {
-                          return await sendGenerationRequest(true);
-                        } else {
-                           setIsGenerating(false);
-                           return;
-                        }
+                        if (userConfirmed) return await sendGenerationRequest(true);
+                        else { setIsGenerating(false); return; }
                       }
-
                       if (res.ok) { 
                         alert(`✅ ${data.count || 0} créneaux générés avec succès !`);
                         setShowGenModal(false); 
-                        await loadData(); 
-                      } else {
-                        alert("Erreur : " + (data.error || "Erreur inconnue"));
-                      }
-                    } catch (err) {
-                      alert("Erreur de connexion au serveur.");
-                    }
+                        await loadAppointments(); 
+                      } else { alert("Erreur : " + (data.error || "Erreur inconnue")); }
+                    } catch (err) { alert("Erreur de connexion au serveur."); }
                   };
-
                   await sendGenerationRequest(false);
                   setIsGenerating(false); 
                 }}
