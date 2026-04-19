@@ -125,6 +125,16 @@ export default function MonitorsPage() {
     }
   };
 
+  // 🎯 NOUVEAU : Fonction pour copier le lien secret iCal
+  const copyIcalLink = (userId: number) => {
+    // ⚠️ Assurez-vous que c'est la bonne URL de votre backend sur Railway
+    const backendUrl = "https://fluide-production.up.railway.app"; 
+    const fullLink = `${backendUrl}/api/ical/${userId}`;
+    
+    navigator.clipboard.writeText(fullLink);
+    alert("Lien d'agenda copié ! 📋\n\nIl ne vous reste plus qu'à l'ajouter dans Google Calendar ou Apple Calendar (S'abonner à un calendrier via URL).");
+  };
+
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 md:mb-12">
@@ -160,7 +170,7 @@ export default function MonitorsPage() {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-6 pt-4 md:pt-0 mt-2 md:mt-0 border-t border-slate-50 md:border-t-0">
+              <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-6 pt-4 md:pt-0 mt-2 md:mt-0 border-t border-slate-50 md:border-t-0 flex-wrap">
                 <div className={`px-3 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border-2 text-center flex-1 md:flex-none ${
                   u.role === 'admin' 
                     ? 'border-rose-100 bg-rose-50 text-rose-500' 
@@ -171,6 +181,15 @@ export default function MonitorsPage() {
                   {u.role === 'admin' ? 'Administrateur' : u.role === 'permanent' ? 'Permanent' : 'Moniteur Journée'}
                 </div>
                 
+                {/* 🎯 NOUVEAU : BOUTON AGENDA */}
+                <button
+                  onClick={() => copyIcalLink(u.id)}
+                  className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap"
+                  title="Copier le flux iCal pour Google Calendar / iPhone"
+                >
+                  📅 Agenda
+                </button>
+
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
                     onClick={() => openModal(u)}
