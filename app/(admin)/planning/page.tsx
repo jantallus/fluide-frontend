@@ -31,7 +31,7 @@ export default function PlanningAdmin() {
   });
   const [moveGroup, setMoveGroup] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+  const [isGoogleSyncEnabled, setIsGoogleSyncEnabled] = useState(false);
   const dateRangeRef = useRef({ start: '', end: '' });
 
   useEffect(() => {
@@ -171,6 +171,21 @@ export default function PlanningAdmin() {
     } catch(e) { console.error("Erreur chargement créneaux:", e); }
   };
 
+  const toggleGoogleSync = async () => {
+    const newValue = !isGoogleSyncEnabled;
+    setIsGoogleSyncEnabled(newValue); // Met à jour l'affichage direct
+    try {
+      await apiFetch('/api/settings', {
+        method: 'POST',
+        body: JSON.stringify({ key: 'google_calendar_sync', value: newValue ? 'true' : 'false' })
+      });
+      alert(newValue ? "✅ Synchronisation Google Agenda ACTIVÉE" : "⏸️ Synchronisation Google Agenda DÉSACTIVÉE (Navigation ultra-rapide)");
+      loadAppointments(); // Recharge le planning
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const loadData = async () => {
     try {
       const [monRes, flightRes, settingsRes, defsRes] = await Promise.all([
@@ -189,6 +204,8 @@ export default function PlanningAdmin() {
 
       if (settingsRes.ok) {
         const s = await settingsRes.json();
+        const syncSetting = s.find((x: any) => x.key === 'google_calendar_sync');
+        setIsGoogleSyncEnabled(syncSetting ? syncSetting.value === 'true' : false);
         const periodsSetting = s.find((x: any) => x.key === 'opening_periods');
         if (periodsSetting && periodsSetting.value) {
           try { setOpeningPeriods(JSON.parse(periodsSetting.value)); } catch (e) {}
@@ -956,6 +973,13 @@ export default function PlanningAdmin() {
             />
           </div>
 
+          <button 
+            onClick={toggleGoogleSync}
+            className={`px-4 py-2 rounded-2xl font-black uppercase text-[10px] shadow-sm transition-all border-2 ${isGoogleSyncEnabled ? 'bg-sky-50 text-sky-600 border-sky-200 hover:bg-sky-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
+          >
+            {isGoogleSyncEnabled ? '🔄 Google Sync : ON' : '⏸️ Google Sync : OFF'}
+          </button>
+          
           <button 
             onClick={() => setShowGenModal(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
