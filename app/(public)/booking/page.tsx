@@ -143,18 +143,20 @@ export default function ReserverPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         
-        // 🎯 1. ON PRÉCHARGE 21 JOURS (-10 à +10)
-        const daysToFetch = Array.from({ length: 21 }).map((_, i) => {
-          const d = new Date(gridStartDate);
-          d.setDate(d.getDate() - 10 + i);
-          return getLocalYYYYMMDD(d);
-        });
+        // 🎯 1. ON CALCULE LES DATES DE DÉBUT ET FIN (-10 à +10 jours)
+        const dStart = new Date(gridStartDate);
+        dStart.setDate(dStart.getDate() - 10);
+        const startDateStr = getLocalYYYYMMDD(dStart);
         
-        const promises = daysToFetch.map(d => 
-          fetch(`${apiUrl}/api/public/availabilities?date=${d}&t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json())
-        );
-        const results = await Promise.all(promises);
-        setRawSlots(results.flat());
+        const dEnd = new Date(gridStartDate);
+        dEnd.setDate(dEnd.getDate() + 10);
+        const endDateStr = getLocalYYYYMMDD(dEnd);
+        
+        // 🎯 2. LE TIR GROUPÉ : UNE SEULE REQUÊTE POUR TOUTE LA PÉRIODE !
+        const res = await fetch(`${apiUrl}/api/public/availabilities?start=${startDateStr}&end=${endDateStr}&t=${Date.now()}`, { cache: 'no-store' });
+        const results = await res.json();
+        
+        setRawSlots(results);
       } catch (err) { console.error("Erreur dispos", err); } 
       finally { setIsSearchingTimes(false); }
     };
