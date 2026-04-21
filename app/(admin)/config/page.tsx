@@ -344,7 +344,7 @@ export default function ConfigPage() {
 
         {/* MODALE : MODÈLE BOUTIQUE (AVEC DOUBLE UPLOAD) */}
         {showTemplateModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-start justify-center p-4 overflow-y-auto">
             <div className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl my-8">
               <h2 className="text-xl font-black uppercase italic mb-6 text-amber-500">
                 {editingTemplateId ? 'Modifier le Modèle' : 'Nouveau Modèle Boutique'}
