@@ -374,7 +374,7 @@ export default function VouchersPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[40px] p-6 md:p-8 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
             
             <div className="flex flex-col sm:flex-row gap-2 bg-slate-100 p-1 rounded-2xl mb-8">
