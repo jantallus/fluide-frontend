@@ -636,6 +636,43 @@ export default function ReserverPage() {
               </div>
             </div>
 
+            {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
+          <div className="max-w-7xl mx-auto mb-10 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎁</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Bon Cadeau</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📸</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Photos & Vidéos</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Pas complètement decidez pour les photos et vidéos ! Vous pourrez demander l'option directement à votre moniteur le jour J.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎢</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Sensations Fortes</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
             {isLoading ? (
               /* ☠️ EFFET "SKELETON" POUR LES CARTES DE VOLS */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
