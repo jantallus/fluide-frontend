@@ -655,7 +655,7 @@ export default function ReserverPage() {
                 <div>
                   <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Photos & Vidéos</h4>
                   <p className="text-xs text-sky-700 font-medium leading-relaxed">
-                    Pas complètement decidez pour les photos et vidéos ! Vous pourrez demander l'option directement à votre moniteur le jour J.
+                    Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
                 </div>
               </div>
