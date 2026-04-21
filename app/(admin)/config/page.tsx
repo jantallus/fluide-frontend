@@ -263,7 +263,39 @@ export default function ConfigPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">💌 Messages Automatiques</h2>
           </div>
-          
+
+          {/* SECTION : OPTION ENVOI POSTAL */}
+            <div className="bg-orange-50 p-6 rounded-[30px] border border-orange-100 relative overflow-hidden mb-8">
+              <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
+              <h3 className="font-black text-orange-900 uppercase tracking-widest text-sm mb-4">📮 Option : Envoi Postal (Carte cartonnée)</h3>
+              <div className="flex flex-col md:flex-row gap-6 items-center">
+                <label className="flex items-center gap-3 cursor-pointer w-full md:w-1/2">
+                  <input type="checkbox" className="w-5 h-5 accent-orange-500" 
+                    checked={settings['physical_gift_card_enabled'] === 'true'}
+                    onChange={e => {
+                      const val = e.target.checked ? 'true' : 'false';
+                      setSettings({...settings, 'physical_gift_card_enabled': val});
+                      saveEmailSetting('physical_gift_card_enabled', val);
+                    }}
+                  />
+                  <span className="font-bold text-orange-900 text-sm">Proposer l'envoi postal au client (+€)</span>
+                </label>
+                
+                {settings['physical_gift_card_enabled'] === 'true' && (
+                  <div className="w-full md:w-1/2 flex flex-col sm:flex-row gap-3">
+                    <input type="number" placeholder="Prix de l'envoi (€)" 
+                      className="w-full bg-white border-2 border-orange-200 rounded-xl p-3 font-bold outline-none focus:border-orange-500 text-slate-700"
+                      value={settings['physical_gift_card_price'] || ''}
+                      onChange={e => setSettings({...settings, 'physical_gift_card_price': e.target.value})}
+                    />
+                    <button onClick={() => saveEmailSetting('physical_gift_card_price', settings['physical_gift_card_price'])} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-700 transition-all shadow-md">
+                      Enregistrer le prix
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <div className="bg-emerald-50 p-6 rounded-[30px] border border-emerald-100 relative overflow-hidden mb-8">
               <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
               <h3 className="font-black text-emerald-900 uppercase tracking-widest text-sm mb-2">🛎️ Adresses de notification (Nouvelles réservations)</h3>
