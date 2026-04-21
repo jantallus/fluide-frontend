@@ -128,6 +128,43 @@ export default function CadeauPage() {
             <p style={{ color: '#64748b', fontSize: '1.2rem', fontWeight: 500 }}>Sélectionnez l'offre de votre choix pour la personnaliser.</p>
           </div>
 
+          {/* 💡 BANDEAU DE RÉASSURANCE BONS CADEAUX */}
+          <div className="max-w-7xl mx-auto mb-12 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">💌</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Code & PDF Immédiats</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Dès le paiement validé, vous recevrez par email un joli bon cadeau au format PDF contenant un code unique à offrir.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📅</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Réservation Facile</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Le bénéficiaire pourra utiliser son code cadeau directement sur notre site web ou par téléphone pour réserver la date de son vol.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📮</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Envoi Postal Optionnel</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Envie de marquer le coup ? Vous pourrez choisir de faire envoyer une belle carte glacée par courrier lors de l'étape de paiement.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '50px 0' }}><p style={{ color: '#1e40af', fontWeight: 900 }}>Chargement des offres...</p></div>
           ) : templates.length === 0 ? (
