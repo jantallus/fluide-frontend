@@ -184,7 +184,7 @@ export default function CadeauPage() {
             </button>
           </div>
 
-          <div style={{ flex: 1, position: 'relative', width: '100%', height: '500px', borderRadius: '20px', overflow: 'hidden' }}>
+          <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: '400px', borderRadius: '20px', overflow: 'hidden' }}>
             <Image 
               src="/cadeau-body.png" 
               alt="Expérience parapente" 
