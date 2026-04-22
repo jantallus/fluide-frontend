@@ -264,42 +264,69 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 L'ANIMATION ORIGINALE ET PROPRE (Fini les rustines et les ralentissements !)
+  // 🎯 L'ANIMATION CINÉMATIQUE (Fluidité App-Like)
   useEffect(() => {
-    if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
+    if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
+      const headerContainer = headerScrollRef.current;
 
+      // 🖥️ Sur PC, on rend tout visible immédiatement et on centre
+      if (window.innerWidth >= 768) {
+        container.classList.remove('opacity-0');
+        if (headerContainer) headerContainer.classList.remove('opacity-0');
+        
+        setTimeout(() => {
+          const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
+          if (targetEl) targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+        }, 50);
+        return;
+      }
+
+      // 📱 Sur Mobile
       if (!hasAnimatedIntro.current) {
         hasAnimatedIntro.current = true;
 
-        // Un seul petit délai pour laisser React afficher les cases après le chargement gris
-        setTimeout(() => {
-          const startAnimDate = new Date(pickedDate);
-          startAnimDate.setDate(startAnimDate.getDate() - 1);
-          const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
+        const startAnimDate = new Date(pickedDate);
+        startAnimDate.setDate(startAnimDate.getDate() - 1);
+        const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
+        // Petit délai pour que le DOM soit généré en mémoire
+        setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
           if (startEl && targetEl) {
-            // 1. On coupe l'aimant CSS qui bloque le scroll sur mobile
+            // 1. 🛑 On coupe l'aimant et on se TÉLÉPORTE sur la veille
+            // (Le calendrier est INVISIBLE grâce à 'opacity-0', le client ne voit pas le 13 avril)
             container.style.scrollSnapType = 'none';
-
-            // 2. La magie native : le navigateur se centre tout seul sur la veille !
             startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
 
-            // 3. On déclenche le balayage visuel vers le jour J
-            setTimeout(() => {
-              targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-              
-              // 4. On réactive l'aimant une fois l'animation terminée
-              setTimeout(() => { container.style.scrollSnapType = ''; }, 600);
-            }, 100);
+            // 2. 🪄 On allume la lumière ! (Fondu d'apparition direct sur la veille)
+            requestAnimationFrame(() => {
+              container.classList.remove('opacity-0');
+              if (headerContainer) headerContainer.classList.remove('opacity-0');
+
+              // 3. 🎬 Une fraction de seconde après, on lance le swipe doux vers le jour J
+              setTimeout(() => {
+                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                
+                // 4. On réactive l'aimant
+                setTimeout(() => { container.style.scrollSnapType = ''; }, 600);
+              }, 150); 
+            });
+          } else if (targetEl) {
+            // Fallback
+            container.classList.remove('opacity-0');
+            if (headerContainer) headerContainer.classList.remove('opacity-0');
+            targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
           }
-        }, 150);
+        }, 50);
 
       } else {
-        // 🧭 NAVIGATION CLASSIQUE
+        // 🧭 NAVIGATION CLASSIQUE (On est déjà visible)
+        container.classList.remove('opacity-0');
+        if (headerContainer) headerContainer.classList.remove('opacity-0');
+        
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
@@ -888,7 +915,7 @@ export default function ReserverPage() {
                     <div className={`sticky ${isEmbed ? 'top-0' : 'top-20'} z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
                       <div 
                         ref={headerScrollRef}
-                        className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0"
+                        className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300"
                       >
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
@@ -924,7 +951,7 @@ export default function ReserverPage() {
                           headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
                         }
                       }}
-                      className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
+                      className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar opacity-0 md:opacity-100 transition-opacity duration-300"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
