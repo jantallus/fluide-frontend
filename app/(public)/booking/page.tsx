@@ -61,10 +61,13 @@ export default function ReserverPage() {
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
-  // 🎯 CORRECTION : On réinitialise la mémoire de l'animation dès qu'on quitte le calendrier
+  const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
+
+  // 🎯 CORRECTION : On réinitialise les mémoires quand on quitte le calendrier
   useEffect(() => {
     if (step !== 2) {
       hasAnimatedIntro.current = false;
+      setIsGridExpanded(false); // On replie la grille pour le prochain client
     }
   }, [step]);
   const [isLoading, setIsLoading] = useState(true);
@@ -264,16 +267,17 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 L'ANIMATION CINÉMATIQUE (Fluidité App-Like)
+  // 🎯 L'ANIMATION CINÉMATIQUE (Fluidité App-Like + Turbo Load)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
 
-      // 🖥️ Sur PC, on rend tout visible immédiatement et on centre
+      // 🖥️ Sur PC, le processeur est puissant : on affiche tout direct
       if (window.innerWidth >= 768) {
         container.classList.remove('opacity-0');
         if (headerContainer) headerContainer.classList.remove('opacity-0');
+        setIsGridExpanded(true); 
         
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
@@ -290,42 +294,40 @@ export default function ReserverPage() {
         startAnimDate.setDate(startAnimDate.getDate() - 1);
         const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
-        // Petit délai pour que le DOM soit généré en mémoire
         setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
           if (startEl && targetEl) {
-            // 1. 🛑 On coupe l'aimant et on se TÉLÉPORTE sur la veille
-            // (Le calendrier est INVISIBLE grâce à 'opacity-0', le client ne voit pas le 13 avril)
             container.style.scrollSnapType = 'none';
             startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
 
-            // 2. 🪄 On allume la lumière ! (Fondu d'apparition direct sur la veille)
             requestAnimationFrame(() => {
               container.classList.remove('opacity-0');
               if (headerContainer) headerContainer.classList.remove('opacity-0');
 
-              // 3. 🎬 Une fraction de seconde après, on lance le swipe doux vers le jour J
               setTimeout(() => {
                 targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 
-                // 4. On réactive l'aimant
-                setTimeout(() => { container.style.scrollSnapType = ''; }, 600);
-              }, 150); 
+                setTimeout(() => { 
+                  container.style.scrollSnapType = ''; 
+                  setIsGridExpanded(true); // 🚀 LE SECRET : On charge silencieusement les 18 autres jours EN FOND une fois le swipe fini !
+                }, 500);
+              }, 100); 
             });
           } else if (targetEl) {
-            // Fallback
             container.classList.remove('opacity-0');
             if (headerContainer) headerContainer.classList.remove('opacity-0');
             targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+            setIsGridExpanded(true);
           }
         }, 50);
 
       } else {
-        // 🧭 NAVIGATION CLASSIQUE (On est déjà visible)
+        // 🧭 NAVIGATION CLASSIQUE
         container.classList.remove('opacity-0');
         if (headerContainer) headerContainer.classList.remove('opacity-0');
+        setIsGridExpanded(true);
         
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
@@ -918,28 +920,65 @@ export default function ReserverPage() {
                         className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300"
                       >
                         {weekDays.map((dateStr, i) => {
-                          const isFirstDesktop = i === 10;
-                          const isLastDesktop = i === 10 + displayDaysCount - 1;
-                          const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
+                      const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
+                      const times = Object.keys(gridData[dateStr] || {}).sort();
+                      
+                      // 🚀 CALCUL DU CHARGEMENT PROGRESSIF (Votre idée !)
+                      const dTime = new Date(dateStr).getTime();
+                      const pTime = new Date(pickedDate).getTime();
+                      const diffDays = Math.abs((dTime - pTime) / (1000 * 3600 * 24));
+                      
+                      // On affiche les vraies cases SEULEMENT si la grille est étendue, OU si c'est la veille/jour-J/lendemain
+                      const showRealSlots = isGridExpanded || diffDays <= 1;
+
+                      return (
+                        <div id={`mobile-col-${dateStr}`} key={dateStr} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                           
-                          return (
-                            <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
-                              {isFirstDesktop && (
-                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
-                                  <span className="text-2xl font-black">←</span>
-                                </button>
-                              )}
-                              <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                                <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
-                              </div>
-                              {isLastDesktop && (
-                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour suivant">
-                                  <span className="text-2xl font-black">→</span>
-                                </button>
+                          {showRealSlots ? (
+                            // ✅ LES VRAIS CRÉNEAUX (Dessinés instantanément pour les 3 jours principaux)
+                            <div className="flex flex-col gap-2 animate-in fade-in duration-500">
+                              {times.length === 0 ? (
+                                <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
+                                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Complet</p>
+                                </div>
+                              ) : (
+                                times.map(timeStr => {
+                                  const capacity = gridData[dateStr][timeStr];
+                                  const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
+                                  const qtyInCart = cart[currentFlightKey] || 0;
+                                  const isSelected = qtyInCart > 0;
+
+                                  return (
+                                    <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'bg-sky-100 border-sky-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}>
+                                      <div className="flex justify-between items-center mb-4">
+                                        <span className={`font-bold text-lg ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>{timeStr}</span>
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-white shadow-sm border ${capacity > 0 ? 'text-emerald-600 border-emerald-100' : 'text-rose-500 border-rose-100'}`}>
+                                          {capacity} place{capacity > 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
+                                        <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}>-</button>
+                                        <span className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
+                                        <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'}`}>+</button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
                               )}
                             </div>
-                          );
-                        })}
+                          ) : (
+                            // 👻 LES SQUELETTES FANTÔMES
+                            // Pour les 18 jours lointains. Ils prennent la même place physique pour que le swipe ne casse pas, mais ne demandent aucun effort au processeur !
+                            <div className="flex flex-col gap-2 opacity-0 pointer-events-none">
+                              <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
+                              <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
+                              <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })}
                       </div>
                     </div>
 
