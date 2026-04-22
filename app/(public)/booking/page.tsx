@@ -258,16 +258,28 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (L'Anti-Optimisation)
+  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Le Fix Flexbox Ultime)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
+      // 1. 🛑 On arrache l'aimant CSS immédiatement pour que le navigateur arrête de forcer le scroll au début
+      container.style.scrollSnapType = 'none';
+
       const tryScroll = (attempts = 0) => {
+        // 🛡️ L'ASTUCE ULTIME : Flexbox aligne les éléments de gauche à droite.
+        // On vérifie le tout dernier élément (J+10). S'il n'est pas loin à droite, 
+        // c'est que le téléphone n'a pas fini de calculer le CSS. On attend !
+        const lastChild = container.lastElementChild as HTMLElement;
+        if (!lastChild || lastChild.offsetLeft < 500) {
+          // On réessaie toutes les 20 millisecondes (jusqu'à 50 fois)
+          if (attempts < 50) setTimeout(() => tryScroll(attempts + 1), 20);
+          return; // On stoppe l'exécution ici tant que le CSS n'est pas prêt !
+        }
+
         const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
         
-        // On s'assure que la boîte a bien une largeur (elle existe physiquement)
-        if (targetEl && targetEl.offsetWidth > 0) {
+        if (targetEl) {
           const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
 
           if (!hasAnimatedIntro.current) {
@@ -277,45 +289,41 @@ export default function ReserverPage() {
             const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
             const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
 
-            if (startEl && startEl.offsetWidth > 0) {
+            if (startEl) {
               hasAnimatedIntro.current = true;
               
-              // 1. Désactiver l'aimant et le scroll doux
-              container.style.scrollSnapType = 'none';
+              // 2. Téléportation brute immédiate à la veille (qui a maintenant les VRAIES coordonnées CSS)
               container.style.scrollBehavior = 'auto'; 
-              
-              // 2. Téléportation brute immédiate (scrollLeft direct)
               const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
               container.scrollLeft = startPos;
 
-              // 3. LA MAGIE : On force le navigateur à "imprimer" la téléportation sur l'écran !
-              void container.offsetWidth; 
-
-              // 4. On attend littéralement 2 images de rafraîchissement (frames) pour être sûr
-              requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                  // Maintenant, et seulement maintenant, on allume le moteur doux
-                  container.style.scrollBehavior = 'smooth';
+              // 3. On attend 50ms pour laisser le navigateur imprimer l'écran, puis on glisse
+              setTimeout(() => {
+                container.style.scrollBehavior = 'smooth';
+                container.scrollTo({ left: targetPos, behavior: 'smooth' });
+                
+                // 4. On remet l'aimant seulement quand l'animation est totalement finie (600ms)
+                setTimeout(() => {
                   container.style.scrollSnapType = '';
-                  container.scrollTo({ left: targetPos, behavior: 'smooth' });
-                });
-              });
-
+                }, 600);
+              }, 50);
+              
             } else {
               hasAnimatedIntro.current = true;
-              container.scrollTo({ left: targetPos, behavior: 'smooth' });
+              container.scrollLeft = targetPos;
+              container.style.scrollSnapType = '';
             }
           } else {
             // 🧭 NAVIGATION CLASSIQUE
             container.style.scrollBehavior = 'smooth';
             container.scrollTo({ left: targetPos, behavior: 'smooth' });
+            container.style.scrollSnapType = '';
           }
-        } else if (attempts < 20) {
-          setTimeout(() => tryScroll(attempts + 1), 50);
         }
       };
 
-      setTimeout(() => tryScroll(), 50); 
+      // On lance avec un petit délai initial
+      setTimeout(() => tryScroll(), 20); 
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
 
