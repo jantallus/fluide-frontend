@@ -63,11 +63,15 @@ export default function ReserverPage() {
   const [step, setStep] = useState<number>(1);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
-  // 🎯 CORRECTION : On réinitialise les mémoires quand on quitte le calendrier
+  // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page
   useEffect(() => {
     if (step !== 2) {
       hasAnimatedIntro.current = false;
-      setIsGridExpanded(false); // On replie la grille pour le prochain client
+      setIsGridExpanded(false); 
+    }
+    // Quand on ouvre le calendrier, on remonte proprement en haut de la page pour éviter le bandeau
+    if (step === 2 || step === 3) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [step]);
   const [isLoading, setIsLoading] = useState(true);
@@ -267,7 +271,7 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 L'ANIMATION CINÉMATIQUE (Version Finale - Sans recouvrement)
+  // 🎯 L'ANIMATION CINÉMATIQUE (Vitesse PC + Correction Scroll)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
@@ -279,7 +283,9 @@ export default function ReserverPage() {
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-          setTimeout(() => { setIsGridExpanded(true); }, 150); 
+          
+          // 🚀 Plus rapide sur ordinateur ! (50ms au lieu de 150)
+          setTimeout(() => { setIsGridExpanded(true); }, 50); 
         }, 50);
         return;
       }
@@ -296,14 +302,14 @@ export default function ReserverPage() {
 
           if (startEl && targetEl) {
             container.style.scrollSnapType = 'none';
-            // 🎯 On s'aligne sur le haut avec la marge de sécurité
-            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'start' });
+            // 🎯 "nearest" empêche les sauts verticaux sous le bandeau !
+            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
 
             requestAnimationFrame(() => {
               container.classList.remove('opacity-0');
               if (headerContainer) headerContainer.classList.remove('opacity-0');
               setTimeout(() => {
-                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'start' });
+                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 setTimeout(() => { 
                   container.style.scrollSnapType = ''; 
                   setIsGridExpanded(true); 
@@ -317,8 +323,8 @@ export default function ReserverPage() {
         if (headerContainer) headerContainer.classList.remove('opacity-0');
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
-          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'start' });
-          setTimeout(() => { setIsGridExpanded(true); }, 300);
+          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          setTimeout(() => { setIsGridExpanded(true); }, 150);
         }, 50);
       }
     }
@@ -882,7 +888,7 @@ export default function ReserverPage() {
                 </div>
               </div>
 
-              <div className={`transition-all duration-300 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-40 grayscale-[20%] pointer-events-none scale-[0.99]' : ''}`}>
+              <div className={`transition-opacity duration-100 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                 
                 {isSearchingTimes && rawSlots.length === 0 ? (
                   /* ☠️ EFFET "SKELETON" : Chargement initial ultra-pro */
