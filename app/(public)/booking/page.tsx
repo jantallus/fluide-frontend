@@ -63,15 +63,30 @@ export default function ReserverPage() {
   const [step, setStep] = useState<number>(1);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
-  // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page
+  // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
   useEffect(() => {
     if (step !== 2) {
       hasAnimatedIntro.current = false;
       setIsGridExpanded(false); 
     }
-    // Quand on ouvre le calendrier, on remonte proprement en haut de la page pour éviter le bandeau
-    if (step === 2 || step === 3) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // 🎯 On glisse PILE sur la zone de l'étape correspondante
+    if (step === 2) {
+      setTimeout(() => {
+        const el = document.getElementById('etape-2-container');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 100; // -100px pour éviter le bandeau
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    } else if (step === 3) {
+      setTimeout(() => {
+        const el = document.getElementById('etape-3-container');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
     }
   }, [step]);
   const [isLoading, setIsLoading] = useState(true);
@@ -271,22 +286,28 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 L'ANIMATION CINÉMATIQUE (Vitesse PC + Correction Scroll)
+  // 🎯 L'ANIMATION CINÉMATIQUE (100% Horizontale, Ultra-Rapide, Sans Voile)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
 
+      // 🛠️ Fonction de centrage 100% horizontale (AUCUN saut vertical !)
+      const centerHorizontally = (el: HTMLElement, behavior: 'auto' | 'smooth') => {
+        const pos = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
+        container.scrollTo({ left: pos, behavior });
+      };
+
+      // 🪄 On enlève le "voile blanc" instantanément pour un ressenti immédiat
+      container.classList.remove('opacity-0');
+      if (headerContainer) headerContainer.classList.remove('opacity-0');
+
       if (window.innerWidth >= 768) {
-        container.classList.remove('opacity-0');
-        if (headerContainer) headerContainer.classList.remove('opacity-0');
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
-          if (targetEl) targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-          
-          // 🚀 Plus rapide sur ordinateur ! (50ms au lieu de 150)
-          setTimeout(() => { setIsGridExpanded(true); }, 50); 
-        }, 50);
+          if (targetEl) centerHorizontally(targetEl, 'auto');
+          setIsGridExpanded(true); 
+        }, 10); // Instantané sur PC
         return;
       }
 
@@ -302,30 +323,33 @@ export default function ReserverPage() {
 
           if (startEl && targetEl) {
             container.style.scrollSnapType = 'none';
-            // 🎯 "nearest" empêche les sauts verticaux sous le bandeau !
-            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+            // Téléportation sur la veille
+            centerHorizontally(startEl, 'auto');
 
             requestAnimationFrame(() => {
-              container.classList.remove('opacity-0');
-              if (headerContainer) headerContainer.classList.remove('opacity-0');
               setTimeout(() => {
-                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                // Swipe pur et fluide vers le jour J
+                centerHorizontally(targetEl, 'smooth');
+                
                 setTimeout(() => { 
                   container.style.scrollSnapType = ''; 
                   setIsGridExpanded(true); 
-                }, 500);
-              }, 100); 
+                }, 300); // On divise le temps d'attente par deux !
+              }, 50); 
             });
+          } else if (targetEl) {
+             centerHorizontally(targetEl, 'auto');
+             setIsGridExpanded(true);
           }
-        }, 50);
+        }, 20);
+
       } else {
-        container.classList.remove('opacity-0');
-        if (headerContainer) headerContainer.classList.remove('opacity-0');
+        // 🧭 NAVIGATION CLASSIQUE (Flèches ou calendrier)
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
-          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          setTimeout(() => { setIsGridExpanded(true); }, 150);
-        }, 50);
+          if (targetEl) centerHorizontally(targetEl, 'smooth');
+          setTimeout(() => { setIsGridExpanded(true); }, 100);
+        }, 20);
       }
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
@@ -839,7 +863,7 @@ export default function ReserverPage() {
 
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
+          <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
             <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
               ← Retour au catalogue
             </button>
@@ -888,7 +912,7 @@ export default function ReserverPage() {
                 </div>
               </div>
 
-              <div className={`transition-opacity duration-100 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className={`transition-opacity duration-75 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                 
                 {isSearchingTimes && rawSlots.length === 0 ? (
                   /* ☠️ EFFET "SKELETON" : Chargement initial ultra-pro */
@@ -999,7 +1023,7 @@ export default function ReserverPage() {
 
         {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
+          <div id="etape-3-container" className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
             <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
               ← Modifier le panier
             </button>
