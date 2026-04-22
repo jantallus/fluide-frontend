@@ -19,11 +19,27 @@ export default function CadeauPage() {
     const fetchData = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        // On charge les offres
+        
+        // 1. On charge les offres
         const res = await fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true`, { cache: 'no-store' });
-        if (res.ok) setTemplates(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setTemplates(data);
 
-        // On charge vos paramètres postaux
+          // 🎯 NOUVEAU : Auto-sélection si on vient du bouton "Offrir"
+          const params = new URLSearchParams(window.location.search);
+          const targetId = params.get('templateId');
+          if (targetId) {
+            const found = data.find((t: any) => t.id.toString() === targetId);
+            if (found) {
+              setSelectedTemplate(found);
+              // On scroll en douceur jusqu'au formulaire après 0.5s le temps que la page se dessine
+              setTimeout(() => { document.getElementById('achat-form')?.scrollIntoView({ behavior: 'smooth' }); }, 500);
+            }
+          }
+        }
+
+        // 2. On charge vos paramètres postaux
         const setRes = await fetch(`${apiUrl}/api/public/site-settings`);
         if (setRes.ok) {
           const s = await setRes.json();

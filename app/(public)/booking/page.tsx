@@ -57,6 +57,7 @@ export default function ReserverPage() {
   }, []);
 
   const [flights, setFlights] = useState<any[]>([]);
+  const [giftTemplates, setGiftTemplates] = useState<any[]>([]);
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
@@ -100,14 +101,16 @@ export default function ReserverPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         
-        const [resFlights, resComplements, resSettings] = await Promise.all([
+        const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
           fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
           fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' })
+          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }) // 🎁 On charge les bons cadeaux !
         ]);
 
         if (resFlights.ok) setFlights(await resFlights.json());
         if (resComplements.ok) setComplementsList(await resComplements.json());
+        if (resTemplates.ok) setGiftTemplates(await resTemplates.json());
 
         let count = 7; 
         if (resSettings.ok) {
@@ -733,9 +736,25 @@ export default function ReserverPage() {
                         {displayedSeason}
                       </div>
                     </div>
-                    <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
-                      <div className="text-4xl font-black text-sky-600">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
-                      <button className="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-sky-500 transition-colors">Choisir ce vol</button>
+                    <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="text-3xl md:text-4xl font-black text-sky-600 shrink-0">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {giftTemplates.find(t => t.price_cents === flight.price_cents) && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // ⛔ Empêche d'ouvrir le calendrier
+                              const templateId = giftTemplates.find(t => t.price_cents === flight.price_cents).id;
+                              window.location.href = `/bons-cadeaux?templateId=${templateId}`; // 🚀 Go vers la boutique !
+                            }}
+                            className="bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
+                          >
+                            🎁 Offrir
+                          </button>
+                        )}
+                        <button className="bg-slate-900 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-sky-500 transition-colors">
+                          Réserver <span className="hidden md:inline">ce vol</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )})}
