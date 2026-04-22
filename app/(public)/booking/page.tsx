@@ -86,21 +86,24 @@ export default function ReserverPage() {
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
   
+  // 🎯 RÉFÉRENCES SÉCURISÉES POUR ÉVITER L'EFFET DOMINO (Double-clic)
+  const selectedFlightRef = useRef(selectedFlight);
+  useEffect(() => { selectedFlightRef.current = selectedFlight; }, [selectedFlight]);
+
+  const cartRef = useRef(cart);
+  useEffect(() => { cartRef.current = cart; }, [cart]);
+
   // 🎯 GESTION SÉCURISÉE DU BOUTON RETOUR
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash;
       
-      // 🛡️ On calcule rapidement s'il y a des articles dans le panier (contourne l'erreur de scope)
-      const itemsInCart = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-      
-      // 🛡️ SÉCURITÉ : Si on revient d'une page externe, le "selectedFlight" est perdu.
-      // Si on essaie d'afficher l'étape 2 ou 3 sans données, on force le retour à l'étape 1.
-      const needsReset = (hash === '#etape-2' && !selectedFlight) || (hash === '#etape-3' && itemsInCart === 0);
+      // On lit les références "secrètes" pour ne pas déclencher de rechargement en boucle
+      const itemsInCart = Object.values(cartRef.current).reduce((sum: any, qty: any) => sum + qty, 0);
+      const needsReset = (hash === '#etape-2' && !selectedFlightRef.current) || (hash === '#etape-3' && itemsInCart === 0);
 
       if (needsReset) {
         setStep(1);
-        // On nettoie l'URL pour enlever le #etape-X qui ne veut plus rien dire
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       } else {
         if (hash === '#etape-3') setStep(3);
@@ -110,10 +113,10 @@ export default function ReserverPage() {
     };
 
     window.addEventListener('popstate', handlePopState);
-    handlePopState(); // Vérification au chargement de la page
+    handlePopState(); 
     
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedFlight, cart]); // 🎯 Important : on surveille le 'cart' et plus 'totalItems'
+  }, []); // 🛑 AUCUNE DÉPENDANCE ICI : C'est le secret pour éviter le double clic !
 
   // 2. On met à jour l'URL (sans recharger) quand on change d'étape via vos boutons
   useEffect(() => {
@@ -255,55 +258,52 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent
+  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Version Invincible)
   useEffect(() => {
-    // 🛡️ SÉCURITÉ : On attend que la recherche soit finie ET que les créneaux soient vraiment affichés
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
-      // 🕒 Petit délai pour laisser au téléphone le temps de dessiner physiquement les cases
-      setTimeout(() => {
+      // 🛡️ Boucle intelligente : on essaie jusqu'à ce que le téléphone ait fini de dessiner
+      const tryScroll = (attempts = 0) => {
         const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
+        
+        if (targetEl) {
+          const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
 
-        if (!hasAnimatedIntro.current) {
-          // 🎬 SCÉNARIO D'OUVERTURE (Joué 1 seule fois)
-          const startAnimDate = new Date(pickedDate);
-          startAnimDate.setDate(startAnimDate.getDate() - 1);
-          const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
-          const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
+          if (!hasAnimatedIntro.current) {
+            // 🎬 SCÉNARIO D'OUVERTURE
+            const startAnimDate = new Date(pickedDate);
+            startAnimDate.setDate(startAnimDate.getDate() - 1);
+            const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
+            const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
 
-          if (startEl && targetEl) {
-            hasAnimatedIntro.current = true; // ✅ On valide l'intro UNIQUEMENT si on a trouvé les cases
+            if (startEl) {
+              hasAnimatedIntro.current = true; // On valide l'intro
+              container.style.scrollSnapType = 'none';
+              const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
+              container.scrollLeft = startPos;
 
-            // 1. On coupe temporairement l'effet "aimant" du navigateur pour qu'il obéisse
-            container.style.scrollSnapType = 'none';
-            
-            // 2. On se place sur la veille invisiblement
-            const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
-            container.scrollLeft = startPos;
-
-            // 3. On attend une fraction de seconde, puis on glisse vers le jour J
-            setTimeout(() => {
-              container.style.scrollSnapType = ''; // On remet l'aimant normal
-              const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+              setTimeout(() => {
+                container.style.scrollSnapType = '';
+                container.scrollTo({ left: targetPos, behavior: 'smooth' });
+              }, 300); // Petit délai pour laisser le temps de voir le swipe
+            } else {
+              // Si la "veille" n'existe pas (bord du calendrier), on centre direct
+              hasAnimatedIntro.current = true;
               container.scrollTo({ left: targetPos, behavior: 'smooth' });
-            }, 600); // 600ms donne le temps au client de comprendre le mouvement
-
-          } else if (targetEl) {
-            // 🛡️ Fallback extrême : si "la veille" bugge, on centre direct sur le jour J sans animation
-            hasAnimatedIntro.current = true;
-            const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
-            container.scrollTo({ left: targetPos, behavior: 'auto' });
-          }
-
-        } else {
-          // 🧭 NAVIGATION CLASSIQUE (Quand le client clique sur une autre date)
-          if (targetEl) {
-            const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+            }
+          } else {
+            // 🧭 NAVIGATION CLASSIQUE
             container.scrollTo({ left: targetPos, behavior: 'smooth' });
           }
+        } else if (attempts < 10) {
+          // ⏳ Le DOM n'est pas prêt, le processeur du téléphone réfléchit. 
+          // On réessaie dans 50ms (maximum 10 fois pour éviter de bloquer)
+          setTimeout(() => tryScroll(attempts + 1), 50);
         }
-      }, 200); // 200ms = Le temps magique pour que le DOM soit 100% prêt
+      };
+
+      tryScroll(); // Lancement de la tentative !
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
 
