@@ -85,6 +85,37 @@ export default function ReserverPage() {
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
+  // 🎯 GESTION DU BOUTON RETOUR DU NAVIGATEUR
+  // 1. On écoute la flèche "Retour" ou "Suivant" du navigateur
+  useEffect(() => {
+    const handlePopState = () => {
+      const hash = window.location.hash;
+      if (hash === '#etape-3') setStep(3);
+      else if (hash === '#etape-2') setStep(2);
+      else setStep(1);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // Si le client rafraîchit la page alors qu'il était à l'étape 2, on le remet au bon endroit
+    handlePopState();
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 2. On met à jour l'URL (sans recharger) quand on change d'étape via vos boutons
+  useEffect(() => {
+    const expectedHash = step === 1 ? '' : `#etape-${step}`;
+    const currentHash = window.location.hash;
+    
+    if (currentHash !== expectedHash) {
+      const newUrl = step === 1 
+        ? window.location.pathname + window.location.search 
+        : window.location.pathname + window.location.search + expectedHash;
+        
+      window.history.pushState({ step }, '', newUrl);
+    }
+  }, [step]);
   
   useEffect(() => {
     const currentMonth = new Date().getMonth(); 
