@@ -629,8 +629,9 @@ export default function ReserverPage() {
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-center mb-12">
-              <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-lg border border-slate-100">
+            {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
+            <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
+              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl inline-flex shadow-xl border border-slate-200">
                 <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
                 <button onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-sky-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>❄️ Vols Hiver</button>
               </div>
