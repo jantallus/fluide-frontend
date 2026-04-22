@@ -751,7 +751,7 @@ export default function ReserverPage() {
                             🎁 Offrir
                           </button>
                         )}
-                        <button className="bg-slate-900 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-sky-500 transition-colors">
+                        <button className="bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
