@@ -258,16 +258,17 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Version Invincible)
+  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Version Définitive)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
-      // 🛡️ Boucle intelligente : on essaie jusqu'à ce que le téléphone ait fini de dessiner
+      // 🛡️ Boucle intelligente : on attend que le CSS ait fini de placer les colonnes
       const tryScroll = (attempts = 0) => {
         const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
         
-        if (targetEl) {
+        // 🔒 LA SÉCURITÉ ABSOLUE : offsetLeft doit être supérieur à 0 (sinon la boîte n'est pas encore dessinée)
+        if (targetEl && targetEl.offsetLeft > 0) {
           const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
 
           if (!hasAnimatedIntro.current) {
@@ -277,33 +278,40 @@ export default function ReserverPage() {
             const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
             const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
 
-            if (startEl) {
-              hasAnimatedIntro.current = true; // On valide l'intro
+            // On vérifie aussi que la "veille" est bien dessinée !
+            if (startEl && startEl.offsetLeft > 0) {
+              hasAnimatedIntro.current = true;
+              
+              // 1. Désactiver l'aimant et forcer la téléportation brute sans aucune animation
               container.style.scrollSnapType = 'none';
+              container.style.scrollBehavior = 'auto'; 
+              
               const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
-              container.scrollLeft = startPos;
+              container.scrollTo({ left: startPos, behavior: 'auto' });
 
+              // 2. Petit délai, on rallume le moteur doux et on glisse vers le jour J
               setTimeout(() => {
+                container.style.scrollBehavior = 'smooth';
                 container.style.scrollSnapType = '';
                 container.scrollTo({ left: targetPos, behavior: 'smooth' });
-              }, 300); // Petit délai pour laisser le temps de voir le swipe
+              }, 150); 
             } else {
-              // Si la "veille" n'existe pas (bord du calendrier), on centre direct
               hasAnimatedIntro.current = true;
               container.scrollTo({ left: targetPos, behavior: 'smooth' });
             }
           } else {
             // 🧭 NAVIGATION CLASSIQUE
+            container.style.scrollBehavior = 'smooth';
             container.scrollTo({ left: targetPos, behavior: 'smooth' });
           }
-        } else if (attempts < 10) {
-          // ⏳ Le DOM n'est pas prêt, le processeur du téléphone réfléchit. 
-          // On réessaie dans 50ms (maximum 10 fois pour éviter de bloquer)
+        } else if (attempts < 20) {
+          // ⏳ Le DOM est là, mais le téléphone n'a pas encore calculé les pixels. On réessaie !
           setTimeout(() => tryScroll(attempts + 1), 50);
         }
       };
 
-      tryScroll(); // Lancement de la tentative !
+      // On lance avec un léger délai initial pour laisser respirer le navigateur mobile
+      setTimeout(() => tryScroll(), 50); 
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
 
