@@ -258,17 +258,16 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Version Définitive)
+  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (L'Anti-Optimisation)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
-      // 🛡️ Boucle intelligente : on attend que le CSS ait fini de placer les colonnes
       const tryScroll = (attempts = 0) => {
         const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
         
-        // 🔒 LA SÉCURITÉ ABSOLUE : offsetLeft doit être supérieur à 0 (sinon la boîte n'est pas encore dessinée)
-        if (targetEl && targetEl.offsetLeft > 0) {
+        // On s'assure que la boîte a bien une largeur (elle existe physiquement)
+        if (targetEl && targetEl.offsetWidth > 0) {
           const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
 
           if (!hasAnimatedIntro.current) {
@@ -278,23 +277,30 @@ export default function ReserverPage() {
             const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
             const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
 
-            // On vérifie aussi que la "veille" est bien dessinée !
-            if (startEl && startEl.offsetLeft > 0) {
+            if (startEl && startEl.offsetWidth > 0) {
               hasAnimatedIntro.current = true;
               
-              // 1. Désactiver l'aimant et forcer la téléportation brute sans aucune animation
+              // 1. Désactiver l'aimant et le scroll doux
               container.style.scrollSnapType = 'none';
               container.style.scrollBehavior = 'auto'; 
               
+              // 2. Téléportation brute immédiate (scrollLeft direct)
               const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
-              container.scrollTo({ left: startPos, behavior: 'auto' });
+              container.scrollLeft = startPos;
 
-              // 2. Petit délai, on rallume le moteur doux et on glisse vers le jour J
-              setTimeout(() => {
-                container.style.scrollBehavior = 'smooth';
-                container.style.scrollSnapType = '';
-                container.scrollTo({ left: targetPos, behavior: 'smooth' });
-              }, 150); 
+              // 3. LA MAGIE : On force le navigateur à "imprimer" la téléportation sur l'écran !
+              void container.offsetWidth; 
+
+              // 4. On attend littéralement 2 images de rafraîchissement (frames) pour être sûr
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  // Maintenant, et seulement maintenant, on allume le moteur doux
+                  container.style.scrollBehavior = 'smooth';
+                  container.style.scrollSnapType = '';
+                  container.scrollTo({ left: targetPos, behavior: 'smooth' });
+                });
+              });
+
             } else {
               hasAnimatedIntro.current = true;
               container.scrollTo({ left: targetPos, behavior: 'smooth' });
@@ -305,12 +311,10 @@ export default function ReserverPage() {
             container.scrollTo({ left: targetPos, behavior: 'smooth' });
           }
         } else if (attempts < 20) {
-          // ⏳ Le DOM est là, mais le téléphone n'a pas encore calculé les pixels. On réessaie !
           setTimeout(() => tryScroll(attempts + 1), 50);
         }
       };
 
-      // On lance avec un léger délai initial pour laisser respirer le navigateur mobile
       setTimeout(() => tryScroll(), 50); 
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
