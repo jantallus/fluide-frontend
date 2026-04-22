@@ -264,72 +264,47 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent (Le Fix Flexbox Ultime)
+  // 🎯 L'ANIMATION ORIGINALE ET PROPRE (Fini les rustines et les ralentissements !)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
-      // 1. 🛑 On arrache l'aimant CSS immédiatement pour que le navigateur arrête de forcer le scroll au début
-      container.style.scrollSnapType = 'none';
+      if (!hasAnimatedIntro.current) {
+        hasAnimatedIntro.current = true;
 
-      const tryScroll = (attempts = 0) => {
-        // 🛡️ L'ASTUCE ULTIME : Flexbox aligne les éléments de gauche à droite.
-        // On vérifie le tout dernier élément (J+10). S'il n'est pas loin à droite, 
-        // c'est que le téléphone n'a pas fini de calculer le CSS. On attend !
-        const lastChild = container.lastElementChild as HTMLElement;
-        if (!lastChild || lastChild.offsetLeft < 500) {
-          // On réessaie toutes les 20 millisecondes (jusqu'à 50 fois)
-          if (attempts < 50) setTimeout(() => tryScroll(attempts + 1), 20);
-          return; // On stoppe l'exécution ici tant que le CSS n'est pas prêt !
-        }
+        // Un seul petit délai pour laisser React afficher les cases après le chargement gris
+        setTimeout(() => {
+          const startAnimDate = new Date(pickedDate);
+          startAnimDate.setDate(startAnimDate.getDate() - 1);
+          const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
-        const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
-        
-        if (targetEl) {
-          const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+          const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
+          const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
-          if (!hasAnimatedIntro.current) {
-            // 🎬 SCÉNARIO D'OUVERTURE
-            const startAnimDate = new Date(pickedDate);
-            startAnimDate.setDate(startAnimDate.getDate() - 1);
-            const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
-            const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
+          if (startEl && targetEl) {
+            // 1. On coupe l'aimant CSS qui bloque le scroll sur mobile
+            container.style.scrollSnapType = 'none';
 
-            if (startEl) {
-              hasAnimatedIntro.current = true;
+            // 2. La magie native : le navigateur se centre tout seul sur la veille !
+            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+
+            // 3. On déclenche le balayage visuel vers le jour J
+            setTimeout(() => {
+              targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
               
-              // 2. Téléportation brute immédiate à la veille (qui a maintenant les VRAIES coordonnées CSS)
-              container.style.scrollBehavior = 'auto'; 
-              const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
-              container.scrollLeft = startPos;
-
-              // 3. On attend 50ms pour laisser le navigateur imprimer l'écran, puis on glisse
-              setTimeout(() => {
-                container.style.scrollBehavior = 'smooth';
-                container.scrollTo({ left: targetPos, behavior: 'smooth' });
-                
-                // 4. On remet l'aimant seulement quand l'animation est totalement finie (600ms)
-                setTimeout(() => {
-                  container.style.scrollSnapType = '';
-                }, 600);
-              }, 50);
-              
-            } else {
-              hasAnimatedIntro.current = true;
-              container.scrollLeft = targetPos;
-              container.style.scrollSnapType = '';
-            }
-          } else {
-            // 🧭 NAVIGATION CLASSIQUE
-            container.style.scrollBehavior = 'smooth';
-            container.scrollTo({ left: targetPos, behavior: 'smooth' });
-            container.style.scrollSnapType = '';
+              // 4. On réactive l'aimant une fois l'animation terminée
+              setTimeout(() => { container.style.scrollSnapType = ''; }, 600);
+            }, 100);
           }
-        }
-      };
+        }, 150);
 
-      // On lance avec un petit délai initial
-      setTimeout(() => tryScroll(), 20); 
+      } else {
+        // 🧭 NAVIGATION CLASSIQUE
+        setTimeout(() => {
+          const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
+          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }, 50);
+      }
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length]);
 
