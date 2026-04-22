@@ -267,31 +267,25 @@ export default function ReserverPage() {
     }
   }, [contact.isPassenger, contact.firstName]);
 
-  // 🎯 L'ANIMATION CINÉMATIQUE (Fluidité App-Like + Turbo Load)
+  // 🎯 L'ANIMATION CINÉMATIQUE (Version Finale - Sans recouvrement)
   useEffect(() => {
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
 
-      // 🖥️ Sur PC : On gère le "Lazy Loading" intelligemment sans bloquer l'écran
       if (window.innerWidth >= 768) {
         container.classList.remove('opacity-0');
         if (headerContainer) headerContainer.classList.remove('opacity-0');
-        
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-          
-          // 🚀 LE CORRECTIF DES LENTEURS PC
           setTimeout(() => { setIsGridExpanded(true); }, 150); 
         }, 50);
         return;
       }
 
-      // 📱 Sur Mobile
       if (!hasAnimatedIntro.current) {
         hasAnimatedIntro.current = true;
-
         const startAnimDate = new Date(pickedDate);
         startAnimDate.setDate(startAnimDate.getDate() - 1);
         const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
@@ -302,38 +296,28 @@ export default function ReserverPage() {
 
           if (startEl && targetEl) {
             container.style.scrollSnapType = 'none';
-            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+            // 🎯 On s'aligne sur le haut avec la marge de sécurité
+            startEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'start' });
 
             requestAnimationFrame(() => {
               container.classList.remove('opacity-0');
               if (headerContainer) headerContainer.classList.remove('opacity-0');
-
               setTimeout(() => {
-                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                
+                targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'start' });
                 setTimeout(() => { 
                   container.style.scrollSnapType = ''; 
                   setIsGridExpanded(true); 
                 }, 500);
               }, 100); 
             });
-          } else if (targetEl) {
-            container.classList.remove('opacity-0');
-            if (headerContainer) headerContainer.classList.remove('opacity-0');
-            targetEl.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-            setIsGridExpanded(true);
           }
         }, 50);
-
       } else {
-        // 🧭 NAVIGATION CLASSIQUE
         container.classList.remove('opacity-0');
         if (headerContainer) headerContainer.classList.remove('opacity-0');
-        
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
-          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          
+          if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'start' });
           setTimeout(() => { setIsGridExpanded(true); }, 300);
         }, 50);
       }
@@ -923,21 +907,16 @@ export default function ReserverPage() {
                           const isFirstDesktop = i === 10;
                           const isLastDesktop = i === 10 + displayDaysCount - 1;
                           const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
-                          
                           return (
                             <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                               {isFirstDesktop && (
-                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour précédent">
-                                  <span className="text-2xl font-black">←</span>
-                                </button>
+                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"><span className="text-2xl font-black">←</span></button>
                               )}
                               <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
                                 <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                               </div>
                               {isLastDesktop && (
-                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none" title="Jour suivant">
-                                  <span className="text-2xl font-black">→</span>
-                                </button>
+                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"><span className="text-2xl font-black">→</span></button>
                               )}
                             </div>
                           );
@@ -945,29 +924,26 @@ export default function ReserverPage() {
                       </div>
                     </div>
 
-                    {/* 🎯 LA ZONE DES CRÉNEAUX (Maître - UNIQUE ET NETTOYÉE) */}
+                    {/* 🎯 LA ZONE DES CRÉNEAUX (Unique et Corrigée) */}
                     <div 
                       ref={bodyScrollRef}
-                      onScroll={(e) => {
-                        if (headerScrollRef.current) {
-                          headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                        }
-                      }}
+                      onScroll={(e) => { if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; }}
                       className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar opacity-0 md:opacity-100 transition-opacity duration-300"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
                         const times = Object.keys(gridData[dateStr] || {}).sort();
-                        
-                        // 🚀 CALCUL DU CHARGEMENT PROGRESSIF (Ultra-Rapide & Anti-Bug)
                         const pickedIndex = weekDays.indexOf(pickedDate);
                         const diffIndex = Math.abs(i - pickedIndex);
-                        
                         const showRealSlots = isGridExpanded || diffIndex <= 1;
 
                         return (
-                          <div id={`mobile-col-${dateStr}`} key={dateStr} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
-                            
+                          <div 
+                            id={`mobile-col-${dateStr}`} 
+                            key={dateStr} 
+                            // 🚀 LA MARGE MAGIQUE : scroll-mt-32 (128px) ou scroll-mt-48 (192px)
+                            className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit scroll-mt-32 md:scroll-mt-48 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}
+                          >
                             {showRealSlots ? (
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
                                 {times.length === 0 ? (
@@ -980,7 +956,6 @@ export default function ReserverPage() {
                                     const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
                                     const qtyInCart = cart[currentFlightKey] || 0;
                                     const isSelected = qtyInCart > 0;
-
                                     return (
                                       <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'bg-sky-100 border-sky-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}>
                                         <div className="flex justify-between items-center mb-4">
@@ -989,7 +964,6 @@ export default function ReserverPage() {
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
                                         </div>
-                                        
                                         <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
                                           <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}>-</button>
                                           <span className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
@@ -1001,14 +975,11 @@ export default function ReserverPage() {
                                 )}
                               </div>
                             ) : (
-                              // 👻 LES SQUELETTES FANTÔMES
                               <div className="flex flex-col gap-2 opacity-0 pointer-events-none">
-                                <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
                                 <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
                                 <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
                               </div>
                             )}
-
                           </div>
                         );
                       })}
