@@ -85,23 +85,35 @@ export default function ReserverPage() {
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
-  // 🎯 GESTION DU BOUTON RETOUR DU NAVIGATEUR
-  // 1. On écoute la flèche "Retour" ou "Suivant" du navigateur
+  
+  // 🎯 GESTION SÉCURISÉE DU BOUTON RETOUR
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash;
-      if (hash === '#etape-3') setStep(3);
-      else if (hash === '#etape-2') setStep(2);
-      else setStep(1);
+      
+      // 🛡️ On calcule rapidement s'il y a des articles dans le panier (contourne l'erreur de scope)
+      const itemsInCart = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+      
+      // 🛡️ SÉCURITÉ : Si on revient d'une page externe, le "selectedFlight" est perdu.
+      // Si on essaie d'afficher l'étape 2 ou 3 sans données, on force le retour à l'étape 1.
+      const needsReset = (hash === '#etape-2' && !selectedFlight) || (hash === '#etape-3' && itemsInCart === 0);
+
+      if (needsReset) {
+        setStep(1);
+        // On nettoie l'URL pour enlever le #etape-X qui ne veut plus rien dire
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else {
+        if (hash === '#etape-3') setStep(3);
+        else if (hash === '#etape-2') setStep(2);
+        else setStep(1);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
+    handlePopState(); // Vérification au chargement de la page
     
-    // Si le client rafraîchit la page alors qu'il était à l'étape 2, on le remet au bon endroit
-    handlePopState();
-
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [selectedFlight, cart]); // 🎯 Important : on surveille le 'cart' et plus 'totalItems'
 
   // 2. On met à jour l'URL (sans recharger) quand on change d'étape via vos boutons
   useEffect(() => {
