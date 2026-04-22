@@ -261,44 +261,51 @@ export default function ReserverPage() {
     if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
-      if (!hasAnimatedIntro.current) {
-        // 🎬 SCÉNARIO D'OUVERTURE (Joué 1 seule fois)
-        hasAnimatedIntro.current = true; 
+      // 🕒 Petit délai pour laisser au téléphone le temps de dessiner physiquement les cases
+      setTimeout(() => {
+        const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
-        setTimeout(() => {
-          // 🎯 NOUVEAU : On calcule la "veille" de la date ciblée pour forcer un mouvement
+        if (!hasAnimatedIntro.current) {
+          // 🎬 SCÉNARIO D'OUVERTURE (Joué 1 seule fois)
           const startAnimDate = new Date(pickedDate);
           startAnimDate.setDate(startAnimDate.getDate() - 1);
           const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
-
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
-          const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
-          if (startEl && targetEl && container) {
-            // 1. On fige la vue sur la colonne précédente de manière invisible
+          if (startEl && targetEl) {
+            hasAnimatedIntro.current = true; // ✅ On valide l'intro UNIQUEMENT si on a trouvé les cases
+
+            // 1. On coupe temporairement l'effet "aimant" du navigateur pour qu'il obéisse
+            container.style.scrollSnapType = 'none';
+            
+            // 2. On se place sur la veille invisiblement
             const startPos = startEl.offsetLeft - (container.clientWidth / 2) + (startEl.clientWidth / 2);
             container.scrollLeft = startPos;
 
-            // 2. On attend 800ms, puis on glisse tout en douceur vers la vraie date choisie
+            // 3. On attend une fraction de seconde, puis on glisse vers le jour J
             setTimeout(() => {
+              container.style.scrollSnapType = ''; // On remet l'aimant normal
               const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
               container.scrollTo({ left: targetPos, behavior: 'smooth' });
-            }, 800);
-          }
-        }, 100);
+            }, 600); // 600ms donne le temps au client de comprendre le mouvement
 
-      } else {
-        // 🧭 NAVIGATION CLASSIQUE (Quand le client clique sur le calendrier)
-        setTimeout(() => {
-          const centerEl = document.getElementById(`mobile-col-${pickedDate}`);
-          if (centerEl && container) {
-            const scrollPos = centerEl.offsetLeft - (container.clientWidth / 2) + (centerEl.clientWidth / 2);
-            container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+          } else if (targetEl) {
+            // 🛡️ Fallback extrême : si "la veille" bugge, on centre direct sur le jour J sans animation
+            hasAnimatedIntro.current = true;
+            const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+            container.scrollTo({ left: targetPos, behavior: 'auto' });
           }
-        }, 50);
-      }
+
+        } else {
+          // 🧭 NAVIGATION CLASSIQUE (Quand le client clique sur une autre date)
+          if (targetEl) {
+            const targetPos = targetEl.offsetLeft - (container.clientWidth / 2) + (targetEl.clientWidth / 2);
+            container.scrollTo({ left: targetPos, behavior: 'smooth' });
+          }
+        }
+      }, 200); // 200ms = Le temps magique pour que le DOM soit 100% prêt
     }
-  }, [pickedDate, isSearchingTimes]);
+  }, [pickedDate, isSearchingTimes, rawSlots.length]);
 
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
