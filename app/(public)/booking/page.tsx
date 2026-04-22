@@ -777,12 +777,12 @@ export default function ReserverPage() {
                               const templateId = giftTemplates.find(t => t.price_cents === flight.price_cents).id;
                               window.location.href = `/bons-cadeaux?templateId=${templateId}`; // 🚀 Go vers la boutique !
                             }}
-                            className="bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
+                            className="cursor-pointer bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
                           >
                             🎁 Offrir
                           </button>
                         )}
-                        <button className="bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
+                        <button className="cursor-pointer bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>

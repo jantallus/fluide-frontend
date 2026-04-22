@@ -57,6 +57,29 @@ export default function CadeauPage() {
     fetchData();
   }, []);
 
+  // 🎯 GESTION DU BOUTON RETOUR DU NAVIGATEUR (Bons Cadeaux)
+  // 1. On écoute la flèche "Retour"
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!window.location.hash.includes('#personnaliser')) {
+        setSelectedTemplate(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 2. On met à jour l'URL sans recharger la page quand on clique sur un bon
+  useEffect(() => {
+    const expectedHash = selectedTemplate ? '#personnaliser' : '';
+    const currentHash = window.location.hash;
+    
+    if (selectedTemplate && currentHash !== expectedHash) {
+      const newUrl = window.location.pathname + window.location.search + expectedHash;
+      window.history.pushState({ personnalisation: true }, '', newUrl);
+    }
+  }, [selectedTemplate]);
+
   // 🎯 SÉCURITÉ : Le formulaire vérifie aussi l'adresse si la case est cochée
   const isShippingValid = !wantsShipping || (address.street && address.zip && address.city);
   const isFormValid = buyer.name && buyer.email && buyer.phone && isShippingValid;
@@ -200,7 +223,9 @@ export default function CadeauPage() {
                   </div>
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black text-sky-600">{tpl.price_cents / 100}€</div>
-                    <button className={`px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-colors ${selectedTemplate?.id === tpl.id ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-900 text-white group-hover:bg-sky-500'}`}>{selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}</button>
+                    <button className={`cursor-pointer px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-md ${selectedTemplate?.id === tpl.id ? 'bg-fuchsia-500 text-white shadow-fuchsia-500/30' : 'bg-indigo-700 text-white group-hover:bg-fuchsia-500 hover:shadow-fuchsia-500/30'}`}>
+                      {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
+                    </button>
                   </div>
                 </div>
               ))}
