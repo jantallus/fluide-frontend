@@ -61,6 +61,12 @@ export default function ReserverPage() {
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
+  // 🎯 CORRECTION : On réinitialise la mémoire de l'animation dès qu'on quitte le calendrier
+  useEffect(() => {
+    if (step !== 2) {
+      hasAnimatedIntro.current = false;
+    }
+  }, [step]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
