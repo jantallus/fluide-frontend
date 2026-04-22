@@ -257,7 +257,8 @@ export default function ReserverPage() {
 
   // 🎯 NOUVEAU : Animation d'intro + Auto-centrage intelligent
   useEffect(() => {
-    if (!isSearchingTimes && window.innerWidth < 768 && bodyScrollRef.current) {
+    // 🛡️ SÉCURITÉ : On attend que la recherche soit finie ET que les créneaux soient vraiment affichés
+    if (!isSearchingTimes && rawSlots.length > 0 && window.innerWidth < 768 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
 
       if (!hasAnimatedIntro.current) {
@@ -915,7 +916,7 @@ export default function ReserverPage() {
                           headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
                         }
                       }}
-                      className="flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
+                      className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar"
                     >
                       {weekDays.map((dateStr, i) => {
                         const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
