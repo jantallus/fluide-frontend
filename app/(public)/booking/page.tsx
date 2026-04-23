@@ -62,6 +62,7 @@ export default function ReserverPage() {
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
   const [infoFlight, setInfoFlight] = useState<any>(null); // 🎯 Mémoire pour la popup d'infos du vol
+  const savedScrollPos = useRef(0); // 🎯 NOUVEAU : Mémoire pour retenir la position de défilement
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
   // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
@@ -90,6 +91,20 @@ export default function ReserverPage() {
       }, 50);
     }
   }, [step]);
+
+// 🎯 NOUVEAU : Moteur de défilement intelligent pour la Popup Info
+  useEffect(() => {
+    if (infoFlight) {
+      // 1. La popup s'ouvre : on mémorise où on est, et on remonte tout en haut !
+      savedScrollPos.current = window.scrollY;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (savedScrollPos.current > 0) {
+      // 2. La popup se ferme : on retourne exactement là où on était !
+      window.scrollTo({ top: savedScrollPos.current, behavior: 'smooth' });
+      savedScrollPos.current = 0; // On réinitialise la mémoire
+    }
+  }, [infoFlight]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
