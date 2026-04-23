@@ -289,6 +289,9 @@ export default function ReserverPage() {
 
   // 🎯 L'ANIMATION CINÉMATIQUE (100% Horizontale, Ultra-Rapide, Sans Voile)
   useEffect(() => {
+    // 🛑 SÉCURITÉ ABSOLUE : On refuse de jouer l'animation si on n'est pas sur l'étape 2
+    if (step !== 2) return;
+
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
@@ -299,7 +302,7 @@ export default function ReserverPage() {
         container.scrollTo({ left: pos, behavior });
       };
 
-      // 🪄 On enlève le "voile blanc" instantanément pour un ressenti immédiat
+      // 🪄 On enlève le "voile blanc" (opacity-0) instantanément pour un ressenti immédiat
       container.classList.remove('opacity-0');
       if (headerContainer) headerContainer.classList.remove('opacity-0');
 
@@ -353,7 +356,7 @@ export default function ReserverPage() {
         }, 20);
       }
     }
-  }, [pickedDate, isSearchingTimes, rawSlots.length]);
+  }, [pickedDate, isSearchingTimes, rawSlots.length, step]); // 🎯 NOUVEAU : On a ajouté "step" ici pour forcer le réveil !
 
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
