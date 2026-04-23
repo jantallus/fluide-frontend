@@ -1370,9 +1370,20 @@ export default function ReserverPage() {
           <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
             
             {/* 🎯 2. L'en-tête (Fixe en haut) */}
-            <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-center border-b border-slate-100">
-              <h3 className="text-2xl font-black uppercase italic text-slate-900">À propos de ce vol</h3>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }} className="relative z-50 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0 cursor-pointer">✕</button>
+            <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-start border-b border-slate-100">
+              {/* Le pr-4 (padding-right) empêche le titre de déborder sur la croix */}
+              <h3 className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce vol</h3>
+              
+              <button 
+                onClick={() => setInfoFlight(null)} 
+                className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0 cursor-pointer active:scale-95"
+                aria-label="Fermer"
+              >
+                {/* 🎯 Une vraie icône vectorielle au lieu d'un caractère texte */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             
             {/* 🎯 3. Le contenu (Avec défilement interne activé via overflow-y-auto) */}
