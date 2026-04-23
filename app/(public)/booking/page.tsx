@@ -833,10 +833,11 @@ export default function ReserverPage() {
                         {flight.show_popup && flight.popup_content && (
                           <button
                             onClick={(e) => { 
-                              e.stopPropagation(); // Évite de cliquer sur la carte et de passer à l'étape suivante par erreur
+                              e.stopPropagation(); 
                               setInfoFlight(flight); 
                             }}
-                            className="w-8 h-8 shrink-0 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors shadow-sm border border-sky-100"
+                            // 🎯 Bouton rendu transparent (bg-transparent) avec un contour subtil qui s'allume au survol
+                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-all border border-slate-200"
                             title="Plus d'informations sur ce vol"
                           >
                             <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
