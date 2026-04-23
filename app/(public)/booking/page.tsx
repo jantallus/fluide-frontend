@@ -106,9 +106,12 @@ export default function ReserverPage() {
       // 🔓 3. La popup se ferme : on débloque le défilement de la page
       document.body.style.overflow = '';
       
-      // 4. On retourne exactement là où on était
+      // 4. On retourne exactement là où on était (Micro-délai ajouté ici !)
       if (savedScrollPos.current > 0) {
-        window.scrollTo({ top: savedScrollPos.current, behavior: 'smooth' });
+        const targetPos = savedScrollPos.current;
+        setTimeout(() => {
+          window.scrollTo({ top: targetPos, behavior: 'smooth' });
+        }, 50); // On laisse 50ms au navigateur pour détruire la popup proprement
         savedScrollPos.current = 0; 
       }
     }
@@ -1409,7 +1412,10 @@ export default function ReserverPage() {
                 </div>
               </div>
               
-              <button onClick={() => setInfoFlight(null)} className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }} 
+                className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0 active:scale-[0.98]"
+              >
                 J'ai compris
               </button>
             </div>
