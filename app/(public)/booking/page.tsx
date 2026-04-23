@@ -1336,28 +1336,44 @@ export default function ReserverPage() {
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
-          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-            {infoFlight.image_url && (
-              <div className="h-40 w-full bg-cover bg-center" style={{ backgroundImage: `url(${infoFlight.image_url})` }} />
-            )}
-            <div className="p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black uppercase italic text-slate-900">À propos de ce vol</h3>
-                <button onClick={() => setInfoFlight(null)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>
-              </div>
+          
+          {/* 🎯 1. La popup a maintenant une hauteur maximale (max-h-[90vh]) et une structure en colonne */}
+          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            
+            {/* 🎯 2. L'en-tête (Fixe en haut) */}
+            <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-center border-b border-slate-100">
+              <h3 className="text-2xl font-black uppercase italic text-slate-900">À propos de ce vol</h3>
+              <button onClick={() => setInfoFlight(null)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0">✕</button>
+            </div>
+            
+            {/* 🎯 3. Le contenu (Avec défilement interne activé via overflow-y-auto) */}
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar relative">
               
-              <div className="prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                {infoFlight.popup_content && infoFlight.popup_content.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => 
-                  part.startsWith('**') && part.endsWith('**') 
-                    ? <strong key={i} className="font-black text-slate-900">{part.slice(2, -2)}</strong> 
-                    : part
+              <div className="relative prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-100 overflow-hidden shadow-inner">
+                
+                {/* 🎯 4. Le filigrane ultra-léger (10% d'opacité) placé en arrière-plan du texte */}
+                {infoFlight.image_url && (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" 
+                    style={{ backgroundImage: `url(${infoFlight.image_url})` }} 
+                  />
                 )}
+                
+                {/* Le texte formaté par-dessus le filigrane */}
+                <div className="relative z-10 text-base">
+                  {infoFlight.popup_content && infoFlight.popup_content.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => 
+                    part.startsWith('**') && part.endsWith('**') 
+                      ? <strong key={i} className="font-black text-slate-900">{part.slice(2, -2)}</strong> 
+                      : part
+                  )}
+                </div>
               </div>
               
-              <button onClick={() => setInfoFlight(null)} className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md">
+              <button onClick={() => setInfoFlight(null)} className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0">
                 J'ai compris
               </button>
             </div>
+
           </div>
         </div>
       )}
