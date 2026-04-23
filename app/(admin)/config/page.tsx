@@ -13,7 +13,7 @@ export default function ConfigPage() {
   const [flights, setFlights] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
-  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: false });
+  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: false, popup_content: '', show_popup: false });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -134,9 +134,9 @@ export default function ConfigPage() {
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">🛍️ Boutique Bons Cadeaux</h2>
             <button onClick={() => { 
                 setEditingTemplateId(null); 
-                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: true }); 
+                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: true, popup_content: '', show_popup: false }); 
                 setShowTemplateModal(true); 
-              }} 
+              }}
               className="bg-amber-500 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
             >
               + Créer un Modèle
@@ -163,7 +163,7 @@ export default function ConfigPage() {
                   <div className="flex flex-col gap-2">
                     <button onClick={() => {
                         setEditingTemplateId(tpl.id);
-                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '', pdf_background_url: tpl.pdf_background_url || '' });
+                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '', pdf_background_url: tpl.pdf_background_url || '', popup_content: tpl.popup_content || '', show_popup: tpl.show_popup || false });
                         setShowTemplateModal(true);
                       }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">✏️ Modifier</button>
                     <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors">🗑️ Supprimer</button>
@@ -467,6 +467,34 @@ export default function ConfigPage() {
                     )}
                   </div>
                   
+                </div>
+
+                {/* 🎯 NOUVEAU : GESTION DE LA POPUP D'INFORMATION */}
+                <div className="mt-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
+                  <label className="flex items-center gap-3 cursor-pointer mb-2">
+                    <input 
+                      type="checkbox" 
+                      className="w-5 h-5 accent-sky-500 rounded"
+                      checked={newTemplate.show_popup}
+                      onChange={e => setNewTemplate({...newTemplate, show_popup: e.target.checked})}
+                    />
+                    <span className="font-bold text-sky-900 text-xs">Activer le bouton "i" (Informations détaillées)</span>
+                  </label>
+
+                  {newTemplate.show_popup && (
+                    <div className="mt-3">
+                      <label className="text-[10px] font-black uppercase text-sky-600/70 ml-2">Contenu de la Popup</label>
+                      <textarea 
+                        className="w-full bg-white border-2 border-sky-100 rounded-2xl p-4 font-medium text-sm h-32 focus:border-sky-400 outline-none text-slate-700 mt-1"
+                        placeholder="Explications sur ce bon cadeau...\nLe code sera utilisable sur **toutes nos prestations**."
+                        value={newTemplate.popup_content}
+                        onChange={e => setNewTemplate({...newTemplate, popup_content: e.target.value})}
+                      />
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight ml-2">
+                        💡 Astuce : Entourez un mot avec deux étoiles pour le mettre en gras. Exemple : <span className="font-bold text-slate-600">**haute saison**</span>.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer bg-slate-50 p-4 rounded-2xl border border-slate-100">
