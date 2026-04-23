@@ -92,17 +92,31 @@ export default function ReserverPage() {
     }
   }, [step]);
 
-// 🎯 NOUVEAU : Moteur de défilement intelligent pour la Popup Info
+// 🎯 NOUVEAU : Moteur de défilement intelligent + Blocage de l'arrière-plan
   useEffect(() => {
     if (infoFlight) {
-      // 1. La popup s'ouvre : on mémorise où on est, et on remonte tout en haut !
+      // 1. On mémorise et on remonte tout en haut
       savedScrollPos.current = window.scrollY;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (savedScrollPos.current > 0) {
-      // 2. La popup se ferme : on retourne exactement là où on était !
-      window.scrollTo({ top: savedScrollPos.current, behavior: 'smooth' });
-      savedScrollPos.current = 0; // On réinitialise la mémoire
+      
+      // 🔒 2. LE SECRET : On fige totalement la page en arrière-plan !
+      document.body.style.overflow = 'hidden';
+      
+    } else {
+      // 🔓 3. La popup se ferme : on débloque le défilement de la page
+      document.body.style.overflow = '';
+      
+      // 4. On retourne exactement là où on était
+      if (savedScrollPos.current > 0) {
+        window.scrollTo({ top: savedScrollPos.current, behavior: 'smooth' });
+        savedScrollPos.current = 0; 
+      }
     }
+
+    // 🛡️ Sécurité : Si le client quitte la page brusquement, on s'assure de débloquer le scroll
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [infoFlight]);
 
   const [isLoading, setIsLoading] = useState(true);
