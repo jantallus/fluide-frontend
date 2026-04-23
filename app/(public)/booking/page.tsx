@@ -61,6 +61,7 @@ export default function ReserverPage() {
   const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
+  const [infoFlight, setInfoFlight] = useState<any>(null); // 🎯 Mémoire pour la popup d'infos du vol
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
   // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
@@ -825,7 +826,21 @@ export default function ReserverPage() {
                     )}
 
                     <div>
-                      <h3 className="text-2xl font-black uppercase italic text-slate-900 mb-3">{flight.name}</h3>
+                      <div className="flex justify-between items-start mb-3 gap-2">
+                        <h3 className="text-2xl font-black uppercase italic text-slate-900">{flight.name}</h3>
+                        {flight.show_popup && flight.popup_content && (
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); // Évite de cliquer sur la carte et de changer d'étape
+                              setInfoFlight(flight); 
+                            }}
+                            className="w-8 h-8 shrink-0 rounded-full bg-sky-50 text-sky-600 font-black text-sm flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors shadow-sm border border-sky-100"
+                            title="Plus d'informations sur ce vol"
+                          >
+                            i
+                          </button>
+                        )}
+                      </div>
                       <div className="flex gap-3 text-sm font-bold text-slate-500 mb-6">
                         <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{getMarketingInfo(flight.name)}</span>
                         <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
@@ -1309,6 +1324,30 @@ export default function ReserverPage() {
               )}
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
+      {infoFlight && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
+          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            {infoFlight.image_url && (
+              <div className="h-40 w-full bg-cover bg-center" style={{ backgroundImage: `url(${infoFlight.image_url})` }} />
+            )}
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-black uppercase italic text-slate-900">À propos de ce vol</h3>
+                <button onClick={() => setInfoFlight(null)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>
+              </div>
+              
+              <div className="prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                {infoFlight.popup_content}
+              </div>
+              
+              <button onClick={() => setInfoFlight(null)} className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md">
+                J'ai compris
+              </button>
+            </div>
           </div>
         </div>
       )}

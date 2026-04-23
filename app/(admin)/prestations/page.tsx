@@ -27,7 +27,9 @@ export default function PrestationsPage() {
     weight_max: 110,
     allow_multi_slots: false,
     booking_delay_hours: 1,
-    image_url: ''
+    image_url: '',
+    popup_content: '',
+    show_popup: false
   });
 
   const loadData = async () => {
@@ -101,6 +103,8 @@ export default function PrestationsPage() {
       allow_multi_slots: f.allow_multi_slots || false,
       booking_delay_hours: f.booking_delay_hours !== undefined && f.booking_delay_hours !== null ? f.booking_delay_hours : 1,
       image_url: f.image_url || '',
+      popup_content: f.popup_content || '', 
+      show_popup: f.show_popup || false  
     });
     setShowModal(true);
   };
@@ -120,7 +124,9 @@ export default function PrestationsPage() {
       weight_max: 110,
       allow_multi_slots: false,
       booking_delay_hours: 1, 
-      image_url: '' 
+      image_url: '',
+      popup_content: '',
+      show_popup: false
     });
     setShowModal(true);
   };
@@ -332,6 +338,31 @@ export default function PrestationsPage() {
                   <input type="checkbox" className="w-5 h-5 accent-violet-500 rounded" checked={formData.allow_multi_slots} onChange={e => setFormData({...formData, allow_multi_slots: e.target.checked})} />
                   <span className="font-bold text-violet-900 text-xs leading-tight">Autoriser l'étalement sur plusieurs créneaux</span>
                 </label>
+
+                {/* 🎯 NOUVEAU : GESTION DE LA POPUP D'INFORMATION */}
+                <div className="mt-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
+                  <label className="flex items-center gap-3 cursor-pointer mb-2">
+                    <input 
+                      type="checkbox" 
+                      className="w-5 h-5 accent-sky-500 rounded"
+                      checked={formData.show_popup}
+                      onChange={e => setFormData({...formData, show_popup: e.target.checked})}
+                    />
+                    <span className="font-bold text-sky-900 text-xs">Activer le bouton "i" (Informations détaillées)</span>
+                  </label>
+
+                  {formData.show_popup && (
+                    <div className="mt-3">
+                      <label className="text-[10px] font-black uppercase text-sky-600/70 ml-2">Contenu de la Popup (Point de RDV, vêtements...)</label>
+                      <textarea 
+                        className="w-full bg-white border-2 border-sky-100 rounded-2xl p-4 font-medium text-sm h-32 focus:border-sky-400 outline-none text-slate-700 mt-1"
+                        placeholder="Rendez-vous au télésiège...\nPrévoyez des chaussures de marche..."
+                        value={formData.popup_content}
+                        onChange={e => setFormData({...formData, popup_content: e.target.value})}
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl mt-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
