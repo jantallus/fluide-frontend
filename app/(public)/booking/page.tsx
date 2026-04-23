@@ -1364,7 +1364,7 @@ export default function ReserverPage() {
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
           
           {/* 🎯 1. La popup a maintenant une hauteur maximale (max-h-[90vh]) et une structure en colonne */}
           <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
