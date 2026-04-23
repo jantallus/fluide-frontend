@@ -828,16 +828,18 @@ export default function ReserverPage() {
                     <div>
                       <div className="flex justify-between items-start mb-3 gap-2">
                         <h3 className="text-2xl font-black uppercase italic text-slate-900">{flight.name}</h3>
+                        
+                        {/* On n'affiche le bouton 'i' que si vous l'avez activé et rempli dans le backoffice ! */}
                         {flight.show_popup && flight.popup_content && (
                           <button
                             onClick={(e) => { 
-                              e.stopPropagation(); // Évite de cliquer sur la carte et de changer d'étape
+                              e.stopPropagation(); // Évite de cliquer sur la carte et de passer à l'étape suivante par erreur
                               setInfoFlight(flight); 
                             }}
-                            className="w-8 h-8 shrink-0 rounded-full bg-sky-50 text-sky-600 font-black text-sm flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors shadow-sm border border-sky-100"
+                            className="w-8 h-8 shrink-0 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors shadow-sm border border-sky-100"
                             title="Plus d'informations sur ce vol"
                           >
-                            i
+                            <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                           </button>
                         )}
                       </div>
@@ -1341,7 +1343,11 @@ export default function ReserverPage() {
               </div>
               
               <div className="prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                {infoFlight.popup_content}
+                {infoFlight.popup_content && infoFlight.popup_content.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => 
+                  part.startsWith('**') && part.endsWith('**') 
+                    ? <strong key={i} className="font-black text-slate-900">{part.slice(2, -2)}</strong> 
+                    : part
+                )}
               </div>
               
               <button onClick={() => setInfoFlight(null)} className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md">

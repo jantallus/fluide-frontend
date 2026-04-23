@@ -356,10 +356,13 @@ export default function PrestationsPage() {
                       <label className="text-[10px] font-black uppercase text-sky-600/70 ml-2">Contenu de la Popup (Point de RDV, vêtements...)</label>
                       <textarea 
                         className="w-full bg-white border-2 border-sky-100 rounded-2xl p-4 font-medium text-sm h-32 focus:border-sky-400 outline-none text-slate-700 mt-1"
-                        placeholder="Rendez-vous au télésiège...\nPrévoyez des chaussures de marche..."
+                        placeholder="Rendez-vous au télésiège...\nPrévoyez des **chaussures fermées**..."
                         value={formData.popup_content}
                         onChange={e => setFormData({...formData, popup_content: e.target.value})}
                       />
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight ml-2">
+                        💡 Astuce : Entourez un mot avec deux étoiles pour le mettre en gras. Exemple : <span className="font-bold text-slate-600">**lunettes de soleil**</span>.
+                      </p>
                     </div>
                   )}
                 </div>
