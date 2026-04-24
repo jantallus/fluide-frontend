@@ -121,6 +121,9 @@ export default function ClientsPage() {
   const [tempPayMethod2, setTempPayMethod2] = useState<string>("");
   const [tempPayAmount2, setTempPayAmount2] = useState<number>(0);
   const [tempGcId, setTempGcId] = useState<number | null>(null); // Pour désactiver le bon cadeau après usage
+  // 🎯 NOUVEAU : Mémoires pour les options (photos, vidéos...)
+  const [complements, setComplements] = useState<any[]>([]);
+  const [tempAddedOptions, setTempAddedOptions] = useState<any[]>([]);
   
   const [giftCards, setGiftCards] = useState<any[]>([]);
 
@@ -168,7 +171,13 @@ export default function ClientsPage() {
         part2 = ` + ${tempPayMethod2} - ${tempPayAmount2}€`;
       }
 
-      newPaymentStatus = `Payé sur place (${part1}${part2})`;
+      // 🎯 On ajoute le nom des options au texte du paiement pour la comptabilité
+      let optionsText = "";
+      if (tempAddedOptions.length > 0) {
+        optionsText = ` + ${tempAddedOptions.map(o => o.name).join(', ')}`;
+      }
+
+      newPaymentStatus = `Payé sur place (${part1}${part2})${optionsText}`;
       payload.payment_status = newPaymentStatus;
     }
     
@@ -221,16 +230,18 @@ export default function ClientsPage() {
  useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resC, resM, resF, resG] = await Promise.all([
+        const [resC, resM, resF, resG, resComp] = await Promise.all([
           apiFetch('/api/clients'),
           apiFetch('/api/monitors'),
           apiFetch('/api/flight-types'),
-          apiFetch('/api/gift-cards') 
+          apiFetch('/api/gift-cards'),
+          apiFetch('/api/complements') // 🎯 On charge les options
         ]);
         if (resC.ok) setClients(await resC.json());
         if (resM.ok) setMonitors(await resM.json());
         if (resF.ok) setFlightTypes(await resF.json());
         if (resG.ok) setGiftCards(await resG.json()); 
+        if (resComp.ok) setComplements(await resComp.json());
       } catch (err) { console.error("Erreur chargement:", err); }
     };
     fetchData();
@@ -404,117 +415,167 @@ export default function ClientsPage() {
   const renderClientTable = (title: string, clientsList: any[], icon: string, bgColor: string, textColor: string) => {
     
     // 🎯 NOUVEAU : L'interface de paiement intelligente (Calculatrice auto)
-    const renderPaymentEditor = (f: any, c: any) => (
-      <div className="space-y-2 w-full min-w-[220px]" onClick={e => e.stopPropagation()}>
-        <div className="flex gap-2">
-          <select
-            value={tempPayMethod}
-            onChange={e => {
-              setTempPayMethod(e.target.value);
-              if (e.target.value !== 'Bon Cadeau' && e.target.value !== 'Promo') {
-                setTempPayCode("");
-                setTempGcId(null);
-                setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
-                setTempPayMethod2("");
-                setTempPayAmount2(0);
-              }
-            }}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs outline-none focus:border-sky-500"
-          >
-            <option value="CB">💳 CB</option>
-            <option value="Espèces">💶 Espèces</option>
-            <option value="Chèque">📝 Chèque</option>
-            <option value="ANCV">🎫 ANCV</option>
-            <option value="Bon Cadeau">🎁 Bon Cadeau</option>
-            <option value="Promo">🏷️ Code Promo</option>
-          </select>
+    // 🎯 L'interface de paiement intelligente (Calculatrice auto avec Options)
+    const renderPaymentEditor = (f: any, c: any) => {
+      // Calcul du prix de base : Prix du vol + Prix des options cochées
+      const flightPrice = f.price_cents ? f.price_cents / 100 : 0;
+      const optionsPrice = tempAddedOptions.reduce((sum, o) => sum + (o.price_cents / 100), 0);
+      const basePrice = flightPrice + optionsPrice;
 
-          <input
-            type="number"
-            value={tempPayAmount}
-            onChange={e => setTempPayAmount(Number(e.target.value))}
-            className="w-16 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs text-center outline-none focus:border-sky-500"
-          />
-        </div>
+      // Fonction intelligente quand on coche/décoche une option
+      const handleOptionToggle = (comp: any, isChecked: boolean) => {
+        const newOptions = isChecked ? [...tempAddedOptions, comp] : tempAddedOptions.filter(o => o.id !== comp.id);
+        setTempAddedOptions(newOptions);
+        
+        const newBasePrice = flightPrice + newOptions.reduce((sum, o) => sum + (o.price_cents / 100), 0);
 
-        {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
-          <select
-            value={tempPayCode}
-            onChange={e => {
-              const code = e.target.value;
-              setTempPayCode(code);
-              const gc = giftCards.find((g: any) => g.code === code);
-              const flightPrice = f.price_cents ? f.price_cents / 100 : 0;
-              
-              if (gc) {
-                setTempGcId(gc.id);
-                let discount = 0;
-                if (gc.type === 'gift_card') discount = gc.price_paid_cents / 100;
-                else if (gc.type === 'promo') {
-                  if (gc.discount_type === 'fixed') discount = gc.discount_value;
-                  else if (gc.discount_type === 'percentage') discount = flightPrice * (gc.discount_value / 100);
-                }
-                const covered = Math.min(flightPrice, discount);
-                const remainder = flightPrice - covered;
+        // Si un Bon ou une Promo est déjà sélectionné, on recalcule la répartition !
+        if (tempGcId && tempPayCode && (tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo')) {
+          const gc = giftCards.find((g: any) => g.code === tempPayCode);
+          if (gc) {
+            let discount = gc.type === 'gift_card' ? gc.price_paid_cents / 100 : (gc.discount_type === 'fixed' ? gc.discount_value : newBasePrice * (gc.discount_value / 100));
+            const covered = Math.min(newBasePrice, discount);
+            setTempPayAmount(covered);
+            if (newBasePrice - covered > 0) {
+              setTempPayMethod2(tempPayMethod2 || "CB");
+              setTempPayAmount2(newBasePrice - covered);
+            } else {
+              setTempPayMethod2("");
+              setTempPayAmount2(0);
+            }
+          }
+        } else {
+          setTempPayAmount(newBasePrice);
+        }
+      };
 
-                setTempPayAmount(covered); 
-                
-                if (remainder > 0) {
-                  setTempPayMethod2("CB");
-                  setTempPayAmount2(remainder);
-                } else {
+      return (
+        <div className="space-y-2 w-full min-w-[220px]" onClick={e => e.stopPropagation()}>
+          
+          {/* 🎯 Les Options (Compléments) */}
+          {complements.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+              <span className="w-full text-[9px] font-black uppercase text-slate-400 mb-1">Options ajoutées sur place :</span>
+              {complements.map(comp => {
+                const isSelected = tempAddedOptions.some(o => o.id === comp.id);
+                return (
+                  <label key={comp.id} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border cursor-pointer text-[10px] font-bold transition-all ${isSelected ? 'bg-emerald-100 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}>
+                    <input type="checkbox" className="hidden" checked={isSelected} onChange={(e) => handleOptionToggle(comp, e.target.checked)} />
+                    {isSelected ? '✅' : '➕'} {comp.name} (+{comp.price_cents / 100}€)
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <select
+              value={tempPayMethod}
+              onChange={e => {
+                setTempPayMethod(e.target.value);
+                if (e.target.value !== 'Bon Cadeau' && e.target.value !== 'Promo') {
+                  setTempPayCode("");
+                  setTempGcId(null);
+                  setTempPayAmount(basePrice);
                   setTempPayMethod2("");
                   setTempPayAmount2(0);
                 }
-              } else {
-                setTempGcId(null);
-                setTempPayAmount(flightPrice);
-                setTempPayMethod2("");
-                setTempPayAmount2(0);
-              }
-            }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-[10px] text-slate-700 outline-none focus:border-sky-500"
-          >
-            <option value="">Sélectionner le code...</option>
-            {giftCards
-              // 🎯 On n'affiche que les Bons Cadeaux si "Bon Cadeau" est choisi, et que les Promos si "Promo" est choisi !
-              .filter((gc: any) => gc.status === 'valid' && (tempPayMethod === 'Bon Cadeau' ? gc.type === 'gift_card' : gc.type === 'promo'))
-              .map((gc: any) => (
-                <option key={gc.id} value={gc.code}>
-                  {gc.code} {gc.buyer_name ? `(${gc.buyer_name})` : ''} {gc.type === 'gift_card' ? `- ${(gc.price_paid_cents/100).toFixed(0)}€` : ''}
-                </option>
-              ))
-            }
-          </select>
-        )}
-
-        {tempPayMethod2 && (
-          <div className="flex gap-2 items-center mt-2 p-2 bg-rose-50 rounded-lg border border-rose-100 shadow-sm">
-            <span className="text-[10px] font-black uppercase text-rose-500 w-12 leading-tight">Reste à payer</span>
-            <select
-              value={tempPayMethod2}
-              onChange={e => setTempPayMethod2(e.target.value)}
-              className="flex-1 bg-white border border-rose-200 rounded-lg p-2 font-bold text-xs outline-none"
+              }}
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs outline-none focus:border-sky-500"
             >
               <option value="CB">💳 CB</option>
               <option value="Espèces">💶 Espèces</option>
               <option value="Chèque">📝 Chèque</option>
               <option value="ANCV">🎫 ANCV</option>
+              <option value="Bon Cadeau">🎁 Bon Cadeau</option>
+              <option value="Promo">🏷️ Code Promo</option>
             </select>
+
             <input
               type="number"
-              value={tempPayAmount2}
-              onChange={e => setTempPayAmount2(Number(e.target.value))}
-              className="w-16 bg-white border border-rose-200 rounded-lg p-2 font-bold text-xs text-center outline-none"
+              value={tempPayAmount}
+              onChange={e => setTempPayAmount(Number(e.target.value))}
+              className="w-16 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs text-center outline-none focus:border-sky-500"
             />
           </div>
-        )}
 
-        <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full mt-2 bg-emerald-500 text-white py-2.5 rounded-lg font-black text-[10px] uppercase shadow-md hover:bg-emerald-600 hover:-translate-y-0.5 transition-all">
-          ENCAISSER
-        </button>
-      </div>
-    );
+          {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
+            <select
+              value={tempPayCode}
+              onChange={e => {
+                const code = e.target.value;
+                setTempPayCode(code);
+                const gc = giftCards.find((g: any) => g.code === code);
+                
+                if (gc) {
+                  setTempGcId(gc.id);
+                  let discount = 0;
+                  if (gc.type === 'gift_card') discount = gc.price_paid_cents / 100;
+                  else if (gc.type === 'promo') {
+                    if (gc.discount_type === 'fixed') discount = gc.discount_value;
+                    else if (gc.discount_type === 'percentage') discount = basePrice * (gc.discount_value / 100);
+                  }
+                  const covered = Math.min(basePrice, discount);
+                  const remainder = basePrice - covered;
+
+                  setTempPayAmount(covered); 
+                  
+                  if (remainder > 0) {
+                    setTempPayMethod2(tempPayMethod2 || "CB");
+                    setTempPayAmount2(remainder);
+                  } else {
+                    setTempPayMethod2("");
+                    setTempPayAmount2(0);
+                  }
+                } else {
+                  setTempGcId(null);
+                  setTempPayAmount(basePrice);
+                  setTempPayMethod2("");
+                  setTempPayAmount2(0);
+                }
+              }}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-[10px] text-slate-700 outline-none focus:border-sky-500"
+            >
+              <option value="">Sélectionner le code...</option>
+              {giftCards
+                .filter((gc: any) => gc.status === 'valid' && (tempPayMethod === 'Bon Cadeau' ? gc.type === 'gift_card' : gc.type === 'promo'))
+                .map((gc: any) => (
+                  <option key={gc.id} value={gc.code}>
+                    {gc.code} {gc.buyer_name ? `(${gc.buyer_name})` : ''} {gc.type === 'gift_card' ? `- ${(gc.price_paid_cents/100).toFixed(0)}€` : ''}
+                  </option>
+                ))
+              }
+            </select>
+          )}
+
+          {tempPayMethod2 && (
+            <div className="flex gap-2 items-center mt-2 p-2 bg-rose-50 rounded-lg border border-rose-100 shadow-sm">
+              <span className="text-[10px] font-black uppercase text-rose-500 w-12 leading-tight">Reste à payer</span>
+              <select
+                value={tempPayMethod2}
+                onChange={e => setTempPayMethod2(e.target.value)}
+                className="flex-1 bg-white border border-rose-200 rounded-lg p-2 font-bold text-xs outline-none"
+              >
+                <option value="CB">💳 CB</option>
+                <option value="Espèces">💶 Espèces</option>
+                <option value="Chèque">📝 Chèque</option>
+                <option value="ANCV">🎫 ANCV</option>
+              </select>
+              <input
+                type="number"
+                value={tempPayAmount2}
+                onChange={e => setTempPayAmount2(Number(e.target.value))}
+                className="w-16 bg-white border border-rose-200 rounded-lg p-2 font-bold text-xs text-center outline-none"
+              />
+            </div>
+          )}
+
+          <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full mt-2 bg-emerald-500 text-white py-2.5 rounded-lg font-black text-[10px] uppercase shadow-md hover:bg-emerald-600 hover:-translate-y-0.5 transition-all">
+            ENCAISSER
+          </button>
+        </div>
+      );
+    };
 
     return (
       <div className="mb-12">
@@ -582,6 +643,7 @@ export default function ClientsPage() {
                                     setTempPayMethod2("");
                                     setTempPayAmount2(0);
                                     setTempGcId(null);
+                                    setTempAddedOptions([]); // 🎯 On vide les options
                                     setEditingSlotId(f.id);
                                     setEditType('payment');
                                   } }}>
@@ -681,6 +743,10 @@ export default function ClientsPage() {
                           setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
                           setTempPayMethod("CB");
                           setTempPayCode("");
+                          setTempPayMethod2("");     // 🎯 On vide le 2ème moyen de paiement
+                          setTempPayAmount2(0);      // 🎯 On vide le montant du reste à payer
+                          setTempGcId(null);         // 🎯 On désélectionne le bon cadeau
+                          setTempAddedOptions([]);   // 🎯 On vide les options photos/vidéos
                           setEditingSlotId(f.id);
                           setEditType('payment');
                         } }}>
