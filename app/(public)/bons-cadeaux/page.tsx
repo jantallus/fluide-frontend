@@ -14,6 +14,9 @@ export default function CadeauPage() {
   const [shippingSettings, setShippingSettings] = useState({ enabled: false, price: 0 });
   const [wantsShipping, setWantsShipping] = useState(false);
   const [address, setAddress] = useState({ street: '', zip: '', city: '' });
+  // 🎯 NOUVEAU : Gestion des options additionnelles
+  const [complements, setComplements] = useState<any[]>([]);
+  const [selectedComplements, setSelectedComplements] = useState<any[]>([]);
 
   const [infoTemplate, setInfoTemplate] = useState<any>(null); // 🎯 Mémoire pour la popup
   const savedScrollPos = React.useRef(0); // 🎯 Mémoire pour le défilement
@@ -50,6 +53,11 @@ export default function CadeauPage() {
             enabled: s.physical_gift_card_enabled === 'true',
             price: parseInt(s.physical_gift_card_price) || 0
           });
+        }
+        // 🎯 3. On charge les options additionnelles (Photos, etc.)
+        const compRes = await fetch(`${apiUrl}/api/complements`);
+        if (compRes.ok) {
+          setComplements(await compRes.json());
         }
       } catch (err) {
         console.error("Erreur chargement boutique", err);
@@ -115,8 +123,8 @@ export default function CadeauPage() {
       const payload = { 
         template: selectedTemplate, 
         buyer,
-        // On attache l'adresse si demandée
-        physicalShipping: wantsShipping ? { enabled: true, address: `${address.street}, ${address.zip} ${address.city}` } : null
+        physicalShipping: wantsShipping ? { enabled: true, address: `${address.street}, ${address.zip} ${address.city}` } : null,
+        selectedComplements // 🎯 NOUVEAU : On envoie les options au serveur
       };
 
       const res = await fetch(`${apiUrl}/api/public/checkout-gift-card`, {
@@ -143,8 +151,10 @@ export default function CadeauPage() {
   };
 
   const inputStyle = { width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 700, outline: 'none' };
+  
   // Calcul du prix total affiché sur le bouton
-  const totalPrice = selectedTemplate ? ((selectedTemplate.price_cents / 100) + (wantsShipping ? shippingSettings.price : 0)) : 0;
+  const optionsPrice = selectedComplements.reduce((sum, c) => sum + (c.price_cents / 100), 0);
+  const totalPrice = selectedTemplate ? ((selectedTemplate.price_cents / 100) + (wantsShipping ? shippingSettings.price : 0) + optionsPrice) : 0;
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden', position: 'relative' }}>
@@ -233,7 +243,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); scrollToForm(); }} className={`bg-white rounded-[35px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${selectedTemplate?.id === tpl.id ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'}`}>
+                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); scrollToForm(); }} className={`bg-white rounded-[35px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${selectedTemplate?.id === tpl.id ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -278,6 +288,30 @@ export default function CadeauPage() {
                 <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Email (Réception du bon)</label><input type="email" placeholder="jean@email.com" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} style={inputStyle} /></div>
                 <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Téléphone</label><input type="tel" placeholder="06 12 34 56 78" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} style={inputStyle} /></div>
               </div>
+              {/* 🎯 NOUVEAU : Les Options additionnelles */}
+              {complements.length > 0 && (
+                <div className="mb-8 p-6 bg-slate-50 border-2 border-slate-100 rounded-[20px] transition-all">
+                  <h4 className="font-black text-slate-700 uppercase tracking-wider mb-4 text-sm">✨ Ajouter des options au bon cadeau</h4>
+                  <div className="flex flex-col gap-3">
+                    {complements.map(comp => {
+                      const isSelected = selectedComplements.some(c => c.id === comp.id);
+                      return (
+                        <label key={comp.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-sky-500 bg-sky-50 shadow-md' : 'border-slate-200 bg-white hover:border-sky-300'}`}>
+                          <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={isSelected} onChange={(e) => {
+                            if (e.target.checked) setSelectedComplements([...selectedComplements, comp]);
+                            else setSelectedComplements(selectedComplements.filter(c => c.id !== comp.id));
+                          }} />
+                          <div className="flex-1">
+                            <span className="font-bold text-slate-800 text-sm md:text-base block mb-0.5">{comp.name}</span>
+                            {comp.description && <span className="text-xs font-medium text-slate-500">{comp.description}</span>}
+                          </div>
+                          <span className="font-black text-sky-600 text-lg">+{comp.price_cents / 100}€</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* 🎯 LA NOUVELLE OPTION POSTALE ! */}
               {shippingSettings.enabled && (
