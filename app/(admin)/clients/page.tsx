@@ -179,14 +179,17 @@ export default function ClientsPage() {
       });
       
       if (res.ok) {
-        // 🎯 NOUVEAU : Si un bon cadeau a été utilisé, on le grille définitivement dans la base de données !
+        // 🎯 NOUVEAU : On grille uniquement si c'est un VRAI Bon Cadeau (On ne touche pas aux Promos !)
         if (editType === 'payment' && tempGcId && tempPayCode) {
-          await apiFetch(`/api/gift-cards/${tempGcId}/status`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'used' })
-          });
-          // On le retire instantanément de la liste déroulante locale pour éviter les doublons
-          setGiftCards(prev => prev.map(g => g.id === tempGcId ? { ...g, status: 'used' } : g));
+          const usedGc = giftCards.find(g => g.id === tempGcId);
+          if (usedGc && usedGc.type === 'gift_card') {
+            await apiFetch(`/api/gift-cards/${tempGcId}/status`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'used' })
+            });
+            // On le retire instantanément de la liste pour éviter les doublons
+            setGiftCards(prev => prev.map(g => g.id === tempGcId ? { ...g, status: 'used' } : g));
+          }
         }
 
         setClients(prev => prev.map(c => {
@@ -474,7 +477,8 @@ export default function ClientsPage() {
           >
             <option value="">Sélectionner le code...</option>
             {giftCards
-              .filter((gc: any) => gc.status === 'valid')
+              // 🎯 On n'affiche que les Bons Cadeaux si "Bon Cadeau" est choisi, et que les Promos si "Promo" est choisi !
+              .filter((gc: any) => gc.status === 'valid' && (tempPayMethod === 'Bon Cadeau' ? gc.type === 'gift_card' : gc.type === 'promo'))
               .map((gc: any) => (
                 <option key={gc.id} value={gc.code}>
                   {gc.code} {gc.buyer_name ? `(${gc.buyer_name})` : ''} {gc.type === 'gift_card' ? `- ${(gc.price_paid_cents/100).toFixed(0)}€` : ''}
@@ -511,7 +515,7 @@ export default function ClientsPage() {
         </button>
       </div>
     );
-    
+
     return (
       <div className="mb-12">
         <div className="flex items-center gap-4 mb-6 ml-4">
@@ -711,50 +715,8 @@ export default function ClientsPage() {
                               <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-emerald-500 text-white px-4 rounded-lg font-black text-xs uppercase">OK</button>
                             </div>
                           ) : (
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap gap-2">
-                                <select 
-                                  value={tempPayMethod} 
-                                  onChange={e => setTempPayMethod(e.target.value)} 
-                                  className="flex-1 border rounded-lg p-2 font-bold text-xs"
-                                >
-                                  <option value="CB">💳 CB</option>
-                                  <option value="Espèces">💶 Espèces</option>
-                                  <option value="Chèque">📝 Chèque</option>
-                                  <option value="ANCV">🎫 ANCV</option>
-                                  <option value="Bon Cadeau">🎁 Bon Cadeau</option>
-                                  <option value="Promo">🏷️ Code Promo</option>
-                                </select>
-
-                                <input 
-                                  type="number" 
-                                  value={tempPayAmount} 
-                                  onChange={e => setTempPayAmount(Number(e.target.value))} 
-                                  className="w-16 border rounded-lg p-2 font-bold text-xs text-center" 
-                                />
-
-                                {(tempPayMethod === 'Bon Cadeau' || tempPayMethod === 'Promo') && (
-                                  <select 
-                                    value={tempPayCode} 
-                                    onChange={e => setTempPayCode(e.target.value)} 
-                                    className="w-full bg-slate-50 border rounded-lg p-2 font-bold text-[10px] text-slate-700"
-                                  >
-                                    <option value="">Sélectionner le code...</option>
-                                    {giftCards
-                                      .filter(gc => gc.status === 'valid')
-                                      .map(gc => (
-                                        <option key={gc.id} value={gc.code}>
-                                          {gc.code} {gc.buyer_name ? `(Offert par ${gc.buyer_name})` : ''}
-                                        </option>
-                                      ))
-                                    }
-                                  </select>
-                                )}
-                              </div>
-                              <button onClick={() => saveQuickEdit(f.id, c.id)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-black text-[9px] uppercase">
-                                Confirmer
-                              </button>
-                            </div>
+                            // 🎯 ON APPELLE NOTRE CALCULATRICE SUR MOBILE AUSSI !
+                            renderPaymentEditor(f, c)
                           )}
                         </div>
                       )}
