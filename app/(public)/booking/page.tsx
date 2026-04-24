@@ -1087,7 +1087,7 @@ export default function ReserverPage() {
                                       <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'bg-sky-100 border-sky-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}>
                                         <div className="flex justify-between items-center mb-4">
                                           <span className={`font-bold text-lg ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>{timeStr}</span>
-                                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-white shadow-sm border ${capacity > 0 ? 'text-emerald-600 border-emerald-100' : 'text-rose-500 border-rose-100'}`}>
+                                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded shadow-sm border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
                                         </div>
