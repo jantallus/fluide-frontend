@@ -753,8 +753,14 @@ export default function ClientsPage() {
                         {renderPaymentBadge(f.payment_status)}
                       </div>
                       {editingSlotId === f.id && (
-                        <div className="absolute inset-0 bg-white/95 z-10 flex flex-col justify-center p-4 rounded-2xl" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-between mb-2"><p className="text-[8px] font-black uppercase text-slate-400">Modifier</p><button onClick={() => setEditingSlotId(null)}>✕</button></div>
+                        // 🎯 CORRECTION : On passe en "relative" pour que la boîte puisse s'agrandir autant que nécessaire vers le bas !
+                        <div className="relative mt-3 bg-white border border-slate-200 z-10 flex flex-col p-4 rounded-2xl shadow-xl animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
+                          <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                            <p className="text-[10px] font-black uppercase text-sky-500">
+                              {editType === 'monitor' ? '👨‍✈️ Assigner un pilote' : '💳 Encaissement'}
+                            </p>
+                            <button onClick={() => setEditingSlotId(null)} className="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-xs hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>
+                          </div>
                           {editType === 'monitor' ? (
                             <div className="flex gap-1">
                               <select 
