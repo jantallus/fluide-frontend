@@ -20,6 +20,7 @@ export default function CadeauPage() {
 
   const [infoTemplate, setInfoTemplate] = useState<any>(null); // 🎯 Mémoire pour la popup
   const savedScrollPos = React.useRef(0); // 🎯 Mémoire pour le défilement
+  const hasAutoScrolled = React.useRef(false); // 🎯 NOUVEAU : Mémoire pour la téléportation
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,19 +65,23 @@ export default function CadeauPage() {
     fetchData();
   }, []);
 
-  // 🎯 MOTEUR DE DÉFILEMENT ROBUSTE (Spécial Multi-rangées)
+  // 🎯 MOTEUR DE DÉFILEMENT ROBUSTE (Uniquement à l'arrivée sur la page)
   useEffect(() => {
-    if (selectedTemplate && !isLoading) {
+    // On ne le déclenche que si on n'a pas encore fait le saut automatique !
+    if (selectedTemplate && !isLoading && !hasAutoScrolled.current) {
+      hasAutoScrolled.current = true; // 🔒 On verrouille pour ne plus jamais le refaire
+      
       const performScroll = () => {
         const formEl = document.getElementById('achat-form');
         if (formEl) {
           const y = formEl.getBoundingClientRect().top + window.scrollY - 60; 
-          window.scrollTo({ top: y, behavior: 'smooth' });
+          // ⚡ MAGIE : 'auto' au lieu de 'smooth'. La page se téléporte instantanément !
+          window.scrollTo({ top: y, behavior: 'auto' });
         }
       };
 
-      // ⚡ TURBO : 150ms suffisent largement au navigateur pour dessiner la grille sans faire attendre le client
-      const timer = setTimeout(performScroll, 150);
+      // ⚡ TURBO MAX : 50ms suffisent car on ne fait plus glisser la page
+      const timer = setTimeout(performScroll, 50);
       return () => clearTimeout(timer);
     }
   }, [selectedTemplate, isLoading]);
