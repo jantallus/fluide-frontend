@@ -154,6 +154,11 @@ export default function ClientsPage() {
     let payload: any = {};
     let newPaymentStatus = "";
     
+    // 🎯 NOUVEAU : On récupère le statut de paiement existant s'il y en a un
+    const clientObj = clients.find(c => c.id === clientId);
+    const flightObj = clientObj?.flights.find((fl: any) => fl.id === slotId);
+    const existingStatus = flightObj?.payment_status || "";
+    
     if (editType === 'monitor') {
       payload.monitor_id = tempMonitorId;
     } else if (editType === 'payment') {
@@ -177,7 +182,20 @@ export default function ClientsPage() {
         optionsText = ` + ${tempAddedOptions.map(o => o.name).join(', ')}`;
       }
 
-      newPaymentStatus = `Payé sur place (${part1}${part2})${optionsText}`;
+      // 🎯 MAGIE : Si c'est déjà payé, on ajoute le complément à la suite !
+      if (existingStatus) {
+        if (tempPayAmount > 0 || tempPayAmount2 > 0 || tempAddedOptions.length > 0) {
+          newPaymentStatus = `${existingStatus} | Ajout : ${part1}${part2}${optionsText}`;
+        } else {
+          // Si on n'a rien ajouté (0€), on ferme sans rien sauvegarder pour éviter les doublons
+          setEditingSlotId(null);
+          setEditType(null);
+          return; 
+        }
+      } else {
+        newPaymentStatus = `Payé sur place (${part1}${part2})${optionsText}`;
+      }
+
       payload.payment_status = newPaymentStatus;
     }
     
@@ -416,8 +434,8 @@ export default function ClientsPage() {
     
     // 🎯 L'interface de paiement intelligente (Calculatrice auto avec Options et Split)
     const renderPaymentEditor = (f: any, c: any) => {
-      // Calcul du prix de base : Prix du vol + Prix des options cochées
-      const flightPrice = f.price_cents ? f.price_cents / 100 : 0;
+      // 🎯 Calcul du prix : Si DÉJÀ PAYÉ, le prix de base est 0. On ne facture que les options !
+      const flightPrice = f.payment_status ? 0 : (f.price_cents ? f.price_cents / 100 : 0);
       const optionsPrice = tempAddedOptions.reduce((sum, o) => sum + (o.price_cents / 100), 0);
       const basePrice = flightPrice + optionsPrice;
 
@@ -653,17 +671,20 @@ export default function ClientsPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-4">
-                                <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
-                                    setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
+                                {/* 🎯 NOUVEAU : Toujours cliquable, même si c'est déjà payé ! */}
+                                <div className="cursor-pointer hover:opacity-80 transition-opacity" onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    // 🎯 NOUVEAU : Si déjà payé, on initialise à 0€. Sinon, prix normal.
+                                    setTempPayAmount(f.payment_status ? 0 : (f.price_cents ? f.price_cents / 100 : 0));
                                     setTempPayMethod("CB");
                                     setTempPayCode(""); 
                                     setTempPayMethod2("");
                                     setTempPayAmount2(0);
                                     setTempGcId(null);
-                                    setTempAddedOptions([]); // 🎯 On vide les options
+                                    setTempAddedOptions([]); 
                                     setEditingSlotId(f.id);
                                     setEditType('payment');
-                                  } }}>
+                                  }}>
                                   {renderPaymentBadge(f.payment_status)}
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }} className="p-2 text-rose-400">🗑️</button>
@@ -756,17 +777,20 @@ export default function ClientsPage() {
                         </div>
                         <button onClick={(e) => { e.stopPropagation(); deleteFlight(f.id, c.id); }} className="text-rose-300">🗑️</button>
                       </div>
-                      <div className={!f.payment_status ? "cursor-pointer" : "cursor-default"} onClick={(e) => { e.stopPropagation(); if (!f.payment_status) {
-                          setTempPayAmount(f.price_cents ? f.price_cents / 100 : 0);
-                          setTempPayMethod("CB");
-                          setTempPayCode("");
-                          setTempPayMethod2("");     // 🎯 On vide le 2ème moyen de paiement
-                          setTempPayAmount2(0);      // 🎯 On vide le montant du reste à payer
-                          setTempGcId(null);         // 🎯 On désélectionne le bon cadeau
-                          setTempAddedOptions([]);   // 🎯 On vide les options photos/vidéos
-                          setEditingSlotId(f.id);
-                          setEditType('payment');
-                        } }}>
+                      {/* 🎯 NOUVEAU : Toujours cliquable, même si c'est déjà payé ! */}
+                                <div className="cursor-pointer hover:opacity-80 transition-opacity" onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    // 🎯 NOUVEAU : Si déjà payé, on initialise à 0€. Sinon, prix normal.
+                                    setTempPayAmount(f.payment_status ? 0 : (f.price_cents ? f.price_cents / 100 : 0));
+                                    setTempPayMethod("CB");
+                                    setTempPayCode(""); 
+                                    setTempPayMethod2("");
+                                    setTempPayAmount2(0);
+                                    setTempGcId(null);
+                                    setTempAddedOptions([]); 
+                                    setEditingSlotId(f.id);
+                                    setEditType('payment');
+                                  }}>
                         {renderPaymentBadge(f.payment_status)}
                       </div>
                       {editingSlotId === f.id && (
