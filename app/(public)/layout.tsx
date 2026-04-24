@@ -47,7 +47,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           60% { transform: translateY(0) scaleX(0.7); opacity: 1; }
           100% { transform: translateY(0) scaleX(1); opacity: 1; }
         }
-        .splash-widget { 
+        {/*.splash-widget { 
           position: fixed; 
           bottom: 30px; 
           left: 20px; 
@@ -72,7 +72,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           line-height: 1.3; 
           margin-top: -20px; 
           text-shadow: 0 1px 3px rgba(0,0,0,0.6); 
-        }
+        }*/}
         .close-x { 
           position: absolute; 
           top: 35px; 
@@ -100,7 +100,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* --- SPLASH WIDGET (Texte complet) --- */}
       {/* 🎯 On coupe aussi le widget sur les autres sites pour éviter de les polluer visuellement */}
-      {hasSplat && !isLogin && !isEmbed && (
+      {/*{hasSplat && !isLogin && !isEmbed && (
         <div className="splash-widget">
           <button className="close-x" onClick={() => setHasSplat(false)}>✕</button>
           <img src="/splash.avif" alt="Splash Fluide" className="img-splash" />
@@ -108,7 +108,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             Chez <span style={{ color: '#f026b8' }}>fluide</span> pilotage et sensations offerts ! <br /><br /> Demandez au pilote !
           </div>
         </div>
-      )}
+      )}*/}
 
       {/* --- CONTENU DE LA PAGE CLIENT --- */}
       <main style={{ flex: 1 }}>
