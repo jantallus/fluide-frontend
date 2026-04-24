@@ -306,22 +306,24 @@ export default function ClientsPage() {
   });
 
   const renderPaymentBadge = (status: string) => {
-    if (!status) return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 block w-fit">🏢 Backoffice</span>;
+    // Si ce n'est pas payé
+    if (!status) return <span className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-slate-200 block w-fit hover:bg-sky-50 hover:text-sky-600 transition-colors">🏢 À ENCAISSER</span>;
     
-    const extractedCode = extractVoucherCode(status);
-
-    if (status.includes('Bon Cadeau')) {
-      return <span className="bg-violet-100 text-violet-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-violet-200 block w-fit">🎁 Bon {extractedCode ? `(${extractedCode})` : ''}</span>;
-    }
+    // 🎯 NOUVEAU : Affichage détaillé du reçu complet (avec tous les moyens et montants)
+    let bgColor = "bg-emerald-50 border-emerald-200 text-emerald-800";
+    let icon = "✅";
     
-    if (status.includes('Promo')) {
-      const code = extractedCode || 'PROMO';
-      return <span className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-emerald-300 block w-fit shadow-sm">🏢 {code}</span>;
-    }
+    // On adapte la couleur selon ce qui est contenu dans le texte
+    if (status.includes('Bon Cadeau')) { bgColor = "bg-violet-50 border-violet-200 text-violet-800"; icon = "🎁"; }
+    else if (status.includes('Promo')) { bgColor = "bg-fuchsia-50 border-fuchsia-200 text-fuchsia-800"; icon = "🏷️"; }
+    else if (status.includes('Partenaire')) { bgColor = "bg-amber-50 border-amber-200 text-amber-800"; icon = "🤝"; }
+    else if (status.includes('À régler')) { bgColor = "bg-rose-50 border-rose-200 text-rose-800"; icon = "⏳"; }
 
-    if (status.includes('CB')) return <span className="bg-sky-100 text-sky-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-sky-200 block w-fit">💳 CB</span>;
-    if (status.includes('ANCV')) return <span className="bg-teal-100 text-teal-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-200 block w-fit">🎫 ANCV</span>;
-    return <span className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest border border-amber-200 block w-fit">🤝 {status}</span>;
+    return (
+      <span className={`px-3 py-2 rounded-xl font-bold text-[9px] uppercase tracking-wider border block w-fit max-w-[280px] whitespace-pre-wrap leading-relaxed shadow-sm ${bgColor}`}>
+        {icon} {status}
+      </span>
+    );
   };
 
   const now = new Date().getTime();
@@ -370,14 +372,20 @@ export default function ClientsPage() {
     } catch (err) { console.error(err); }
   };
 
-  // 🎯 EXPORT EXCEL CORRIGÉ (Force la lecture des accents sur Excel)
+  // 🎯 EXPORT EXCEL CORRIGÉ (Force la lecture des accents sur Excel + Colonnes Séparées)
   const handleExport = () => {
     if (filtered.length === 0) return alert("Rien à exporter !");
     
-    const headers = ["Date", "Client", "Email", "Telephone Passager", "Prestation", "Pilote", "Statut Paiement", "Code (Bon/Promo)", "Acheteur d'origine", "Téléphone Acheteur", "Net à facturer Partenaire"];
+    // 🎯 NOUVEAU : On ajoute des colonnes spécifiques pour la comptabilité
+    const headers = [
+      "Date", "Client", "Email", "Telephone Passager", "Prestation", "Pilote", 
+      "Statut Brut", "CB (€)", "Espèces (€)", "Chèque (€)", "ANCV (€)", "Bons & Promos (€)", 
+      "Code (Bon/Promo)", "Acheteur d'origine", "Téléphone Acheteur", "Net à facturer Partenaire"
+    ];
     
     const rows = filtered.flatMap(c => c.flights.map((f: any) => {
-      const code = extractVoucherCode(f.payment_status);
+      const status = f.payment_status || '';
+      const code = extractVoucherCode(status);
       let buyerName = '';
       let buyerPhone = '';
       let partnerBilling = ''; 
@@ -402,6 +410,33 @@ export default function ClientsPage() {
         }
       }
 
+      // --- 🎯 MOTEUR D'EXTRACTION DES MONTANTS ---
+      let cb = 0, especes = 0, cheque = 0, ancv = 0, bons = 0;
+      // Il cherche le motif "Moyen de paiement - XX€" dans le texte
+      const amountRegex = /(CB|Esp[èe]ces|Ch[èe]que|ANCV|Bon Cadeau|Promo)(?:.*?)-\s*(\d+(?:\.\d+)?)\s*€/gi;
+      let match;
+      let hasExplicitAmounts = false;
+
+      while ((match = amountRegex.exec(status)) !== null) {
+        hasExplicitAmounts = true;
+        const method = match[1].toLowerCase();
+        const amt = parseFloat(match[2]);
+        
+        if (method.includes('cb')) cb += amt;
+        else if (method.includes('esp')) especes += amt;
+        else if (method.includes('ch')) cheque += amt;
+        else if (method.includes('ancv')) ancv += amt;
+        else if (method.includes('cadeau') || method.includes('promo')) bons += amt;
+      }
+
+      // Filet de sécurité : Si c'est un paiement intégral sur le site web sans montant écrit, on devine via le prix du vol
+      if (!hasExplicitAmounts && status) {
+        const flightPrice = (f.price_cents || 0) / 100;
+        if (status === 'Payé (CB en ligne)') cb = flightPrice;
+        else if (status.includes('Payé (Bon Cadeau')) bons = flightPrice;
+        else if (status.includes('Payé (Promo')) bons = flightPrice;
+      }
+
       return [
         new Date(f.start_time).toLocaleDateString('fr-FR'), 
         `${c.last_name} ${c.first_name}`, 
@@ -409,7 +444,12 @@ export default function ClientsPage() {
         c.phone ? `="${c.phone}"` : '', 
         f.flight_name, 
         f.monitor_name, 
-        f.payment_status || 'A régler',
+        status || 'A régler',
+        cb > 0 ? cb : '',           // Colonne CB
+        especes > 0 ? especes : '', // Colonne Espèces
+        cheque > 0 ? cheque : '',   // Colonne Chèque
+        ancv > 0 ? ancv : '',       // Colonne ANCV
+        bons > 0 ? bons : '',       // Colonne Bons & Promos
         code || '',         
         buyerName,          
         buyerPhone,         
@@ -419,7 +459,6 @@ export default function ClientsPage() {
 
     const csvContent = [headers, ...rows].map((e: any[]) => e.map(String).map((v: string) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
     
-    // 🎯 LA CORRECTION EST ICI : Ajout du BOM UTF-8 strict pour forcer Excel à comprendre les accents
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); 
     const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
     
