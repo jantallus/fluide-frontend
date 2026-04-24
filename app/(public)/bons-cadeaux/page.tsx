@@ -66,19 +66,17 @@ export default function CadeauPage() {
 
   // 🎯 MOTEUR DE DÉFILEMENT ROBUSTE (Spécial Multi-rangées)
   useEffect(() => {
-    // On ne lance le scroll que si un modèle est sélectionné ET que le chargement est fini
     if (selectedTemplate && !isLoading) {
       const performScroll = () => {
         const formEl = document.getElementById('achat-form');
         if (formEl) {
-          // On calcule la position réelle par rapport au haut du document
           const y = formEl.getBoundingClientRect().top + window.scrollY - 60; 
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
       };
 
-      // On attend 1 seconde pour être SUR que les 2 rangées de bons sont bien dessinées
-      const timer = setTimeout(performScroll, 1000);
+      // ⚡ TURBO : 150ms suffisent largement au navigateur pour dessiner la grille sans faire attendre le client
+      const timer = setTimeout(performScroll, 150);
       return () => clearTimeout(timer);
     }
   }, [selectedTemplate, isLoading]);
