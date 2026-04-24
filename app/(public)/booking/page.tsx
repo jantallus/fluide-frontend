@@ -63,6 +63,8 @@ export default function ReserverPage() {
   const [step, setStep] = useState<number>(1);
   const [infoFlight, setInfoFlight] = useState<any>(null); // 🎯 Mémoire pour la popup d'infos du vol
   const savedScrollPos = useRef(0); // 🎯 NOUVEAU : Mémoire pour retenir la position de défilement
+  const scrollTimeout = useRef<any>(null); // 🎯 NOUVEAU : Mémoire pour le délai du swipe
+  const isSwipingRef = useRef(false); // 🎯 NOUVEAU : Verrou de sécurité anti-rebond
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
   // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
@@ -325,6 +327,14 @@ export default function ReserverPage() {
     if (step !== 2) return;
 
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
+      
+      // 🛑 SÉCURITÉ SWIPE : Si le client a glissé au doigt, on ne force pas le recentrage !
+      if (isSwipingRef.current) {
+        isSwipingRef.current = false; // On désarme le verrou
+        setIsGridExpanded(true);
+        return; 
+      }
+
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
 
@@ -1010,7 +1020,41 @@ export default function ReserverPage() {
                     {/* 🎯 LA ZONE DES CRÉNEAUX (Unique et Corrigée) */}
                     <div 
                       ref={bodyScrollRef}
-                      onScroll={(e) => { if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; }}
+                      onScroll={(e) => { 
+                        if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
+                        
+                        // 🎯 NOUVEAU : Synchronisation magique du Swipe (Uniquement sur mobile)
+                        if (window.innerWidth < 768) {
+                          clearTimeout(scrollTimeout.current);
+                          scrollTimeout.current = setTimeout(() => {
+                            if (!bodyScrollRef.current) return;
+                            const container = bodyScrollRef.current;
+                            const scrollCenter = container.scrollLeft + (container.clientWidth / 2);
+                            
+                            let closestDate = pickedDate;
+                            let minDistance = Infinity;
+                            
+                            // On cherche quelle carte de jour est la plus proche du centre de l'écran
+                            weekDays.forEach(dateStr => {
+                              const el = document.getElementById(`mobile-col-${dateStr}`);
+                              if (el) {
+                                const elCenter = el.offsetLeft + (el.clientWidth / 2);
+                                const distance = Math.abs(elCenter - scrollCenter);
+                                if (distance < minDistance) {
+                                  minDistance = distance;
+                                  closestDate = dateStr;
+                                }
+                              }
+                            });
+                            
+                            // Si le jour au centre a changé, on met à jour le calendrier silencieusement
+                            if (closestDate !== pickedDate) {
+                              isSwipingRef.current = true; // On active le verrou anti-rebond
+                              setPickedDate(closestDate);
+                            }
+                          }, 150); // Un délai de 150ms pour laisser le doigt finir son mouvement
+                        }
+                      }}
                       className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar opacity-0 md:opacity-100 transition-opacity duration-300"
                     >
                       {weekDays.map((dateStr, i) => {
