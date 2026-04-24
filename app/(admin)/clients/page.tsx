@@ -414,8 +414,7 @@ export default function ClientsPage() {
 
   const renderClientTable = (title: string, clientsList: any[], icon: string, bgColor: string, textColor: string) => {
     
-    // 🎯 NOUVEAU : L'interface de paiement intelligente (Calculatrice auto)
-    // 🎯 L'interface de paiement intelligente (Calculatrice auto avec Options)
+    // 🎯 L'interface de paiement intelligente (Calculatrice auto avec Options et Split)
     const renderPaymentEditor = (f: any, c: any) => {
       // Calcul du prix de base : Prix du vol + Prix des options cochées
       const flightPrice = f.price_cents ? f.price_cents / 100 : 0;
@@ -446,6 +445,8 @@ export default function ClientsPage() {
           }
         } else {
           setTempPayAmount(newBasePrice);
+          setTempPayMethod2("");
+          setTempPayAmount2(0);
         }
       };
 
@@ -494,7 +495,18 @@ export default function ClientsPage() {
             <input
               type="number"
               value={tempPayAmount}
-              onChange={e => setTempPayAmount(Number(e.target.value))}
+              onChange={e => {
+                const val = Number(e.target.value);
+                setTempPayAmount(val);
+                // 🎯 MAGIE : Si on tape un montant inférieur au total, le Reste à payer s'ouvre !
+                if (val < basePrice) {
+                  if (!tempPayMethod2) setTempPayMethod2(tempPayMethod === "CB" ? "Espèces" : "CB");
+                  setTempPayAmount2(Math.max(0, basePrice - val));
+                } else {
+                  setTempPayMethod2("");
+                  setTempPayAmount2(0);
+                }
+              }}
               className="w-16 bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-xs text-center outline-none focus:border-sky-500"
             />
           </div>
@@ -549,7 +561,7 @@ export default function ClientsPage() {
           )}
 
           {tempPayMethod2 && (
-            <div className="flex gap-2 items-center mt-2 p-2 bg-rose-50 rounded-lg border border-rose-100 shadow-sm">
+            <div className="flex gap-2 items-center mt-2 p-2 bg-rose-50 rounded-lg border border-rose-100 shadow-sm relative">
               <span className="text-[10px] font-black uppercase text-rose-500 w-12 leading-tight">Reste à payer</span>
               <select
                 value={tempPayMethod2}
@@ -564,7 +576,12 @@ export default function ClientsPage() {
               <input
                 type="number"
                 value={tempPayAmount2}
-                onChange={e => setTempPayAmount2(Number(e.target.value))}
+                onChange={e => {
+                  const val2 = Number(e.target.value);
+                  setTempPayAmount2(val2);
+                  // 🎯 MAGIE : Si on modifie le reste à payer, le premier paiement s'ajuste !
+                  setTempPayAmount(Math.max(0, basePrice - val2));
+                }}
                 className="w-16 bg-white border border-rose-200 rounded-lg p-2 font-bold text-xs text-center outline-none"
               />
             </div>
