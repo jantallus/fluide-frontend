@@ -39,8 +39,14 @@ export default function CadeauPage() {
             const found = data.find((t: any) => t.id.toString() === targetId);
             if (found) {
               setSelectedTemplate(found);
-              // On scroll en douceur jusqu'au formulaire après 0.5s le temps que la page se dessine
-              setTimeout(() => { document.getElementById('achat-form')?.scrollIntoView({ behavior: 'smooth' }); }, 500);
+              // On utilise notre calcul mathématique pour atterrir parfaitement sur le formulaire
+              setTimeout(() => { 
+                const formEl = document.getElementById('achat-form');
+                if (formEl) {
+                  const y = formEl.getBoundingClientRect().top + window.scrollY - 40;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+              }, 500);
             }
           }
         }
@@ -146,8 +152,16 @@ export default function CadeauPage() {
     }
   };
 
+  // 🎯 NOUVEAU : Fonction de défilement intelligente et précise
   const scrollToForm = () => {
-    setTimeout(() => { document.getElementById('achat-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+    setTimeout(() => { 
+      const formEl = document.getElementById('achat-form');
+      if (formEl) {
+        // Calcule la position exacte du formulaire et retire 40px pour l'esthétique
+        const y = formEl.getBoundingClientRect().top + window.scrollY - 40; 
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 150); // Un léger délai pour s'assurer que le formulaire a bien "poussé" le bas de page
   };
 
   const inputStyle = { width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 700, outline: 'none' };
