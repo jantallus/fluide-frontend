@@ -903,9 +903,10 @@ export default function ReserverPage() {
                         {giftTemplates.find(t => t.price_cents === flight.price_cents) && (
                           <button 
                             onClick={(e) => {
-                              e.stopPropagation(); // ⛔ Empêche d'ouvrir le calendrier
+                              e.stopPropagation(); 
                               const templateId = giftTemplates.find(t => t.price_cents === flight.price_cents).id;
-                              window.location.href = `/bons-cadeaux?templateId=${templateId}`; // 🚀 Go vers la boutique !
+                              // 🎯 NOUVEAU : On envoie le nom du vol dans l'URL !
+                              window.location.href = `/bons-cadeaux?templateId=${templateId}&flightName=${encodeURIComponent(flight.name)}`; 
                             }}
                             className="cursor-pointer bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
                           >

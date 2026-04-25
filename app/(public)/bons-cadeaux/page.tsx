@@ -21,6 +21,7 @@ export default function CadeauPage() {
   const [infoTemplate, setInfoTemplate] = useState<any>(null); // 🎯 Mémoire pour la popup
   const savedScrollPos = React.useRef(0); // 🎯 Mémoire pour le défilement
   const hasAutoScrolled = React.useRef(false); // 🎯 NOUVEAU : Mémoire pour la téléportation
+  const [urlFlightName, setUrlFlightName] = useState<string | null>(null); // 🎯 NOUVEAU : Nom du vol venant de la réservation
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,9 +37,14 @@ export default function CadeauPage() {
           // 🎯 On se contente de sélectionner le modèle, le moteur de scroll fera le reste
           const params = new URLSearchParams(window.location.search);
           const targetId = params.get('templateId');
+          const incomingFlightName = params.get('flightName'); // 🎯 On lit le nom du vol
+
           if (targetId) {
             const found = data.find((t: any) => t.id.toString() === targetId);
-            if (found) setSelectedTemplate(found);
+            if (found) {
+              setSelectedTemplate(found);
+              if (incomingFlightName) setUrlFlightName(incomingFlightName); // 🎯 On le sauvegarde
+            }
           }
         }
 
@@ -269,7 +275,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); scrollToForm(); }} className={`bg-white rounded-[35px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${selectedTemplate?.id === tpl.id ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'}`}>
+                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`bg-white rounded-[35px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${selectedTemplate?.id === tpl.id ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -307,7 +313,9 @@ export default function CadeauPage() {
           {selectedTemplate && (
             <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '30px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)', border: '2px solid #e2e8f0', scrollMarginTop: '100px' }}>
               <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#1e40af', marginBottom: '10px' }}>Personnalisez votre bon</h3>
-              <p style={{ color: '#f026b8', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>{selectedTemplate.title} - {selectedTemplate.price_cents / 100}€</p>
+              <p style={{ color: '#f026b8', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>
+                {urlFlightName ? `Bon ${urlFlightName}` : selectedTemplate.title} - {selectedTemplate.price_cents / 100}€
+              </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                 <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Qui offre ? (Acheteur)</label><input type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={inputStyle} /></div>
