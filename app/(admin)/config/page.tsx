@@ -470,12 +470,14 @@ export default function ConfigPage() {
 
                 {/* 🎯 NOUVEAU : LIGNES PERSONNALISÉES PDF */}
                 <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Texte PDF (Ligne 1 - Optionnel)</label>
-                  <input type="text" maxLength={60} placeholder="Ex: Réservation obligatoire sur notre site web" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm mb-3 outline-none focus:border-indigo-500" value={newTemplate.custom_line_1} onChange={e => setNewTemplate({...newTemplate, custom_line_1: e.target.value})} />
+                  <h4 className="text-sm font-black text-slate-700 mb-2">Texte "VALABLE POUR :" sur le PDF</h4>
+                  <p className="text-[10px] text-slate-500 font-bold mb-3 leading-tight">Si vous remplissez ces cases, ce texte remplacera le nom générique du vol sur le PDF pour donner des détails (Ex: 1 vol Crêt du loup Hiver ou Découverte Été).</p>
+                  
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 1</label>
+                  <input type="text" maxLength={60} placeholder="Ex: 1 vol Crêt du Loup Hiver ou Découverte Été" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm mb-3 outline-none focus:border-indigo-500" value={newTemplate.custom_line_1} onChange={e => setNewTemplate({...newTemplate, custom_line_1: e.target.value})} />
 
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Texte PDF (Ligne 2 - Optionnel)</label>
-                  <input type="text" maxLength={60} placeholder="Ex: Poids max 100kg. Billet non remboursable." className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_2} onChange={e => setNewTemplate({...newTemplate, custom_line_2: e.target.value})} />
-                  <p className="text-[9px] text-slate-400 font-bold ml-2 mt-1">S'affichera en petit tout en bas du bon cadeau PDF (60 caractères max).</p>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 2 (Suite optionnelle)</label>
+                  <input type="text" maxLength={60} placeholder="Ex: Option photos et vidéos incluse" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_2} onChange={e => setNewTemplate({...newTemplate, custom_line_2: e.target.value})} />
                 </div>
 
                 {/* 🎯 NOUVEAU : GESTION DE LA POPUP D'INFORMATION */}
