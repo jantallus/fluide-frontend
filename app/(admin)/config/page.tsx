@@ -13,7 +13,7 @@ export default function ConfigPage() {
   const [flights, setFlights] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
-  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: false, popup_content: '', show_popup: false, custom_line_1: '', custom_line_2: '' });
+  const [newTemplate, setNewTemplate] = useState({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: false, popup_content: '', show_popup: false, custom_line_1: '', custom_line_2: '', custom_line_3: '' });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -134,7 +134,7 @@ export default function ConfigPage() {
             <h2 className="text-xl font-black uppercase italic flex items-center gap-2">🛍️ Boutique Bons Cadeaux</h2>
             <button onClick={() => { 
                 setEditingTemplateId(null); 
-                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: true, popup_content: '', show_popup: false, custom_line_1: '', custom_line_2: '' }); 
+                setNewTemplate({ title: '', description: '', price_cents: '', flight_type_id: '', validity_months: 12, image_url: '', pdf_background_url: '', is_published: true, popup_content: '', show_popup: false, custom_line_1: '', custom_line_2: '', custom_line_3: '' }); 
                 setShowTemplateModal(true); 
               }}
               className="bg-amber-500 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform"
@@ -163,7 +163,7 @@ export default function ConfigPage() {
                   <div className="flex flex-col gap-2">
                     <button onClick={() => {
                         setEditingTemplateId(tpl.id);
-                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '', pdf_background_url: tpl.pdf_background_url || '', popup_content: tpl.popup_content || '', show_popup: tpl.show_popup || false, custom_line_1: tpl.custom_line_1 || '', custom_line_2: tpl.custom_line_2 || '' });
+                        setNewTemplate({ ...tpl, price_cents: (tpl.price_cents / 100).toString(), flight_type_id: tpl.flight_type_id || '', pdf_background_url: tpl.pdf_background_url || '', popup_content: tpl.popup_content || '', show_popup: tpl.show_popup || false, custom_line_1: tpl.custom_line_1 || '', custom_line_2: tpl.custom_line_2 || '', custom_line_3: tpl.custom_line_3 || '' });
                         setShowTemplateModal(true);
                       }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">✏️ Modifier</button>
                     <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors">🗑️ Supprimer</button>
@@ -478,6 +478,9 @@ export default function ConfigPage() {
 
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 2 (Suite optionnelle)</label>
                   <input type="text" maxLength={60} placeholder="Ex: Option photos et vidéos incluse" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_2} onChange={e => setNewTemplate({...newTemplate, custom_line_2: e.target.value})} />
+
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 3 (Suite optionnelle)</label>
+                  <input type="text" maxLength={60} placeholder="Ex: Réservation obligatoire par téléphone" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_3} onChange={e => setNewTemplate({...newTemplate, custom_line_3: e.target.value})} />
                 </div>
 
                 {/* 🎯 NOUVEAU : GESTION DE LA POPUP D'INFORMATION */}
