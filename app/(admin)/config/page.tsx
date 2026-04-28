@@ -474,13 +474,13 @@ export default function ConfigPage() {
                   <p className="text-[10px] text-slate-500 font-bold mb-3 leading-tight">Si vous remplissez ces cases, ce texte remplacera le nom générique du vol sur le PDF pour donner des détails (Ex: 1 vol Crêt du loup Hiver ou Découverte Été).</p>
                   
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 1</label>
-                  <input type="text" maxLength={60} placeholder="Ex: 1 vol Crêt du Loup Hiver ou Découverte Été" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm mb-3 outline-none focus:border-indigo-500" value={newTemplate.custom_line_1} onChange={e => setNewTemplate({...newTemplate, custom_line_1: e.target.value})} />
+                  <input type="text" maxLength={80} placeholder="Ex: 1 vol Crêt du Loup Hiver ou Découverte Été" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm mb-3 outline-none focus:border-indigo-500" value={newTemplate.custom_line_1} onChange={e => setNewTemplate({...newTemplate, custom_line_1: e.target.value})} />
 
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 2 (Suite optionnelle)</label>
-                  <input type="text" maxLength={60} placeholder="Ex: Option photos et vidéos incluse" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_2} onChange={e => setNewTemplate({...newTemplate, custom_line_2: e.target.value})} />
+                  <input type="text" maxLength={80} placeholder="Ex: Option photos et vidéos incluse" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_2} onChange={e => setNewTemplate({...newTemplate, custom_line_2: e.target.value})} />
 
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Ligne 3 (Suite optionnelle)</label>
-                  <input type="text" maxLength={60} placeholder="Ex: Réservation obligatoire par téléphone" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_3} onChange={e => setNewTemplate({...newTemplate, custom_line_3: e.target.value})} />
+                  <input type="text" maxLength={80} placeholder="Ex: Réservation obligatoire par téléphone" className="w-full border-2 border-slate-200 rounded-xl p-3 font-bold bg-white text-sm outline-none focus:border-indigo-500" value={newTemplate.custom_line_3} onChange={e => setNewTemplate({...newTemplate, custom_line_3: e.target.value})} />
                 </div>
 
                 {/* 🎯 NOUVEAU : GESTION DE LA POPUP D'INFORMATION */}
