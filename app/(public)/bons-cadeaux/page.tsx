@@ -111,7 +111,15 @@ export default function CadeauPage() {
     
     if (selectedTemplate && currentHash !== expectedHash) {
       const newUrl = window.location.pathname + window.location.search + expectedHash;
-      window.history.pushState({ personnalisation: true }, '', newUrl);
+      
+      // 🎯 CORRECTION : Si on arrive via le bouton "Offrir" (présence de ?templateId= dans l'URL),
+      // on REMPLACE l'état actuel au lieu d'en rajouter un dans l'historique.
+      // Ainsi, le bouton "Retour" ramènera directement à la page de réservation !
+      if (window.location.search.includes('templateId=')) {
+        window.history.replaceState({ personnalisation: true }, '', newUrl);
+      } else {
+        window.history.pushState({ personnalisation: true }, '', newUrl);
+      }
     }
   }, [selectedTemplate]);
 
