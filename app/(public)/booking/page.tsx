@@ -278,6 +278,15 @@ export default function ReserverPage() {
   useEffect(() => {
     if (step === 3) {
       const newPassengers: any[] = [];
+      
+      // 🎯 1. RECHERCHE ROBUSTE : On cherche l'option peu importe son nom (photo, vidéo, gopro...)
+      const photoOption = complementsList.find(c => 
+        c.name.toLowerCase().includes('photo') || 
+        c.name.toLowerCase().includes('vidéo') || 
+        c.name.toLowerCase().includes('video') || 
+        c.name.toLowerCase().includes('gopro')
+      );
+
       Object.entries(cart).forEach(([key, qty]) => {
         const [fId, dStr, tStr] = key.split('|');
         const flight = flights.find(f => f.id.toString() === fId);
@@ -293,23 +302,45 @@ export default function ReserverPage() {
             firstName: '',
             weightChecked: false,
             selectedComplements: [], 
-            weight_min: flight?.weight_min !== undefined ? flight.weight_min : 20,
-            weight_max: flight?.weight_max !== undefined ? flight.weight_max : 110,
+            weight_min: flight?.weight_min ?? 20,
+            weight_max: flight?.weight_max ?? 110,
           });
         }
       });
+      
       setPassengers(prev => newPassengers.map((nP) => {
         const existing = prev.find(p => p.id === nP.id);
-        if (existing) return { 
+        const flight = flights.find(f => f.id.toString() === nP.flightId);
+        
+        // On récupère ce qui est déjà coché par l'utilisateur
+        let currentComplements = existing ? [...(existing.selectedComplements || [])] : [];
+        
+        // 🎯 2. LA SOURCE UNIQUE DE VÉRITÉ : C'est ici que la magie opère !
+        if (appliedVoucher && appliedVoucher.type === 'gift_card' && photoOption && flight) {
+           // On vérifie que le bon est soit générique, soit lié à ce vol précis
+           const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === nP.flightId;
+           
+           if (isSameFlight) {
+             const vVal = Number(appliedVoucher.price_paid_cents) / 100;
+             const fPri = flight.price_cents / 100;
+             const pPri = photoOption.price_cents / 100;
+
+             // Si la valeur du bon couvre [Vol + Photo] et que la photo n'est pas encore cochée
+             if (vVal >= (fPri + pPri) && !currentComplements.includes(photoOption.id)) {
+               currentComplements.push(photoOption.id);
+             }
+           }
+        }
+
+        return { 
           ...nP, 
-          firstName: existing.firstName, 
-          weightChecked: existing.weightChecked, 
-          selectedComplements: existing.selectedComplements || []
+          firstName: existing?.firstName || '', 
+          weightChecked: existing?.weightChecked || false, 
+          selectedComplements: currentComplements
         };
-        return nP;
       }));
     }
-  }, [step, cart, flights]);
+  }, [step, cart, flights, appliedVoucher, complementsList]);
 
   useEffect(() => {
     if (contact.isPassenger && passengers.length > 0 && contact.firstName) {
@@ -653,6 +684,9 @@ export default function ReserverPage() {
             return;
           }
         }
+
+        // 🎯 ON S'ARRÊTE LÀ ! Le fait de changer cet état va "réveiller" le useEffect plus haut
+        // qui se chargera de cocher la case tout seul comme un grand !
         setAppliedVoucher(data);
         setVoucherInput(''); 
       }
@@ -1292,16 +1326,37 @@ export default function ReserverPage() {
                           <div className="grid gap-3">
                             {complementsList.map((comp: any) => {
                               const isSelected = p.selectedComplements?.includes(comp.id) || false;
+                              
+                              // 🎯 NOUVEAU : On vérifie si cette option est couverte par le bon cadeau
+                              let isLockedByVoucher = false;
+                              const currentFlight = flights.find(f => f.id.toString() === p.flightId);
+                              
+                              if (appliedVoucher && appliedVoucher.type === 'gift_card' && currentFlight) {
+                                const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === p.flightId;
+                                if (isSameFlight) {
+                                  const vVal = Number(appliedVoucher.price_paid_cents) / 100;
+                                  const fPri = currentFlight.price_cents / 100;
+                                  const pPri = comp.price_cents / 100;
+                                  // Si le bon paie le vol + cette option, on verrouille !
+                                  if (vVal >= (fPri + pPri)) {
+                                    isLockedByVoucher = true;
+                                  }
+                                }
+                              }
+
                               return (
                                 <label 
                                   key={comp.id} 
-                                  className={`flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors ${isSelected ? 'bg-sky-50 border-sky-300' : 'bg-slate-50 border-slate-100 hover:border-sky-200'}`}
+                                  // On grise légèrement et on met un curseur "interdit" si c'est verrouillé
+                                  className={`flex items-start gap-3 p-4 rounded-2xl border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed bg-sky-50/50 border-sky-200' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-sky-50 border-sky-300' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100 hover:border-sky-200' : '')}`}
                                 >
                                   <input 
                                     type="checkbox" 
-                                    className="w-6 h-6 mt-0.5 accent-sky-500" 
+                                    className={`w-6 h-6 mt-0.5 accent-sky-500 ${isLockedByVoucher ? 'cursor-not-allowed' : 'cursor-pointer'}`} 
                                     checked={isSelected}
+                                    disabled={isLockedByVoucher} // 🔒 Blocage physique du clic
                                     onChange={(e) => {
+                                      if (isLockedByVoucher) return; // 🔒 Double sécurité
                                       const newP = [...passengers];
                                       newP[index] = { ...newP[index] };
                                       const selected = newP[index].selectedComplements || [];
@@ -1315,16 +1370,18 @@ export default function ReserverPage() {
                                     }}
                                   />
                                   <div className="flex-1 flex items-center gap-4">
-                                    {/* 🎯 NOUVEAU : Le pictogramme joliment encadré */}
                                     {comp.image_url && (
-                                      <div className="w-10 h-10 shrink-0 bg-white rounded-lg p-1 border border-slate-200 flex items-center justify-center shadow-sm">
+                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-lg p-1 border flex items-center justify-center shadow-sm ${isLockedByVoucher ? 'border-sky-200' : 'border-slate-200'}`}>
                                         <img src={comp.image_url} alt={comp.name} className="w-full h-full object-contain" />
                                       </div>
                                     )}
                                     
                                     <div>
                                       <span className={`font-bold block ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
-                                        {comp.name} (+{comp.price_cents / 100}€)
+                                        {/* 🎯 NOUVEAU : On remplace le prix par un texte rassurant ! */}
+                                        {comp.name} <span className={isLockedByVoucher ? 'text-emerald-600' : ''}>
+                                          {isLockedByVoucher ? '(Inclus dans le Bon)' : `(+${comp.price_cents / 100}€)`}
+                                        </span>
                                       </span>
                                       {comp.description && (
                                         <span className="text-xs text-slate-500 mt-1 block leading-tight">
