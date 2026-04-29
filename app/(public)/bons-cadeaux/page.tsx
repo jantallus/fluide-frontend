@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import type { GiftCardTemplate, FlightType, Complement } from '@/lib/types';
 import Image from 'next/image';
 
 export default function CadeauPage() {

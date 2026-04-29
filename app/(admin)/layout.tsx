@@ -38,28 +38,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const role = parsed.role;
     setUserRole(role);
 
-    // --- LA SOLUTION INFAILLIBLE : LECTURE DU TOKEN ---
-    try {
-      // On décrypte le token envoyé par le serveur pour y lire l'email
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const userEmail = payload.email; 
-      
-      // On cherche le prénom, sinon on coupe l'email lu dans le token
-      let finalName = parsed.first_name || parsed.firstName;
-      if (!finalName && userEmail) {
-        finalName = userEmail.split('@')[0];
-      }
-      
-      // On met une majuscule à la première lettre pour faire propre
-      if (finalName) {
-        finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
-      }
-      
-      setUserName(finalName || 'Utilisateur');
-    } catch (e) {
-      setUserName('Utilisateur');
+    // Lecture du nom directement depuis l'objet user (plus besoin de décoder le token)
+    let finalName = parsed.first_name || parsed.firstName || parsed.email?.split('@')[0] || '';
+    if (finalName) {
+      finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
     }
-    // --------------------------------------------------
+    setUserName(finalName || 'Utilisateur');
 
     if (role !== 'admin' && !pathname.startsWith('/planning')) {
       router.push('/planning'); 
@@ -86,8 +70,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname, router]);
 
   const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
+    localStorage.removeItem('user');
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    }).finally(() => {
+      router.push('/login');
+    });
   };
 
   // 2. Configuration du menu avec filtrage par RÔLE

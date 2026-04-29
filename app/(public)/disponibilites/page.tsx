@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { PublicSlot } from '@/lib/types';
 import { apiFetch } from '@/lib/api'; // On ajoute l'import manquant
 
 export default function PlanningPage() {

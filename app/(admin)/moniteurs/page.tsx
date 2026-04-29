@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import type { User, SlotDefinition } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
 
 export default function MonitorsPage() {

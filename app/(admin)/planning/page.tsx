@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import type { CalendarAppointment, Monitor, FlightType, OpeningPeriod, SlotDefinition, Slot, CurrentUser, Setting } from '@/lib/types';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';

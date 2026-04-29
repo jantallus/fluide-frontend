@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import type { PublicSlot, Passenger } from '@/lib/types';
 
 // --- UTILITAIRES ---
 const getLocalYYYYMMDD = (d: Date) => {

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import type { Client } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
 
 const extractVoucherCode = (status: string) => {

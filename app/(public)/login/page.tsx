@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -18,29 +18,29 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // 1. On prépare l'objet utilisateur de manière BLINDÉE
         const userFirst = data.user.first_name || data.user.firstName;
-        const userEmail = data.user.email || email; // On récupère l'email tapé
+        const userEmail = data.user.email || email;
         
         const userToStore = {
           id: data.user.id,
           role: data.user.role ? data.user.role.toLowerCase() : 'user',
           email: userEmail,
-          // Si pas de prénom, on coupe l'email avant le @ (ex: leo@fluide.fr -> leo)
           first_name: userFirst || userEmail.split('@')[0] 
         };
 
-        // 2. Stockage propre
-        localStorage.setItem('token', data.token);
+        // Token pour les requêtes API + cookie HttpOnly pour la sécurité XSS
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         localStorage.setItem('user', JSON.stringify(userToStore));
 
-        // 3. Redirection
         if (userToStore.role === 'admin') {
           router.push('/dashboard');
         } else if (userToStore.role === 'monitor' || userToStore.role === 'permanent') {
