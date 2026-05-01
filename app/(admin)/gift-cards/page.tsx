@@ -299,7 +299,7 @@ export default function VouchersPage() {
                       </p>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {c.max_uses ? (
-                          <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold">🎯 {c.current_uses || 0} / {c.max_uses} utilisations</span>
+                          <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold">🎯 {c.used_count || 0} / {c.max_uses} utilisations</span>
                         ) : (
                           <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-bold">♾️ Illimité</span>
                         )}
