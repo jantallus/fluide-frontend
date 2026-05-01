@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export function usePlanningData(getDateRange: () => { start: string; end: string }) {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [monitors, setMonitors] = useState<any[]>([]);
   const [flightTypes, setFlightTypes] = useState<any[]>([]);
@@ -77,7 +79,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
         method: 'POST',
         body: JSON.stringify({ key: 'google_calendar_sync', value: newValue ? 'true' : 'false' }),
       });
-      alert(newValue
+      toast.success(newValue
         ? '✅ Synchronisation Google Agenda ACTIVÉE'
         : '⏸️ Synchronisation Google Agenda DÉSACTIVÉE (Navigation ultra-rapide)'
       );

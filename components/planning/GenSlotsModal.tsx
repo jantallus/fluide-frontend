@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Props {
   availablePlans: string[];
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function GenSlotsModal({ availablePlans, monitors, loadAppointments, onClose }: Props) {
+  const { toast, confirm } = useToast();
   const [genConfig, setGenConfig] = useState({
     startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all',
   });
@@ -23,24 +25,24 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
       });
       const data = await res.json();
       if (res.status === 409 && data.warning) {
-        const confirmed = window.confirm(data.message);
+        const confirmed = await confirm(data.message);
         if (confirmed) return sendGenerationRequest(true);
         else { setIsGenerating(false); return; }
       }
       if (res.ok) {
-        alert(`✅ ${data.count || 0} créneaux générés avec succès !`);
+        toast.success(`✅ ${data.count || 0} créneaux générés avec succès !`);
         onClose();
         await loadAppointments();
       } else {
-        alert('Erreur : ' + (data.error || 'Erreur inconnue'));
+        toast.error('Erreur : ' + (data.error || 'Erreur inconnue'));
       }
     } catch {
-      alert('Erreur de connexion au serveur.');
+      toast.error('Erreur de connexion au serveur.');
     }
   };
 
   const handleGenerate = async () => {
-    if (!genConfig.startDate || !genConfig.endDate) return alert('Veuillez sélectionner des dates.');
+    if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
     setIsGenerating(true);
     await sendGenerationRequest(false);
     setIsGenerating(false);

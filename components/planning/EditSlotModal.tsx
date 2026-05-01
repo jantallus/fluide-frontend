@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type FormData = {
   title: string; flight_type_id: string; weightChecked: boolean;
@@ -31,6 +32,7 @@ export default function EditSlotModal({
   appointments, setAppointments, flightTypes, monitors, slotDefs, openingPeriods,
   loadAppointments, onClose,
 }: Props) {
+  const { toast, confirm } = useToast();
   // ── State modal ────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<FormData>({
     title: '', flight_type_id: '', weightChecked: false, phone: '', email: '', notes: '', booking_options: '', client_message: '',
@@ -295,7 +297,7 @@ export default function EditSlotModal({
       const startMs = new Date(selectedEvent.start).getTime();
       slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
       if (!isNonBlockingNote) {
-        if (slotsToUpdate.some(slot => IS_CLIENT_SLOT(slot))) return alert('❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.');
+        if (slotsToUpdate.some(slot => IS_CLIENT_SLOT(slot))) { toast.error('❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.'); return; }
       }
       const updatesToApply: any[] = [];
       slotsToUpdate.forEach(slot => {
@@ -314,16 +316,16 @@ export default function EditSlotModal({
       return applyAll(updatesToApply);
     }
 
-    if (!formData.title?.trim()) return alert('❌ Le nom du contact est obligatoire pour une réservation.');
-    if (!formData.flight_type_id) return alert('❌ Veuillez choisir un type de vol.');
-    if (!formData.phone?.trim()) return alert('❌ Le numéro de téléphone est obligatoire.');
+    if (!formData.title?.trim()) { toast.error('❌ Le nom du contact est obligatoire pour une réservation.'); return; }
+    if (!formData.flight_type_id) { toast.error('❌ Veuillez choisir un type de vol.'); return; }
+    if (!formData.phone?.trim()) { toast.error('❌ Le numéro de téléphone est obligatoire.'); return; }
     const selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
     const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
     slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
 
     const updatesToApply: any[] = [];
     if (groupSize > 1 || isManual) {
-      if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) return alert('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.');
+      if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) { toast.error('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.'); return; }
       displayDistribution.slotsToUse.forEach((baseSlot: any, index: number) => {
         const namesList = formData.title.split(',').map((n: string) => n.trim()).filter((n: string) => n);
         let passengerTitle = '';
@@ -357,7 +359,7 @@ export default function EditSlotModal({
   const handleRelease = async () => {
     const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
     const confirmMsg = isNoteOnly ? '🗑️ Voulez-vous vraiment effacer cette note ?' : '🗑️ Action irréversible. Libérer ce créneau ?\n\n(Les notes éventuelles seront conservées)';
-    if (!selectedEvent || !confirm(confirmMsg)) return;
+    if (!selectedEvent || !await confirm(confirmMsg)) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
@@ -376,7 +378,7 @@ export default function EditSlotModal({
   };
 
   const handleReleaseGroup = async () => {
-    if (!selectedEvent || !confirm(`🧹 Action irréversible. Libérer les ${groupRootSlots.length} créneaux de ce groupe ?`)) return;
+    if (!selectedEvent || !await confirm(`🧹 Action irréversible. Libérer les ${groupRootSlots.length} créneaux de ce groupe ?`)) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
@@ -396,7 +398,7 @@ export default function EditSlotModal({
     if (!selectedEvent) return;
     const isPlural = blockType === 'all' || (blockType === 'specific' && selectedMonitors.length > 1) || (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
     const confirmMsg = isPlural ? '🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection ?\n\n(Les réservations clients existantes seront conservées).' : '🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).';
-    if (!confirm(confirmMsg)) return;
+    if (!await confirm(confirmMsg)) return;
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
     const startMs = new Date(selectedEvent.start).getTime();
     const slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
@@ -457,8 +459,8 @@ export default function EditSlotModal({
         const sTime = new Date(slot.start_time).getTime();
         if (!assignedSlots.some(a => a.monitor_id === slot.monitor_id && Math.abs(new Date(a.start_time).getTime() - sTime) < slotsNeeded * slotDuration * 60000)) { assignedSlots.push(slot); remaining--; }
       }
-      if (remaining > 0) return alert(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`);
-      if (assignedSlots.length === groupRootSlots.length && assignedSlots.every((s, i) => s.id === groupRootSlots[i].id)) return alert('ℹ️ Le groupe est déjà assigné exactement à ces mêmes créneaux et pilotes.');
+      if (remaining > 0) { toast.error(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`); return; }
+      if (assignedSlots.length === groupRootSlots.length && assignedSlots.every((s, i) => s.id === groupRootSlots[i].id)) { toast.info('ℹ️ Le groupe est déjà assigné exactement à ces mêmes créneaux et pilotes.'); return; }
       slotsToFree.forEach(id => updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } }));
       groupRootSlots.forEach((oldSlot, g) => {
         const newBaseSlot = assignedSlots[g];
@@ -479,8 +481,8 @@ export default function EditSlotModal({
         const d = new Date(a.start_time);
         return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === moveConfig.date && (d.getHours() * 60 + d.getMinutes()) * 60000 === targetTimeMs && (moveConfig.monitorId === 'random' || a.monitor_id?.toString() === moveConfig.monitorId);
       });
-      if (!targetSlot) return alert("❌ Le créneau cible n'est plus disponible.");
-      if (targetSlot.id === selectedEvent.id) return alert('ℹ️ Le créneau est déjà à cet emplacement avec ce pilote.');
+      if (!targetSlot) { toast.error("❌ Le créneau cible n'est plus disponible."); return; }
+      if (targetSlot.id === selectedEvent.id) { toast.info('ℹ️ Le créneau est déjà à cet emplacement avec ce pilote.'); return; }
       currentBookingSlotIds.forEach(id => updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } }));
       const newStartMs = new Date(targetSlot.start_time).getTime();
       for (let i = 0; i < slotsNeeded; i++) {
