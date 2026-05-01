@@ -311,7 +311,7 @@ export default function VouchersPage() {
                         {/* 🎯 Badge Commission optimisé responsive */}
                         {c.is_partner && (c.partner_amount_cents ?? 0) > 0 && (
                           <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-md text-[10px] font-bold">
-                            💰 Commission : {c.partner_billing_type === 'percentage' ? `${c.partner_amount_cents / 100}%` : `${c.partner_amount_cents / 100}€`} / vol
+                            💰 Commission : {c.partner_billing_type === 'percentage' ? `${(c.partner_amount_cents ?? 0) / 100}%` : `${(c.partner_amount_cents ?? 0) / 100}€`} / vol
                           </span>
                         )}
                       </div>
@@ -322,7 +322,7 @@ export default function VouchersPage() {
                         De la part de : {c.buyer_name}
                       </h3>
                       <p className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-tight mt-1">
-                        {c.flight_name ? `Vol : ${c.flight_name}` : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {c.price_paid_cents / 100}€</span>
+                        {c.flight_name ? `Vol : ${c.flight_name}` : 'Avoir Libre'} • <span className="text-indigo-500">Montant : {(c.price_paid_cents ?? 0) / 100}€</span>
                       </p>
                       
                       <div className="flex flex-wrap gap-2 mt-3">
