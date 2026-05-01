@@ -48,8 +48,9 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
     setEditType('monitor');
   };
 
-  const methodToKey = (method: string): keyof PaymentData => {
-    const map: Record<string, keyof PaymentData> = {
+  type NumericPaymentKey = 'cb' | 'especes' | 'cheque' | 'ancv';
+  const methodToKey = (method: string): NumericPaymentKey => {
+    const map: Record<string, NumericPaymentKey> = {
       'CB': 'cb', 'Espèces': 'especes', 'Chèque': 'cheque', 'ANCV': 'ancv',
     };
     return map[method] ?? 'cb';
