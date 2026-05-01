@@ -463,7 +463,7 @@ export default function EditSlotModal({
       groupRootSlots.forEach((oldSlot, g) => {
         const newBaseSlot = assignedSlots[g];
         const passengerTitle = oldSlot.title || formData.title;
-        updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes, payment_status: oldSlot.payment_status } });
+        updatesToApply.push({ id: newBaseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', notes: oldSlot.notes, payment_data: oldSlot.payment_data } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(newBaseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -486,7 +486,7 @@ export default function EditSlotModal({
       for (let i = 0; i < slotsNeeded; i++) {
         const ms = newStartMs + i * slotDuration * 60000;
         const slotToBook = appointments.find(a => a.monitor_id?.toString() === targetSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms);
-        if (slotToBook) updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto', payment_status: selectedEvent.payment_status } });
+        if (slotToBook) updatesToApply.push({ id: slotToBook.id, data: { ...formData, title: i === 0 ? formData.title : `↪️ Suite ${formData.title || 'Vol'}`, status: 'booked', notes: i === 0 ? formData.notes : 'Extension auto', payment_data: selectedEvent.payment_data } });
       }
     }
     applyAll(updatesToApply);
