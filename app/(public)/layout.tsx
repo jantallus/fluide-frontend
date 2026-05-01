@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation'; 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -112,7 +113,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* --- CONTENU DE LA PAGE CLIENT --- */}
       <main style={{ flex: 1 }}>
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </main>
 
       {/* --- PIED DE PAGE --- */}

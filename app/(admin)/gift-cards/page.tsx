@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import type { GiftCard, FlightType, Complement } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function VouchersPage() {
-  const [cards, setCards] = useState<any[]>([]);
+  const { toast, confirm } = useToast();
+  const [cards, setCards] = useState<GiftCard[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -104,9 +106,9 @@ export default function VouchersPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const toggleCardStatus = async (id: number, currentStatus: string) => {
+  const toggleCardStatus = async (id: number, currentStatus: string | undefined) => {
     const newStatus = currentStatus === 'valid' ? 'used' : 'valid';
-    if (!confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme inactif/utilisé ?")) return;
+    if (!await confirm(newStatus === 'valid' ? "Réactiver ce code ?" : "Marquer ce code comme inactif/utilisé ?")) return;
 
     const res = await apiFetch(`/api/gift-cards/${id}/status`, {
       method: 'PATCH',
@@ -117,7 +119,7 @@ export default function VouchersPage() {
   };
 
   const deleteCard = async (id: number) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer définitivement ce code/bon ?")) return;
+    if (!await confirm("Êtes-vous sûr de vouloir supprimer définitivement ce code/bon ?")) return;
     const res = await apiFetch(`/api/gift-cards/${id}`, { method: 'DELETE' });
     if (res.ok) loadData();
   };
@@ -130,7 +132,7 @@ export default function VouchersPage() {
 
     if (activeTab === 'gift_card') {
       if (!newVoucher.gift_value || !newVoucher.buyer_name) {
-        alert("Veuillez renseigner le nom de l'acheteur et le montant du bon.");
+        toast.warning("Veuillez renseigner le nom de l'acheteur et le montant du bon.");
         return;
       }
 
@@ -160,12 +162,12 @@ export default function VouchersPage() {
       };
     } else {
       if (!newVoucher.discount_value) {
-        alert("Veuillez indiquer la valeur de la réduction.");
+        toast.warning("Veuillez indiquer la valeur de la réduction.");
         return;
       }
-      
+
       if (newVoucher.discount_type === 'percentage' && parseFloat(newVoucher.discount_value) > 100) {
-        alert("Une réduction en pourcentage ne peut pas dépasser 100 % !");
+        toast.warning("Une réduction en pourcentage ne peut pas dépasser 100 % !");
         return;
       }
 
@@ -203,7 +205,7 @@ export default function VouchersPage() {
       loadData();
     } else {
       const errorMsg = await res.json();
-      alert("Erreur : " + (errorMsg.error || "Le code personnalisé est peut-être déjà pris."));
+      toast.error("Erreur : " + (errorMsg.error || "Le code personnalisé est peut-être déjà pris."));
     }
   };
 

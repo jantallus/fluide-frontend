@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FlightType, SettingsMap, Setting, OpeningPeriod } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function ConfigPage() {
   const [definitions, setDefinitions] = useState<any[]>([]);
@@ -24,6 +25,7 @@ export default function ConfigPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   
+  const { toast, confirm } = useToast();
   const [activePlan, setActivePlan] = useState<string>('Standard');
   const [newRotation, setNewRotation] = useState({ start_time: '', duration_minutes: 60, label: 'VOL', plan_name: 'Standard' });
 
@@ -63,18 +65,18 @@ export default function ConfigPage() {
     setIsSaving(true); 
     try {
       const res = await apiFetch('/api/slot-definitions', { method: 'POST', body: JSON.stringify({ ...newRotation, plan_name: activePlan }) });
-      if (res.ok) { setNewRotation({ start_time: '', duration_minutes: 0, label: 'VOL', plan_name: activePlan }); loadData(); } 
-      else { alert("Erreur lors de l'enregistrement"); }
-    } catch (err) { alert("Erreur de connexion"); } finally { setIsSaving(false); }
+      if (res.ok) { setNewRotation({ start_time: '', duration_minutes: 0, label: 'VOL', plan_name: activePlan }); loadData(); }
+      else { toast.error("Erreur lors de l'enregistrement"); }
+    } catch (err) { toast.error("Erreur de connexion"); } finally { setIsSaving(false); }
   };
 
   const deleteDef = async (id: number) => {
-    if(!confirm("Supprimer cette rotation ?")) return;
+    if (!await confirm("Supprimer cette rotation ?")) return;
     await apiFetch(`/api/slot-definitions/${id}`, { method: 'DELETE' }); loadData();
   };
 
   const renamePlan = async (oldName: string) => {
-    if (oldName === 'Standard') return alert("Le plan Standard ne peut pas être renommé.");
+    if (oldName === 'Standard') return toast.warning("Le plan Standard ne peut pas être renommé.");
     const newName = prompt(`Renommer le plan "${oldName}" en :`, oldName);
     if (!newName || newName === oldName) return;
     await apiFetch(`/api/plans/${oldName}`, { method: 'PUT', body: JSON.stringify({ newName }) });
@@ -82,8 +84,8 @@ export default function ConfigPage() {
   };
 
   const deletePlan = async (name: string) => {
-    if (name === 'Standard') return alert("Le plan Standard ne peut pas être supprimé.");
-    if (!confirm(`Voulez-vous vraiment supprimer le plan "${name}" ?`)) return;
+    if (name === 'Standard') return toast.warning("Le plan Standard ne peut pas être supprimé.");
+    if (!await confirm(`Voulez-vous vraiment supprimer le plan "${name}" ?`)) return;
     await apiFetch(`/api/plans/${name}`, { method: 'DELETE' });
     setActivePlan('Standard'); loadData();
   };
@@ -91,18 +93,18 @@ export default function ConfigPage() {
   const saveSeasonsToDB = async (updatedSeasons: any[]) => { await apiFetch('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'opening_periods', value: JSON.stringify(updatedSeasons) }) }); };
   const handleAddSeason = () => { const updated = [...seasons, { id: Date.now().toString(), name: '', start: '', end: '' }]; setSeasons(updated); saveSeasonsToDB(updated); };
   const handleSeasonChange = (id: string, field: string, value: string) => { setSeasons(seasons.map(s => s.id === id ? { ...s, [field]: value } : s)); };
-  const handleDeleteSeason = (id: string) => { if(!confirm("Supprimer ?")) return; const updated = seasons.filter(s => s.id !== id); setSeasons(updated); saveSeasonsToDB(updated); };
+  const handleDeleteSeason = async (id: string) => { if (!await confirm("Supprimer cette période ?")) return; const updated = seasons.filter(s => s.id !== id); setSeasons(updated); saveSeasonsToDB(updated); };
 
   const saveEmailSetting = async (key: string, value: string) => {
     try {
       const res = await apiFetch('/api/settings', { method: 'POST', body: JSON.stringify({ key, value }) });
-      if (res.ok) alert("Sauvegardé avec succès ! ✅");
-      else alert("❌ Erreur lors de la sauvegarde côté serveur.");
-    } catch (err) { alert("❌ Erreur de connexion avec le serveur."); }
+      if (res.ok) toast.success("Sauvegardé avec succès !");
+      else toast.error("Erreur lors de la sauvegarde côté serveur.");
+    } catch (err) { toast.error("Erreur de connexion avec le serveur."); }
   };
 
   const handleSaveTemplate = async () => {
-    if (!newTemplate.title || !newTemplate.price_cents) return alert("Le titre et le prix sont obligatoires.");
+    if (!newTemplate.title || !newTemplate.price_cents) return toast.warning("Le titre et le prix sont obligatoires.");
     setIsSaving(true);
     try {
       const payload = { ...newTemplate, price_cents: Math.round(parseFloat(newTemplate.price_cents as string) * 100) };
@@ -110,12 +112,12 @@ export default function ConfigPage() {
       const method = editingTemplateId ? 'PUT' : 'POST';
       
       const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
-      if (res.ok) { setShowTemplateModal(false); loadData(); } else { alert("Erreur lors de l'enregistrement du modèle."); }
-    } catch (err) { alert("Erreur de connexion."); } finally { setIsSaving(false); }
+      if (res.ok) { setShowTemplateModal(false); loadData(); } else { toast.error("Erreur lors de l'enregistrement du modèle."); }
+    } catch (err) { toast.error("Erreur de connexion."); } finally { setIsSaving(false); }
   };
 
   const deleteTemplate = async (id: number) => {
-    if(!confirm("Supprimer définitivement ce modèle de la boutique ?")) return;
+    if (!await confirm("Supprimer définitivement ce modèle de la boutique ?")) return;
     await apiFetch(`/api/gift-card-templates/${id}`, { method: 'DELETE' }); loadData();
   };
 
@@ -426,8 +428,8 @@ export default function ConfigPage() {
                             const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', { method: 'POST', body: formData });
                             const data = await res.json();
                             if (data.secure_url) setNewTemplate({...newTemplate, image_url: data.secure_url});
-                          } catch (err) { alert("Erreur d'envoi."); } finally { setIsUploading(false); }
-                        }} 
+                          } catch (err) { toast.error("Erreur lors de l'envoi de l'image."); } finally { setIsUploading(false); }
+                        }}
                       />
                       <label htmlFor="image-upload" className={`flex-1 flex items-center justify-center border-2 border-dashed border-sky-300 rounded-2xl p-3 font-black uppercase text-[10px] tracking-widest cursor-pointer ${isUploading ? 'bg-white text-slate-400' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'}`}>
                         {isUploading ? '⏳ Envoi...' : '📸 Uploader la miniature'}
@@ -454,7 +456,7 @@ export default function ConfigPage() {
                             const res = await fetch('https://api.cloudinary.com/v1_1/dscvvpjyb/image/upload', { method: 'POST', body: formData });
                             const data = await res.json();
                             if (data.secure_url) setNewTemplate({...newTemplate, pdf_background_url: data.secure_url});
-                          } catch (err) { alert("Erreur d'envoi."); } finally { setIsUploadingPdf(false); }
+                          } catch (err) { toast.error("Erreur lors de l'envoi du PDF."); } finally { setIsUploadingPdf(false); }
                         }} 
                       />
                       <label htmlFor="pdf-upload" className={`flex-1 flex items-center justify-center border-2 border-dashed border-rose-300 rounded-2xl p-3 font-black uppercase text-[10px] tracking-widest cursor-pointer ${isUploadingPdf ? 'bg-white text-slate-400' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}`}>

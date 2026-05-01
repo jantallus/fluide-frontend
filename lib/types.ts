@@ -38,7 +38,7 @@ export interface Slot {
   client_message?: string | null;
   flight_type_id?: number | null;
   weight?: number | null;
-  payment_status?: string | null;
+  payment_data?: PaymentData | null;
   resourceId?: string;
 }
 
@@ -110,13 +110,17 @@ export interface GiftCard {
   flight_type_id?: number | null;
   flight_name?: string;
   gift_value?: number | null;
-  discount_type?: 'fixed' | 'percent';
+  discount_type?: 'fixed' | 'percentage';
   discount_value?: number;
   discount_scope?: 'flight' | 'options' | 'both';
   max_uses?: number;
   used_count?: number;
   is_unlimited?: boolean;
   is_used?: boolean;
+  status?: 'valid' | 'used' | 'inactive';
+  price_paid_cents?: number;
+  valid_from?: string;
+  valid_until?: string;
   is_partner?: boolean;
   partner_amount_cents?: number | null;
   partner_billing_type?: string;
@@ -141,12 +145,26 @@ export interface GiftCardTemplate {
   show_popup?: boolean;
 }
 
+// ── Paiement structuré ───────────────────────────────────────────────────────
+
+export interface PaymentData {
+  online?: boolean;      // payé via Stripe CB
+  cb?: number;           // CB en centimes (sur place ou en ligne)
+  especes?: number;      // Espèces en centimes
+  cheque?: number;       // Chèque en centimes
+  ancv?: number;         // ANCV en centimes
+  voucher?: number;      // Montant couvert par bon/promo en centimes
+  code?: string;         // Code bon cadeau ou promo
+  code_type?: 'gift_card' | 'promo';
+  options?: string[];    // Noms des options ajoutées sur place
+}
+
 // ── Clients ───────────────────────────────────────────────────────────────────
 
 export interface ClientFlight {
   id: number;
   start_time: string;
-  payment_status?: string;
+  payment_data?: PaymentData | null;
   monitor_name?: string;
   monitor_id?: string;
   flight_name?: string;

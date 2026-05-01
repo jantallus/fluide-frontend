@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import AutoLogout from '@/components/AutoLogout';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
@@ -112,6 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // SI ON EST LÀ, C'EST QU'ON EST CONNECTÉ (Affichage normal)
   return (
+    <ToastProvider>
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <AutoLogout />
       
@@ -258,5 +260,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

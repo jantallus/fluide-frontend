@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import type { GiftCardTemplate, FlightType, Complement } from '@/lib/types';
 import Image from 'next/image';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function CadeauPage() {
+  const { toast } = useToast();
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -168,13 +170,13 @@ export default function CadeauPage() {
 
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url; 
+        window.location.href = data.url;
       } else {
-        alert("Erreur lors de la création du paiement.");
+        toast.error("Erreur lors de la création du paiement.");
         setIsCheckingOut(false);
       }
     } catch (err) {
-      alert("Erreur de connexion au serveur de paiement.");
+      toast.error("Erreur de connexion au serveur de paiement.");
       setIsCheckingOut(false);
     }
   };

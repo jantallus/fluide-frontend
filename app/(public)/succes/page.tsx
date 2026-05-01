@@ -1,8 +1,10 @@
 "use client";
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/ui/ToastProvider';
 
 function SuccessContent() {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const session_id = searchParams.get('session_id');
   
@@ -75,7 +77,7 @@ function SuccessContent() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Le téléchargement a échoué. Veuillez réessayer.");
+      toast.error("Le téléchargement a échoué. Veuillez réessayer.");
       console.error(err);
     }
   };

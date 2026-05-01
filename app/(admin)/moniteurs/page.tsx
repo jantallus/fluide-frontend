@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User, SlotDefinition } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function MonitorsPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export default function MonitorsPage() {
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const { toast, confirm } = useToast();
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setCurrentUser(JSON.parse(u));
@@ -72,12 +74,12 @@ export default function MonitorsPage() {
 
   const handleSave = async () => {
     if (!newUser.first_name || !newUser.email) {
-      alert("Veuillez remplir le nom et l'email.");
+      toast.warning("Veuillez remplir le nom et l'email.");
       return;
     }
-    
+
     if (!editingUserId && !newUser.password) {
-      alert("Le mot de passe est obligatoire pour un nouveau compte.");
+      toast.warning("Le mot de passe est obligatoire pour un nouveau compte.");
       return;
     }
 
@@ -107,12 +109,12 @@ export default function MonitorsPage() {
       loadUsers();
     } else {
       const err = await res.json();
-      alert(err.error || "Erreur lors de l'enregistrement");
+      toast.error(err.error || "Erreur lors de l'enregistrement");
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Supprimer définitivement le compte de ${name} ?`)) return;
+    if (!await confirm(`Supprimer définitivement le compte de ${name} ?`)) return;
 
       const res = await apiFetch(`/api/users/${id}`, {
         method: 'DELETE'
@@ -122,7 +124,7 @@ export default function MonitorsPage() {
       loadUsers();
     } else {
       const err = await res.json();
-      alert(err.error || "Erreur lors de la suppression");
+      toast.error(err.error || "Erreur lors de la suppression");
     }
   };
 
@@ -133,7 +135,7 @@ export default function MonitorsPage() {
     const fullLink = `${backendUrl}/api/ical/${userId}`;
     
     navigator.clipboard.writeText(fullLink);
-    alert("Lien d'agenda copié ! 📋\n\nIl ne vous reste plus qu'à l'ajouter dans Google Calendar ou Apple Calendar (S'abonner à un calendrier via URL).");
+    toast.success("Lien d'agenda copié ! 📋");
   };
 
   return (

@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import type { Complement } from '@/lib/types';
 import { apiFetch } from '../../../../lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function ComplementsPage() {
   const [complements, setComplements] = useState<any[]>([]);
   const [newComp, setNewComp] = useState({ name: '', description: '', price_cents: 2000, image_url: '' });
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const { toast, confirm } = useToast();
 
   const loadComplements = async () => {
     try {
@@ -32,7 +34,7 @@ export default function ComplementsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Supprimer ce complément ?")) return;
+    if (!await confirm("Supprimer ce complément ?")) return;
     const res = await apiFetch(`/api/complements/${id}`, { method: 'DELETE' });
     if (res.ok) loadComplements();
   };
@@ -79,7 +81,7 @@ export default function ComplementsPage() {
                   });
                   const data = await res.json();
                   if (data.secure_url) setNewComp({...newComp, image_url: data.secure_url});
-                } catch (err) { alert("Erreur d'envoi"); } 
+                } catch (err) { toast.error("Erreur d'envoi"); }
                 finally { setIsUploading(false); }
               }} 
             />

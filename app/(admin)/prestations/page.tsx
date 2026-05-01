@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import type { FlightType } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function PrestationsPage() {
   const [flights, setFlights] = useState<any[]>([]);
   const [slotDefs, setSlotDefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { toast, confirm } = useToast();
   
   const [seasonFilter, setSeasonFilter] = useState<'ALL' | 'SUMMER' | 'WINTER'>('ALL');
   
@@ -73,18 +75,18 @@ export default function PrestationsPage() {
       await loadData();
     } else {
       const errorData = await res.json();
-      alert("Erreur : " + (errorData.error || "Problème d'enregistrement"));
+      toast.error("Erreur : " + (errorData.error || "Problème d'enregistrement"));
     }
     setIsSaving(false);
   };
 
   const deleteFlight = async (id: number) => {
-    if (!confirm("Supprimer définitivement ce vol ? (Impossible s'il est déjà lié à des réservations ou des bons cadeaux)")) return;
+    if (!await confirm("Supprimer définitivement ce vol ? (Impossible s'il est déjà lié à des réservations ou des bons cadeaux)")) return;
     const res = await apiFetch(`/api/flight-types/${id}`, { method: 'DELETE' });
     if (res.ok) {
       loadData();
     } else {
-      alert("Ce vol est lié à des réservations passées ou des bons cadeaux. Astuce: Modifiez-le pour décocher tous ses créneaux afin de le masquer du site client !");
+      toast.error("Ce vol est lié à des réservations passées ou des bons cadeaux. Astuce: Modifiez-le pour décocher tous ses créneaux afin de le masquer du site client !");
     }
   };
 
@@ -254,7 +256,7 @@ export default function PrestationsPage() {
                             setFormData({...formData, image_url: data.secure_url});
                           }
                         } catch (err) {
-                          alert("Erreur lors de l'envoi de l'image.");
+                          toast.error("Erreur lors de l'envoi de l'image.");
                         } finally {
                           setIsUploading(false);
                         }

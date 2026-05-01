@@ -1,70 +1,173 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
-import { useBookingData } from '@/hooks/useBookingData';
-import { useAvailabilities } from '@/hooks/useAvailabilities';
-import { useGridData } from '@/hooks/useGridData';
-import FlightCard from '@/components/booking/FlightCard';
-import InfoFlightModal from '@/components/booking/InfoFlightModal';
-import VoucherSection from '@/components/booking/VoucherSection';
-import PassengerCard from '@/components/booking/PassengerCard';
-import CartBar from '@/components/booking/CartBar';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import type { PublicSlot, Passenger } from '@/lib/types';
+import { useToast } from '@/components/ui/ToastProvider';
+
+// --- UTILITAIRES ---
+const getLocalYYYYMMDD = (d: Date) => {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+
+const getDayName = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+};
+
+// 🧠 MOTEUR INTELLIGENT DE DATES
+// 🧠 MOTEUR INTELLIGENT DE DATES
+const calculateGridStart = (dateStr: string, count: number) => {
+  const start = new Date(dateStr);
+  start.setHours(0, 0, 0, 0);
+
+  if (count === 7) {
+    const day = start.getDay(); 
+    const diff = day === 6 ? 0 : day + 1; 
+    start.setDate(start.getDate() - diff);
+  }
+  // 🎯 CORRECTION : On a supprimé la règle qui forçait un recul de "-1 jour" !
+  
+  return getLocalYYYYMMDD(start);
+};
+
+// --- FONCTION TEXTE COMMERCIAL ---
+const getMarketingInfo = (flightName: string) => {
+  if (!flightName) return '🪂 Vol sensationnel';
+  const name = flightName.toLowerCase();
+  
+  if (name.includes('loupiot')) return '⏱️ 8 min de vol';
+  if (name.includes('découverte') || name.includes('decouverte')) return '⏱️ 15 min de vol';
+  if (name.includes('ascendance')) return '⏱️ 30 min de vol';
+  if (name.includes('prestige')) return '⏱️ 1h de vol';
+  
+  if (name.includes('beauregard')) return '⛰️ 500m de dénivelé';
+  if (name.includes('loup')) return '⛰️ 800m de dénivelé';
+  if (name.includes('aiguille')) return '⛰️ 1200m de dénivelé';
+
+  return '🪂 Vol inoubliable';
+};
 
 export default function ReserverPage() {
-  // ── Refs scroll/animation ──────────────────────────────────────────────────
+  const { toast } = useToast();
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
-  const hasAnimatedIntro = useRef(false);
-  const scrollTimeout = useRef<any>(null);
-  const isSwipingRef = useRef(false);
-
-  // ── State ──────────────────────────────────────────────────────────────────
+  const hasAnimatedIntro = useRef(false); // 🎯 NOUVEAU : Mémoire pour l'intro
+  // 🎯 NOUVEAU : On mémorise si on est sur un autre site
   const [isEmbed, setIsEmbed] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) {
+      setIsEmbed(true);
+    }
+  }, []);
+
+  const [flights, setFlights] = useState<any[]>([]);
+  const [giftTemplates, setGiftTemplates] = useState<any[]>([]);
+  const [complementsList, setComplementsList] = useState<any[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<any>(null);
   const [step, setStep] = useState<number>(1);
-  const [infoFlight, setInfoFlight] = useState<any>(null);
-  const [isGridExpanded, setIsGridExpanded] = useState(false);
+  const [infoFlight, setInfoFlight] = useState<any>(null); // 🎯 Mémoire pour la popup d'infos du vol
+  const savedScrollPos = useRef(0); // 🎯 NOUVEAU : Mémoire pour retenir la position de défilement
+  const scrollTimeout = useRef<any>(null); // 🎯 NOUVEAU : Mémoire pour le délai du swipe
+  const isSwipingRef = useRef(false); // 🎯 NOUVEAU : Verrou de sécurité anti-rebond
+  const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
+  // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
+  useEffect(() => {
+    if (step !== 2) {
+      hasAnimatedIntro.current = false;
+      setIsGridExpanded(false); 
+    }
+    
+    // 🎯 On glisse PILE sur la zone de l'étape correspondante
+    if (step === 2) {
+      setTimeout(() => {
+        const el = document.getElementById('etape-2-container');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 100; // -100px pour éviter le bandeau
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    } else if (step === 3) {
+      setTimeout(() => {
+        const el = document.getElementById('etape-3-container');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    }
+  }, [step]);
+
+// 🎯 NOUVEAU : Moteur de défilement intelligent + Blocage de l'arrière-plan
+  useEffect(() => {
+    if (infoFlight) {
+      // 1. On mémorise et on remonte tout en haut
+      savedScrollPos.current = window.scrollY;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // 🔒 2. LE SECRET : On fige totalement la page en arrière-plan !
+      document.body.style.overflow = 'hidden';
+      
+    } else {
+      // 🔓 3. La popup se ferme : on débloque le défilement de la page
+      document.body.style.overflow = '';
+      
+      // 4. On retourne exactement là où on était (Micro-délai ajouté ici !)
+      if (savedScrollPos.current > 0) {
+        const targetPos = savedScrollPos.current;
+        setTimeout(() => {
+          window.scrollTo({ top: targetPos, behavior: 'smooth' });
+        }, 50); // On laisse 50ms au navigateur pour détruire la popup proprement
+        savedScrollPos.current = 0; 
+      }
+    }
+
+    // 🛡️ Sécurité : Si le client quitte la page brusquement, on s'assure de débloquer le scroll
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [infoFlight]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
+  const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
   const [pickedDate, setPickedDate] = useState<string>(() => {
-    const d = new Date();
-    if (d.getHours() >= 12) d.setDate(d.getDate() + 1);
-    return getLocalYYYYMMDD(d);
+    const defaultDate = new Date();
+    // 🎯 Si on est à midi (12h) ou plus tard, on passe à demain
+    if (defaultDate.getHours() >= 12) {
+      defaultDate.setDate(defaultDate.getDate() + 1);
+    }
+    return getLocalYYYYMMDD(defaultDate);
   });
-  const [gridStartDate, setGridStartDate] = useState<string>('');
+  const [gridStartDate, setGridStartDate] = useState<string>(''); 
 
+  const [rawSlots, setRawSlots] = useState<any[]>([]);
+  const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
+  
+  const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [passengers, setPassengers] = useState<any[]>([]);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-
-  // ── Refs sécurisés anti double-clic ───────────────────────────────────────
+  
+  // 🎯 RÉFÉRENCES SÉCURISÉES POUR ÉVITER L'EFFET DOMINO (Double-clic)
   const selectedFlightRef = useRef(selectedFlight);
   useEffect(() => { selectedFlightRef.current = selectedFlight; }, [selectedFlight]);
+
   const cartRef = useRef(cart);
   useEffect(() => { cartRef.current = cart; }, [cart]);
 
-  // ── Hooks de données ───────────────────────────────────────────────────────
-  const { flights, giftTemplates, complementsList, displayDaysCount, isLoading, activeSeason, setActiveSeason } =
-    useBookingData((dateStr, count) => {
-      setPickedDate(dateStr);
-      setGridStartDate(calculateGridStart(dateStr, count));
-    });
-
-  const { rawSlots, isSearchingTimes } = useAvailabilities(gridStartDate, selectedFlight, displayDaysCount);
-  const gridData = useGridData(rawSlots, selectedFlight, cart, gridStartDate, flights);
-
-  // ── Détection embed ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) setIsEmbed(true);
-  }, []);
-
-  // ── Gestion du bouton retour navigateur ────────────────────────────────────
+  // 🎯 GESTION SÉCURISÉE DU BOUTON RETOUR
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash;
-      const itemsInCart = Object.values(cartRef.current).reduce((s: any, q: any) => s + q, 0);
+      
+      // On lit les références "secrètes" pour ne pas déclencher de rechargement en boucle
+      const itemsInCart = Object.values(cartRef.current).reduce((sum: any, qty: any) => sum + qty, 0);
       const needsReset = (hash === '#etape-2' && !selectedFlightRef.current) || (hash === '#etape-3' && itemsInCart === 0);
+
       if (needsReset) {
         setStep(1);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -74,58 +177,208 @@ export default function ReserverPage() {
         else setStep(1);
       }
     };
-    window.addEventListener('popstate', handlePopState);
-    handlePopState();
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Mise à jour URL sans rechargement ─────────────────────────────────────
+    window.addEventListener('popstate', handlePopState);
+    handlePopState(); 
+    
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // 🛑 AUCUNE DÉPENDANCE ICI : C'est le secret pour éviter le double clic !
+
+  // 2. On met à jour l'URL (sans recharger) quand on change d'étape via vos boutons
   useEffect(() => {
     const expectedHash = step === 1 ? '' : `#etape-${step}`;
-    if (window.location.hash !== expectedHash) {
-      const newUrl = step === 1
-        ? window.location.pathname + window.location.search
+    const currentHash = window.location.hash;
+    
+    if (currentHash !== expectedHash) {
+      const newUrl = step === 1 
+        ? window.location.pathname + window.location.search 
         : window.location.pathname + window.location.search + expectedHash;
+        
       window.history.pushState({ step }, '', newUrl);
     }
   }, [step]);
-
-  // ── Scroll vers la bonne étape ─────────────────────────────────────────────
+  
   useEffect(() => {
-    if (step !== 2) {
-      hasAnimatedIntro.current = false;
-      setIsGridExpanded(false);
-    }
-    if (step === 2) {
-      setTimeout(() => {
-        const el = document.getElementById('etape-2-container');
-        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
-      }, 50);
-    } else if (step === 3) {
-      setTimeout(() => {
-        const el = document.getElementById('etape-3-container');
-        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
-      }, 50);
-    }
-  }, [step]);
+    const currentMonth = new Date().getMonth(); 
+    let defaultSeason: 'Standard' | 'Hiver' = (currentMonth >= 9 || currentMonth <= 3) ? 'Hiver' : 'Standard';
 
-  // ── Animation cinématique de la grille ────────────────────────────────────
-  useEffect(() => {
-    if (step !== 2) return;
-    if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
-      if (isSwipingRef.current) {
-        isSwipingRef.current = false;
-        setIsGridExpanded(true);
-        return;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('saison')?.toLowerCase() === 'hiver') defaultSeason = 'Hiver';
+      if (params.get('saison')?.toLowerCase() === 'ete') defaultSeason = 'Standard';
+    }
+    setActiveSeason(defaultSeason);
+
+    const fetchData = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
+          fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }) // 🎁 On charge les bons cadeaux !
+        ]);
+
+        if (resFlights.ok) setFlights(await resFlights.json());
+        if (resComplements.ok) setComplementsList(await resComplements.json());
+        if (resTemplates.ok) setGiftTemplates(await resTemplates.json());
+
+        let count = 7; 
+        if (resSettings.ok) {
+           const s = await resSettings.json();
+           const countSetting = s.find((x: any) => x.key === 'display_days_count');
+           if (countSetting) count = parseInt(countSetting.value);
+        }
+        setDisplayDaysCount(count);
+        
+        // 🎯 NOUVEAU : On affiche "Aujourd'hui" le matin, et "Demain" l'après-midi (dès 12h)
+        const defaultDate = new Date();
+        if (defaultDate.getHours() >= 12) {
+          defaultDate.setDate(defaultDate.getDate() + 1);
+        }
+        const defaultDateStr = getLocalYYYYMMDD(defaultDate);
+        
+        setPickedDate(defaultDateStr);
+        setGridStartDate(calculateGridStart(defaultDateStr, count));
+
+      } catch (err) { 
+        console.error("Erreur chargement données", err); 
+      } finally { 
+        setIsLoading(false); 
       }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (!gridStartDate || !selectedFlight) return;
+    const fetchWeekData = async () => {
+      setIsSearchingTimes(true);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        // 🎯 1. ON CALCULE LES DATES DE DÉBUT ET FIN (-10 à +10 jours)
+        const dStart = new Date(gridStartDate);
+        dStart.setDate(dStart.getDate() - 10);
+        const startDateStr = getLocalYYYYMMDD(dStart);
+        
+        const dEnd = new Date(gridStartDate);
+        dEnd.setDate(dEnd.getDate() + 10);
+        const endDateStr = getLocalYYYYMMDD(dEnd);
+        
+        // 🎯 2. LE TIR GROUPÉ : UNE SEULE REQUÊTE POUR TOUTE LA PÉRIODE !
+        const res = await fetch(`${apiUrl}/api/public/availabilities?start=${startDateStr}&end=${endDateStr}&t=${Date.now()}`, { cache: 'no-store' });
+        const results = await res.json();
+        
+        setRawSlots(results);
+      } catch (err) { console.error("Erreur dispos", err); } 
+      finally { setIsSearchingTimes(false); }
+    };
+    fetchWeekData();
+  }, [gridStartDate, selectedFlight, displayDaysCount]);
+
+  useEffect(() => {
+    if (step === 3) {
+      const newPassengers: any[] = [];
+      
+      // 🎯 1. RECHERCHE ROBUSTE : On cherche l'option peu importe son nom (photo, vidéo, gopro...)
+      const photoOption = complementsList.find(c => 
+        c.name.toLowerCase().includes('photo') || 
+        c.name.toLowerCase().includes('vidéo') || 
+        c.name.toLowerCase().includes('video') || 
+        c.name.toLowerCase().includes('gopro')
+      );
+
+      Object.entries(cart).forEach(([key, qty]) => {
+        const [fId, dStr, tStr] = key.split('|');
+        const flight = flights.find(f => f.id.toString() === fId);
+        
+        for (let i = 0; i < qty; i++) {
+          newPassengers.push({
+            id: `${key}-${i}`,
+            flightKey: key, 
+            flightId: fId,
+            flightName: flight?.name || 'Vol',
+            date: dStr,
+            time: tStr,
+            firstName: '',
+            weightChecked: false,
+            selectedComplements: [], 
+            weight_min: flight?.weight_min ?? 20,
+            weight_max: flight?.weight_max ?? 110,
+          });
+        }
+      });
+      
+      setPassengers(prev => newPassengers.map((nP) => {
+        const existing = prev.find(p => p.id === nP.id);
+        const flight = flights.find(f => f.id.toString() === nP.flightId);
+        
+        // On récupère ce qui est déjà coché par l'utilisateur
+        let currentComplements = existing ? [...(existing.selectedComplements || [])] : [];
+        
+        // 🎯 2. LA SOURCE UNIQUE DE VÉRITÉ : C'est ici que la magie opère !
+        if (appliedVoucher && appliedVoucher.type === 'gift_card' && photoOption && flight) {
+           // On vérifie que le bon est soit générique, soit lié à ce vol précis
+           const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === nP.flightId;
+           
+           if (isSameFlight) {
+             const vVal = Number(appliedVoucher.price_paid_cents) / 100;
+             const fPri = flight.price_cents / 100;
+             const pPri = photoOption.price_cents / 100;
+
+             // Si la valeur du bon couvre [Vol + Photo] et que la photo n'est pas encore cochée
+             if (vVal >= (fPri + pPri) && !currentComplements.includes(photoOption.id)) {
+               currentComplements.push(photoOption.id);
+             }
+           }
+        }
+
+        return { 
+          ...nP, 
+          firstName: existing?.firstName || '', 
+          weightChecked: existing?.weightChecked || false, 
+          selectedComplements: currentComplements
+        };
+      }));
+    }
+  }, [step, cart, flights, appliedVoucher, complementsList]);
+
+  useEffect(() => {
+    if (contact.isPassenger && passengers.length > 0 && contact.firstName) {
+      setPassengers(prev => {
+        const newP = [...prev];
+        if (!newP[0].firstName) newP[0].firstName = contact.firstName;
+        return newP;
+      });
+    }
+  }, [contact.isPassenger, contact.firstName]);
+
+  // 🎯 L'ANIMATION CINÉMATIQUE (100% Horizontale, Ultra-Rapide, Sans Voile)
+  useEffect(() => {
+    // 🛑 SÉCURITÉ ABSOLUE : On refuse de jouer l'animation si on n'est pas sur l'étape 2
+    if (step !== 2) return;
+
+    if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
+      
+      // 🛑 SÉCURITÉ SWIPE : Si le client a glissé au doigt, on ne force pas le recentrage !
+      if (isSwipingRef.current) {
+        isSwipingRef.current = false; // On désarme le verrou
+        setIsGridExpanded(true);
+        return; 
+      }
+
       const container = bodyScrollRef.current;
       const headerContainer = headerScrollRef.current;
 
+      // 🛠️ Fonction de centrage 100% horizontale (AUCUN saut vertical !)
       const centerHorizontally = (el: HTMLElement, behavior: 'auto' | 'smooth') => {
-        const pos = el.offsetLeft - container.clientWidth / 2 + el.clientWidth / 2;
+        const pos = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
         container.scrollTo({ left: pos, behavior });
       };
 
+      // 🪄 On enlève le "voile blanc" (opacity-0) instantanément pour un ressenti immédiat
       container.classList.remove('opacity-0');
       if (headerContainer) headerContainer.classList.remove('opacity-0');
 
@@ -133,8 +386,8 @@ export default function ReserverPage() {
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) centerHorizontally(targetEl, 'auto');
-          setIsGridExpanded(true);
-        }, 10);
+          setIsGridExpanded(true); 
+        }, 10); // Instantané sur PC
         return;
       }
 
@@ -147,161 +400,160 @@ export default function ReserverPage() {
         setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
+
           if (startEl && targetEl) {
             container.style.scrollSnapType = 'none';
+            // Téléportation sur la veille
             centerHorizontally(startEl, 'auto');
+
             requestAnimationFrame(() => {
               setTimeout(() => {
+                // Swipe pur et fluide vers le jour J
                 centerHorizontally(targetEl, 'smooth');
-                setTimeout(() => { container.style.scrollSnapType = ''; setIsGridExpanded(true); }, 300);
-              }, 50);
+                
+                setTimeout(() => { 
+                  container.style.scrollSnapType = ''; 
+                  setIsGridExpanded(true); 
+                }, 300); // On divise le temps d'attente par deux !
+              }, 50); 
             });
           } else if (targetEl) {
-            centerHorizontally(targetEl, 'auto');
-            setIsGridExpanded(true);
+             centerHorizontally(targetEl, 'auto');
+             setIsGridExpanded(true);
           }
         }, 20);
+
       } else {
+        // 🧭 NAVIGATION CLASSIQUE (Flèches ou calendrier)
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) centerHorizontally(targetEl, 'smooth');
-          setTimeout(() => setIsGridExpanded(true), 100);
+          setTimeout(() => { setIsGridExpanded(true); }, 100);
         }, 20);
       }
     }
-  }, [pickedDate, isSearchingTimes, rawSlots.length, step]);
+  }, [pickedDate, isSearchingTimes, rawSlots.length, step]); // 🎯 NOUVEAU : On a ajouté "step" ici pour forcer le réveil !
 
-  // ── Initialisation des passagers depuis le panier ──────────────────────────
-  useEffect(() => {
-    if (step !== 3) return;
+  const gridData = useMemo(() => {
+    if (!selectedFlight || rawSlots.length === 0) return {};
 
-    const photoOption = complementsList.find((c: any) =>
-      c.name.toLowerCase().includes('photo') ||
-      c.name.toLowerCase().includes('vidéo') ||
-      c.name.toLowerCase().includes('video') ||
-      c.name.toLowerCase().includes('gopro')
-    );
+    const delayHours = selectedFlight.booking_delay_hours || 0;
+    const now = new Date();
+    const cutoffMs = now.getTime() + (delayHours * 60 * 60 * 1000);
 
-    const newPassengers: any[] = [];
-    Object.entries(cart).forEach(([key, qty]) => {
-      const [fId, dStr, tStr] = key.split('|');
-      const flight = flights.find((f: any) => f.id.toString() === fId);
-      for (let i = 0; i < qty; i++) {
-        newPassengers.push({
-          id: `${key}-${i}`,
-          flightKey: key,
-          flightId: fId,
-          flightName: flight?.name || 'Vol',
-          date: dStr,
-          time: tStr,
-          firstName: '',
-          weightChecked: false,
-          selectedComplements: [],
-          weight_min: flight?.weight_min ?? 20,
-          weight_max: flight?.weight_max ?? 110,
-        });
-      }
+    const flightDur = selectedFlight.duration_minutes || 0;
+    const allowedSlots = Array.isArray(selectedFlight.allowed_time_slots) ? selectedFlight.allowed_time_slots : [];
+    
+    let baseDur = 15;
+    const sample = rawSlots[0];
+    if (sample) baseDur = Math.round((new Date(sample.end_time).getTime() - new Date(sample.start_time).getTime()) / 60000) || 15;
+    
+    const isMulti = selectedFlight.allow_multi_slots === true;
+    const slotsNeeded = (isMulti && flightDur > baseDur) ? Math.ceil(flightDur / baseDur) : 1;
+
+    const monSchedules: Record<string, Record<number, any>> = {};
+    const timeToMs: Record<string, number> = {};
+    const uniqueTimesByDate: Record<string, Set<string>> = {};
+
+    rawSlots.forEach(s => {
+      const dObj = new Date(s.start_time);
+      const ms = dObj.getTime(); 
+      
+      if (!monSchedules[s.monitor_id]) monSchedules[s.monitor_id] = {};
+      monSchedules[s.monitor_id][ms] = { ...s }; 
+
+      const dStr = dObj.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      const tStr = dObj.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }); 
+      
+      if (!uniqueTimesByDate[dStr]) uniqueTimesByDate[dStr] = new Set();
+      uniqueTimesByDate[dStr].add(tStr);
+
+      timeToMs[`${dStr}|${tStr}`] = ms; 
     });
 
-    setPassengers(prev => newPassengers.map(nP => {
-      const existing = prev.find(p => p.id === nP.id);
-      const flight = flights.find((f: any) => f.id.toString() === nP.flightId);
-      let currentComplements = existing ? [...(existing.selectedComplements || [])] : [];
+    Object.entries(cart).forEach(([key, qty]) => {
+      if (qty === 0) return;
+      const [fId, dStr, tStr] = key.split('|');
+      const flightInCart = flights.find(f => f.id.toString() === fId);
+      if (!flightInCart) return;
 
-      if (appliedVoucher && appliedVoucher.type === 'gift_card' && photoOption && flight) {
-        const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === nP.flightId;
-        if (isSameFlight) {
-          const vVal = Number(appliedVoucher.price_paid_cents) / 100;
-          const fPri = flight.price_cents / 100;
-          const pPri = photoOption.price_cents / 100;
-          if (vVal >= fPri + pPri && !currentComplements.includes(photoOption.id)) {
-            currentComplements.push(photoOption.id);
+      const fDurCart = flightInCart.duration_minutes || 0;
+      const isMultiCart = flightInCart.allow_multi_slots === true;
+      const sNeededCart = (isMultiCart && fDurCart > baseDur) ? Math.ceil(fDurCart / baseDur) : 1;
+      
+      const targetMs = timeToMs[`${dStr}|${tStr}`];
+      if (!targetMs) return;
+
+      let consumed = 0;
+      for (const monId of Object.keys(monSchedules)) {
+        if (consumed >= qty) break;
+        let canBook = true;
+        for (let i = 0; i < sNeededCart; i++) {
+          const ms = targetMs + (i * baseDur * 60000);
+          const slot = monSchedules[monId][ms];
+          if (!slot || slot.status !== 'available') { canBook = false; break; }
+        }
+        if (canBook) {
+          for (let i = 0; i < sNeededCart; i++) {
+            const ms = targetMs + (i * baseDur * 60000);
+            monSchedules[monId][ms].status = 'booked_by_cart';
           }
+          consumed++;
         }
       }
-
-      return { ...nP, firstName: existing?.firstName || '', weightChecked: existing?.weightChecked || false, selectedComplements: currentComplements };
-    }));
-  }, [step, cart, flights, appliedVoucher, complementsList]);
-
-  // ── Copie du contact vers le premier passager ──────────────────────────────
-  useEffect(() => {
-    if (contact.isPassenger && passengers.length > 0 && contact.firstName) {
-      setPassengers(prev => {
-        const newP = [...prev];
-        if (!newP[0].firstName) newP[0].firstName = contact.firstName;
-        return newP;
-      });
-    }
-  }, [contact.isPassenger, contact.firstName]);
-
-  // ── Calcul des totaux (doit précéder les useEffects qui en dépendent) ────────
-  let totalItems = 0;
-  let flightTotal = 0;
-  let complementsTotal = 0;
-
-  Object.entries(cart).forEach(([key, qty]) => {
-    totalItems += qty;
-    const [fId] = key.split('|');
-    const f = flights.find((fl: any) => fl.id.toString() === fId);
-    if (f?.price_cents) flightTotal += (f.price_cents / 100) * qty;
-  });
-
-  passengers.forEach(p => {
-    (p.selectedComplements || []).forEach((compId: number) => {
-      const comp = complementsList.find((c: any) => c.id === compId);
-      if (comp?.price_cents) complementsTotal += comp.price_cents / 100;
     });
-  });
 
-  const originalPrice = flightTotal + complementsTotal;
-  let discountAmount = 0;
-  if (appliedVoucher) {
-    if (appliedVoucher.type === 'gift_card') {
-      discountAmount = Number(appliedVoucher.price_paid_cents) / 100;
-    } else if (appliedVoucher.type === 'promo') {
-      const discountVal = Number(appliedVoucher.discount_value);
-      const scope = appliedVoucher.discount_scope || 'both';
-      let targetAmount = scope === 'flight' ? flightTotal : scope === 'complements' ? complementsTotal : originalPrice;
-      discountAmount = appliedVoucher.discount_type === 'fixed'
-        ? Math.min(discountVal, targetAmount)
-        : targetAmount * (discountVal / 100);
-    }
-  }
-  const finalPrice = Math.max(0, originalPrice - discountAmount);
+    const grid: Record<string, Record<string, number>> = {};
+    
+    // 🎯 2. LE MOTEUR CONSTRUIT 21 JOURS (-10 à +10)
+    const weekDays = Array.from({ length: 21 }).map((_, i) => {
+      const d = new Date(gridStartDate);
+      d.setDate(d.getDate() - 10 + i);
+      return getLocalYYYYMMDD(d);
+    });
+    weekDays.forEach(d => grid[d] = {});
 
-  // ── Vide le panier → retour étape 1 ───────────────────────────────────────
-  useEffect(() => {
-    if (step === 3 && totalItems === 0) setStep(1);
-  }, [totalItems, step]);
+    weekDays.forEach(dateStr => {
+      if (!uniqueTimesByDate[dateStr]) return;
+      Array.from(uniqueTimesByDate[dateStr]).forEach(timeStr => {
+        if (allowedSlots.length > 0 && !allowedSlots.includes(timeStr)) return;
+        
+        const targetMs = timeToMs[`${dateStr}|${timeStr}`];
+        if (!targetMs) return;
 
-  // ── Données dérivées ───────────────────────────────────────────────────────
-  const weekDays = Array.from({ length: 21 }).map((_, i) => {
-    const d = new Date(gridStartDate);
-    d.setDate(d.getDate() - 10 + i);
-    return getLocalYYYYMMDD(d);
-  });
+        if (targetMs <= cutoffMs) return;
 
-  const filteredFlights = flights.filter((f: any) => {
-    const s = String(f.season || 'ALL').toUpperCase().trim();
-    const isLegacy = s === 'STANDARD' || s === 'ALL';
-    if (activeSeason === 'Hiver') return s === 'WINTER' || s === 'HIVER' || isLegacy;
-    return s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || isLegacy;
-  });
+        let capacity = 0;
+        for (const monId of Object.keys(monSchedules)) {
+          let isFree = true;
+          for (let i = 0; i < slotsNeeded; i++) {
+            const ms = targetMs + (i * baseDur * 60000);
+            const slot = monSchedules[monId][ms];
+            if (!slot || slot.status !== 'available') { isFree = false; break; }
+          }
+          if (isFree) capacity++;
+        }
+        const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
+        if (capacity > 0 || (cart[currentFlightKey] || 0) > 0) {
+           grid[dateStr][timeStr] = capacity;
+        }
+      });
+    });
 
-  const isFormValid = !!(contact.firstName && contact.lastName && contact.phone && contact.email &&
-    passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked));
+    return grid;
+  }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleDatePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPickedDate(e.target.value);
-    setGridStartDate(calculateGridStart(e.target.value, displayDaysCount));
+    const val = e.target.value;
+    setPickedDate(val);
+    setGridStartDate(calculateGridStart(val, displayDaysCount));
   };
 
   const shiftDays = (offset: number) => {
     const d = new Date(gridStartDate);
     d.setDate(d.getDate() + offset);
     setGridStartDate(getLocalYYYYMMDD(d));
+    
     const p = new Date(pickedDate);
     p.setDate(p.getDate() + offset);
     setPickedDate(getLocalYYYYMMDD(p));
@@ -311,57 +563,164 @@ export default function ReserverPage() {
     const key = `${selectedFlight.id}|${date}|${time}`;
     setCart(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
   };
-
   const handleRemove = (date: string, time: string) => {
     const key = `${selectedFlight.id}|${date}|${time}`;
     setCart(prev => {
-      const c = { ...prev };
-      if (c[key] > 1) c[key]--; else delete c[key];
-      return c;
+      const newCart = { ...prev };
+      if (newCart[key] > 1) newCart[key]--; else delete newCart[key];
+      return newCart;
     });
   };
 
   const handleDecrementCart = (key: string) => {
     setCart(prev => {
-      const c = { ...prev };
-      if (c[key] > 1) c[key]--; else delete c[key];
-      return c;
+      const newCart = { ...prev };
+      if (newCart[key] > 1) newCart[key]--;
+      else delete newCart[key];
+      return newCart;
     });
   };
 
   const handleDeleteCartItem = (key: string) => {
-    setCart(prev => { const c = { ...prev }; delete c[key]; return c; });
+    setCart(prev => {
+      const newCart = { ...prev };
+      delete newCart[key];
+      return newCart;
+    });
   };
 
-  const handleApplyVoucher = async (code: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const res = await fetch(`${apiUrl}/api/gift-cards/check/${code}`);
-    if (!res.ok) {
-      const errData = await res.json();
-      throw errData.message || 'Code invalide ou expiré';
-    }
-    const data = await res.json();
-    if (data.flight_type_id) {
-      const hasRequiredFlight = Object.keys(cart).some(k => k.startsWith(`${data.flight_type_id}|`));
-      if (!hasRequiredFlight) throw `Ce code n'est valable que pour la prestation : ${data.flight_name}`;
-    }
-    setAppliedVoucher(data);
+  const handleRemovePassenger = (indexToRemove: number, flightKey: string) => {
+    setPassengers(prev => prev.filter((_, i) => i !== indexToRemove));
+    handleDecrementCart(flightKey);
   };
 
-  const handlePassengerChange = (index: number, updated: any) => {
-    setPassengers(prev => { const arr = [...prev]; arr[index] = updated; return arr; });
+  let totalItems = 0;
+  let flightTotal = 0;
+  let complementsTotal = 0;
+
+  Object.entries(cart).forEach(([key, qty]) => {
+    totalItems += qty;
+    const [fId] = key.split('|');
+    const f = flights.find(fl => fl.id.toString() === fId);
+    if (f && f.price_cents) flightTotal += (f.price_cents / 100) * qty;
+  });
+
+  passengers.forEach(p => {
+    if (p.selectedComplements && p.selectedComplements.length > 0) {
+      p.selectedComplements.forEach((compId: number) => {
+        const comp = complementsList.find(c => c.id === compId);
+        if (comp && comp.price_cents) complementsTotal += (comp.price_cents / 100);
+      });
+    }
+  });
+
+  let originalPrice = flightTotal + complementsTotal;
+  let discountAmount = 0;
+  
+  if (appliedVoucher) {
+    if (appliedVoucher.type === 'gift_card') {
+      discountAmount = Number(appliedVoucher.price_paid_cents) / 100;
+    } else if (appliedVoucher.type === 'promo') {
+      const discountVal = Number(appliedVoucher.discount_value);
+      const scope = appliedVoucher.discount_scope || 'both';
+      
+      let targetAmount = originalPrice;
+      if (scope === 'flight') targetAmount = flightTotal;
+      if (scope === 'complements') targetAmount = complementsTotal;
+
+      if (appliedVoucher.discount_type === 'fixed') {
+        discountAmount = Math.min(discountVal, targetAmount); 
+      }
+      if (appliedVoucher.discount_type === 'percentage') {
+        discountAmount = targetAmount * (discountVal / 100);
+      }
+    }
+  }
+
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
+
+  useEffect(() => {
+    if (step === 3 && totalItems === 0) setStep(1);
+  }, [totalItems, step]);
+
+  // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (21 JOURS)
+  const weekDays = Array.from({ length: 21 }).map((_, i) => {
+    const d = new Date(gridStartDate);
+    d.setDate(d.getDate() - 10 + i);
+    return getLocalYYYYMMDD(d);
+  });
+
+  const filteredFlights = flights.filter(f => {
+    const flightSeason = String(f.season || 'ALL').toUpperCase().trim(); 
+    const isLegacy = flightSeason === 'STANDARD' || flightSeason === 'ALL';
+
+    if (activeSeason === 'Hiver') {
+      return flightSeason === 'WINTER' || flightSeason === 'HIVER' || isLegacy;
+    } else {
+      return flightSeason === 'SUMMER' || flightSeason === 'ETE' || flightSeason === 'ÉTÉ' || isLegacy;
+    }
+  });
+
+  const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email && 
+                      passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherInput.trim()) return;
+    setIsApplyingVoucher(true);
+    setVoucherError('');
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/gift-cards/check/${voucherInput.trim()}`);
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        setVoucherError(errData.message || "Code invalide ou expiré");
+        setAppliedVoucher(null);
+      } else {
+        const data = await res.json();
+        if (data.flight_type_id) {
+          const hasRequiredFlight = Object.keys(cart).some(key => key.startsWith(`${data.flight_type_id}|`));
+          if (!hasRequiredFlight) {
+            setVoucherError(`Ce code n'est valable que pour la prestation : ${data.flight_name}`);
+            setAppliedVoucher(null);
+            setIsApplyingVoucher(false);
+            return;
+          }
+        }
+
+        // 🎯 ON S'ARRÊTE LÀ ! Le fait de changer cet état va "réveiller" le useEffect plus haut
+        // qui se chargera de cocher la case tout seul comme un grand !
+        setAppliedVoucher(data);
+        setVoucherInput(''); 
+      }
+    } catch (err) {
+      setVoucherError("Erreur de connexion.");
+    } finally {
+      setIsApplyingVoucher(false);
+    }
   };
 
   const handleSubmit = async () => {
     if (!isFormValid) return;
     setIsCheckingOut(true);
+
     try {
+      // 🎯 NOUVEAU : Formatage intelligent des prénoms pour les groupes
       const passengersToSubmit = passengers.map((p, index) => {
         let finalName = p.firstName.trim();
+        
+        // Si c'est un groupe (plus d'un passager)
         if (passengers.length > 1) {
+          // On vérifie si ce passager est le contact principal (soit c'est le passager 1 coché, soit ils ont exactement le même prénom)
           const isContact = contact.isPassenger && (index === 0 || finalName.toLowerCase() === contact.firstName.trim().toLowerCase());
-          if (!isContact) finalName = `${finalName} (${contact.firstName.trim()})`;
+          
+          if (!isContact) {
+            // Si ce n'est pas le contact, on ajoute le nom du "chef de groupe" entre parenthèses !
+            finalName = `${finalName} (${contact.firstName.trim()})`;
+          }
         }
+        
+        // On retourne le passager avec son nouveau nom formaté
         return { ...p, firstName: finalName };
       });
 
@@ -369,27 +728,31 @@ export default function ReserverPage() {
       const res = await fetch(`${apiUrl}/api/public/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact, passengers: passengersToSubmit, voucher_code: appliedVoucher?.code ?? null }),
+        body: JSON.stringify({ 
+          contact, 
+          passengers: passengersToSubmit, // 🚀 On envoie les noms formatés !
+          voucher_code: appliedVoucher ? appliedVoucher.code : null
+        })
       });
 
       const data = await res.json();
+      
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert('Erreur lors de la création du paiement : ' + (data.error || 'Inconnue'));
+        toast.error("Erreur lors de la création du paiement : " + (data.error || "Inconnue"));
         setIsCheckingOut(false);
       }
     } catch (err) {
       console.error(err);
-      alert('Erreur de connexion au serveur de paiement.');
+      toast.error("Erreur de connexion au serveur de paiement.");
       setIsCheckingOut(false);
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-clip">
-
+      
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal {
           0% { opacity: 0; transform: translateY(100px); }
@@ -398,17 +761,37 @@ export default function ReserverPage() {
         .hero-animation-block {
           will-change: transform, opacity;
           animation: ultraSmoothReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          position: relative; z-index: 10;
+          position: relative;
+          z-index: 10;
         }
         .hero-gradient-infos {
           background: radial-gradient(circle at center, #3b82f6 0%, #1e3a8a 50%, #4c1d95 100%);
-          position: relative; width: 100%; height: 70vh;
-          display: flex; align-items: center; color: white;
-          text-align: left; padding-left: 15vw; overflow: hidden;
+          position: relative;
+          width: 100%;
+          height: 70vh;
+          display: flex;
+          align-items: center;
+          color: white;
+          text-align: left;
+          padding-left: 15vw;
+          overflow: hidden;
         }
-        .mountains-container { position: absolute; bottom: -5px; left: 0; width: 100%; z-index: 5; line-height: 0; }
-        .mountains-container img { width: 100%; height: auto; display: block; }
-        @media (max-width: 1024px) { .hero-gradient-infos { height: 60vh; padding-left: 8vw; } }
+        .mountains-container {
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          width: 100%;
+          z-index: 5;
+          line-height: 0;
+        }
+        .mountains-container img { 
+          width: 100%; 
+          height: auto; 
+          display: block; 
+        }
+        @media (max-width: 1024px) {
+          .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
+        }
       `}} />
 
       <section className="hero-gradient-infos">
@@ -426,10 +809,11 @@ export default function ReserverPage() {
       </section>
 
       <div className="relative z-20 max-w-7xl mx-auto px-4 -mt-16 md:-mt-32 pb-48">
-
-        {/* ── ÉTAPE 1 : CHOIX DU VOL ── */}
+        
+        {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl inline-flex shadow-xl border border-slate-200">
                 <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
@@ -437,110 +821,192 @@ export default function ReserverPage() {
               </div>
             </div>
 
-            <div className="max-w-7xl mx-auto mb-10 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎁</div>
-                  <div>
-                    <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Bon Cadeau</h4>
-                    <p className="text-xs text-sky-700 font-medium leading-relaxed">Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📸</div>
-                  <div>
-                    <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Photos & Vidéos</h4>
-                    <p className="text-xs text-sky-700 font-medium leading-relaxed">Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎢</div>
-                  <div>
-                    <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Sensations Fortes</h4>
-                    <p className="text-xs text-sky-700 font-medium leading-relaxed">Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !</p>
-                  </div>
+            {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
+          <div className="max-w-7xl mx-auto mb-10 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎁</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Bon Cadeau</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
+                  </p>
                 </div>
               </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📸</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Photos & Vidéos</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎢</div>
+                <div>
+                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Sensations Fortes</h4>
+                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                    Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
+                  </p>
+                </div>
+              </div>
+
             </div>
+          </div>
 
             {isLoading ? (
+              /* ☠️ EFFET "SKELETON" POUR LES CARTES DE VOLS */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                {[1, 2, 3].map(i => (
+                {[1, 2, 3].map((i) => (
                   <div key={i} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 flex flex-col justify-between animate-pulse">
-                    <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-2xl md:rounded-[20px] mb-6" />
+                    {/* Fausse image */}
+                    <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-2xl md:rounded-[20px] mb-6"></div>
+                    
                     <div>
-                      <div className="h-8 bg-slate-200/80 rounded-xl w-3/4 mb-4" />
-                      <div className="flex gap-3 mb-6"><div className="h-6 bg-slate-100 rounded-lg w-28" /><div className="h-6 bg-slate-100 rounded-lg w-24" /></div>
-                      <div className="h-5 bg-slate-100 rounded-lg w-40 mb-4" />
+                      {/* Faux titre */}
+                      <div className="h-8 bg-slate-200/80 rounded-xl w-3/4 mb-4"></div>
+                      {/* Faux tags */}
+                      <div className="flex gap-3 mb-6">
+                        <div className="h-6 bg-slate-100 rounded-lg w-28"></div>
+                        <div className="h-6 bg-slate-100 rounded-lg w-24"></div>
+                      </div>
+                      {/* Fausse saison */}
+                      <div className="h-5 bg-slate-100 rounded-lg w-40 mb-4"></div>
                     </div>
+                    
+                    {/* Faux prix et bouton */}
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
-                      <div className="h-10 bg-slate-200/80 rounded-xl w-20" />
-                      <div className="h-12 bg-slate-200/50 rounded-2xl w-32" />
+                      <div className="h-10 bg-slate-200/80 rounded-xl w-20"></div>
+                      <div className="h-12 bg-slate-200/50 rounded-2xl w-32"></div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : filteredFlights.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-[35px] shadow-xl border border-slate-100">
-                <span className="text-5xl block mb-4">🌬️</span>
-                <h3 className="text-xl font-black uppercase text-slate-800">Aucun vol configuré pour cette saison</h3>
-              </div>
+               <div className="text-center py-20 bg-white rounded-[35px] shadow-xl border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-black uppercase text-slate-800">Aucun vol configuré pour cette saison</h3></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredFlights.map((flight: any) => (
-                  <FlightCard
-                    key={flight.id}
-                    flight={flight}
-                    giftTemplates={giftTemplates}
-                    onSelect={() => { setSelectedFlight(flight); setStep(2); }}
-                    onInfo={() => setInfoFlight(flight)}
-                    onGift={(templateId, flightName) => {
-                      window.location.href = `/bons-cadeaux?templateId=${templateId}&flightName=${encodeURIComponent(flightName)}`;
-                    }}
-                  />
-                ))}
+                {filteredFlights.map((flight) => {
+                  let displayedSeason = "🌍 Inclus dans toutes les saisons";
+                  const s = String(flight.season || 'ALL').toUpperCase().trim();
+                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') displayedSeason = "☀️ Uniquement sur la saison Été";
+                  if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
+
+                  return (
+                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:border-sky-400 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                    
+                    {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
+                    {flight.image_url && (
+                      <div 
+                        className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100"
+                        style={{ backgroundImage: `url(${flight.image_url})` }}
+                      />
+                    )}
+
+                    <div>
+                      <div className="flex justify-between items-start mb-3 gap-2">
+                        <h3 className="text-2xl font-black uppercase italic text-slate-900">{flight.name}</h3>
+                        
+                        {/* On n'affiche le bouton 'i' que si vous l'avez activé et rempli dans le backoffice ! */}
+                        {flight.show_popup && flight.popup_content && (
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setInfoFlight(flight); 
+                            }}
+                            // 🎯 Bouton rendu transparent (bg-transparent) avec un contour subtil qui s'allume au survol
+                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-all border border-slate-200"
+                            title="Plus d'informations sur ce vol"
+                          >
+                            <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-3 text-sm font-bold text-slate-500 mb-6">
+                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{getMarketingInfo(flight.name)}</span>
+                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
+                      </div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
+                        {displayedSeason}
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="text-3xl md:text-4xl font-black text-sky-600 shrink-0">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {giftTemplates.find(t => t.price_cents === flight.price_cents) && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); 
+                              const templateId = giftTemplates.find(t => t.price_cents === flight.price_cents).id;
+                              // 🎯 NOUVEAU : On envoie le nom du vol dans l'URL !
+                              window.location.href = `/bons-cadeaux?templateId=${templateId}&flightName=${encodeURIComponent(flight.name)}`; 
+                            }}
+                            className="cursor-pointer bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
+                          >
+                            🎁 Offrir
+                          </button>
+                        )}
+                        <button className="cursor-pointer bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
+                          Réserver <span className="hidden md:inline">ce vol</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )})}
               </div>
             )}
           </div>
         )}
 
-        {/* ── ÉTAPE 2 : GRILLE DES CRÉNEAUX ── */}
+        {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
           <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
             <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
               ← Retour au catalogue
             </button>
-
+            
             <div className="bg-white rounded-[40px] shadow-sm p-6 md:p-10 border border-slate-200">
+              
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-3xl font-black text-slate-900 leading-tight">Réservation :</h2>
                     <div className="relative">
-                      <select
+                      <select 
                         className="text-2xl md:text-3xl font-black text-sky-600 bg-sky-50 border-2 border-sky-100 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer focus:border-sky-300 hover:bg-sky-100 transition-all appearance-none shadow-sm"
                         value={selectedFlight.id}
-                        onChange={e => {
-                          const newFlight = flights.find((f: any) => f.id.toString() === e.target.value);
+                        onChange={(e) => {
+                          const newFlight = flights.find(f => f.id.toString() === e.target.value);
                           if (newFlight) setSelectedFlight(newFlight);
                         }}
                       >
-                        {filteredFlights.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                        {filteredFlights.map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sky-500 text-sm">▼</div>
                     </div>
                   </div>
                   <p className="text-sky-500 font-bold uppercase tracking-widest text-sm mt-3">{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
-
+                
                 <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
                   {displayDaysCount < 5 && (
                     <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">←</button>
                   )}
                   <span className="text-xs font-black uppercase text-slate-400 ml-2 hidden md:inline">
-                    {displayDaysCount === 7 ? 'Semaine du' : 'À partir du'}
+                    {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
                   </span>
-                  <input type="date" className="font-bold bg-transparent border-none p-2 outline-none cursor-pointer text-slate-700" value={pickedDate} onChange={handleDatePick} />
+                  <input 
+                    type="date" 
+                    className="font-bold bg-transparent border-none p-2 outline-none cursor-pointer text-slate-700" 
+                    value={pickedDate} 
+                    onChange={handleDatePick} 
+                  />
                   {displayDaysCount < 5 && (
                     <button onClick={() => shiftDays(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">→</button>
                   )}
@@ -548,19 +1014,24 @@ export default function ReserverPage() {
               </div>
 
               <div className={`transition-opacity duration-75 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
+                
                 {isSearchingTimes && rawSlots.length === 0 ? (
+                  /* ☠️ EFFET "SKELETON" : Chargement initial ultra-pro */
                   <div className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 pt-6">
                     {Array.from({ length: displayDaysCount === 7 ? 7 : 5 }).map((_, i) => (
                       <div key={i} className="min-w-[75vw] md:min-w-[220px] flex-1 flex flex-col gap-3 animate-pulse">
-                        <div className="h-14 bg-slate-200/60 rounded-xl mb-4" />
-                        <div className="h-20 bg-slate-100 rounded-xl" />
-                        <div className="h-20 bg-slate-100 rounded-xl" />
-                        <div className="h-20 bg-slate-100/50 rounded-xl" />
+                         {/* Faux header de jour */}
+                         <div className="h-14 bg-slate-200/60 rounded-xl mb-4"></div>
+                         {/* Fausses cases horaires */}
+                         <div className="h-20 bg-slate-100 rounded-xl"></div>
+                         <div className="h-20 bg-slate-100 rounded-xl"></div>
+                         <div className="h-20 bg-slate-100/50 rounded-xl"></div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="relative">
+                    {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
                     <div className={`sticky ${isEmbed ? 'top-0' : 'top-20'} z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
@@ -584,30 +1055,42 @@ export default function ReserverPage() {
                       </div>
                     </div>
 
-                    <div
+                    {/* 🎯 LA ZONE DES CRÉNEAUX (Unique et Corrigée) */}
+                    <div 
                       ref={bodyScrollRef}
-                      onScroll={e => {
-                        if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                      onScroll={(e) => { 
+                        if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
+                        
+                        // 🎯 NOUVEAU : Synchronisation magique du Swipe (Uniquement sur mobile)
                         if (window.innerWidth < 768) {
                           clearTimeout(scrollTimeout.current);
                           scrollTimeout.current = setTimeout(() => {
                             if (!bodyScrollRef.current) return;
                             const container = bodyScrollRef.current;
-                            const scrollCenter = container.scrollLeft + container.clientWidth / 2;
+                            const scrollCenter = container.scrollLeft + (container.clientWidth / 2);
+                            
                             let closestDate = pickedDate;
                             let minDistance = Infinity;
+                            
+                            // On cherche quelle carte de jour est la plus proche du centre de l'écran
                             weekDays.forEach(dateStr => {
                               const el = document.getElementById(`mobile-col-${dateStr}`);
                               if (el) {
-                                const dist = Math.abs(el.offsetLeft + el.clientWidth / 2 - scrollCenter);
-                                if (dist < minDistance) { minDistance = dist; closestDate = dateStr; }
+                                const elCenter = el.offsetLeft + (el.clientWidth / 2);
+                                const distance = Math.abs(elCenter - scrollCenter);
+                                if (distance < minDistance) {
+                                  minDistance = distance;
+                                  closestDate = dateStr;
+                                }
                               }
                             });
+                            
+                            // Si le jour au centre a changé, on met à jour le calendrier silencieusement
                             if (closestDate !== pickedDate) {
-                              isSwipingRef.current = true;
+                              isSwipingRef.current = true; // On active le verrou anti-rebond
                               setPickedDate(closestDate);
                             }
-                          }, 150);
+                          }, 150); // Un délai de 150ms pour laisser le doigt finir son mouvement
                         }
                       }}
                       className="relative flex overflow-x-auto gap-4 px-[12.5vw] md:px-0 pb-4 snap-x snap-mandatory md:snap-proximity pt-6 custom-scrollbar opacity-0 md:opacity-100 transition-opacity duration-300"
@@ -616,12 +1099,14 @@ export default function ReserverPage() {
                         const isHiddenOnDesktop = i < 10 || i >= 10 + displayDaysCount;
                         const times = Object.keys(gridData[dateStr] || {}).sort();
                         const pickedIndex = weekDays.indexOf(pickedDate);
-                        const showRealSlots = isGridExpanded || Math.abs(i - pickedIndex) <= 1;
+                        const diffIndex = Math.abs(i - pickedIndex);
+                        const showRealSlots = isGridExpanded || diffIndex <= 1;
 
                         return (
-                          <div
-                            id={`mobile-col-${dateStr}`}
-                            key={dateStr}
+                          <div 
+                            id={`mobile-col-${dateStr}`} 
+                            key={dateStr} 
+                            // 🚀 LA MARGE MAGIQUE : scroll-mt-32 (128px) ou scroll-mt-48 (192px)
                             className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 snap-center md:snap-start h-fit scroll-mt-32 md:scroll-mt-48 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}
                           >
                             {showRealSlots ? (
@@ -656,8 +1141,8 @@ export default function ReserverPage() {
                               </div>
                             ) : (
                               <div className="flex flex-col gap-2 opacity-0 pointer-events-none">
-                                <div className="h-[90px] bg-slate-50 rounded-lg w-full" />
-                                <div className="h-[90px] bg-slate-50 rounded-lg w-full" />
+                                <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
+                                <div className="h-[90px] bg-slate-50 rounded-lg w-full"></div>
                               </div>
                             )}
                           </div>
@@ -671,7 +1156,7 @@ export default function ReserverPage() {
           </div>
         )}
 
-        {/* ── ÉTAPE 3 : FORMULAIRE PASSAGER ── */}
+        {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
           <div id="etape-3-container" className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
             <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
@@ -679,78 +1164,243 @@ export default function ReserverPage() {
             </button>
 
             <div className="bg-white rounded-[40px] shadow-2xl p-8 md:p-12 border border-slate-100">
+              
               <div className="text-center mb-10 pb-10 border-b border-slate-100">
                 <span className="text-6xl mb-6 block animate-bounce">📝</span>
                 <h2 className="text-3xl font-black uppercase italic text-slate-900 leading-tight">Détails des passagers</h2>
                 <p className="text-slate-500 font-medium mt-2">Dernière étape avant de voler !</p>
               </div>
 
-              <VoucherSection
-                appliedVoucher={appliedVoucher}
-                discountAmount={discountAmount}
-                onApply={handleApplyVoucher}
-                onRemove={() => setAppliedVoucher(null)}
-              />
+              {/* 🎯 NOUVEAU : LA SECTION BON CADEAU EST MAINTENANT TOUT EN HAUT ! */}
+              {/* 🎯 SECTION BON CADEAU (Douce et Rassurante) */}
+              <div className="mb-12 bg-sky-50 border-2 border-sky-200 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm">
+                <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
+                
+                <h3 className="font-black text-xl text-violet-900 mb-2 uppercase tracking-widest flex items-center gap-3 relative z-10">
+                  Vous avez un Bon Cadeau ou un Code Promo ?
+                </h3>
+                <p className="text-violet-700 font-bold mb-6 text-sm relative z-10">
+                  Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
+                </p>
 
-              {/* Contact */}
+                {appliedVoucher ? (
+                  <div className="bg-white border-2 border-emerald-500 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
+                    <div>
+                      <p className="font-black text-emerald-900 uppercase tracking-widest text-sm">
+                        ✅ {appliedVoucher.type === 'promo' ? 'Code Promo appliqué' : 'Bon cadeau activé !'}
+                      </p>
+                      <p className="text-emerald-700 font-bold mt-1">
+                        Code : <span className="uppercase">{appliedVoucher.code}</span>
+                      </p>
+                    </div>
+                    <div className="text-left md:text-right w-full md:w-auto">
+                      <p className="text-3xl font-black text-emerald-600">
+                        - {discountAmount.toFixed(2)} €
+                      </p>
+                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-black uppercase text-rose-500 mt-2 hover:underline">
+                        Retirer le code
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative z-10">
+                    <div className="flex flex-col md:flex-row gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
+                        className="flex-1 bg-white border-2 border-sky-100 rounded-2xl p-4 font-black uppercase text-slate-800 focus:border-violet-500 outline-none transition-colors shadow-sm"
+                        value={voucherInput}
+                        onChange={e => setVoucherInput(e.target.value.toUpperCase())}
+                      />
+                      <button 
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher || !voucherInput.trim()}
+                        className={`px-8 py-4 md:py-0 rounded-2xl font-black uppercase tracking-widest text-sm transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'bg-sky-200/50 text-sky-500' : 'bg-violet-500 text-white hover:bg-violet-600 shadow-md hover:-translate-y-0.5'}`}
+                      >
+                        {isApplyingVoucher ? '...' : 'Appliquer'}
+                      </button>
+                    </div>
+                    {/* 🎯 On remplace le rouge par du violet et la croix par un "i" */}
+                    {voucherError && <p className="text-violet-600 font-bold text-sm mt-3 flex items-center gap-2"><span>ℹ️</span> {voucherError}</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 1 : CONTACT */}
               <div className="mb-12">
                 <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
                   <span className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
                   Personne à contacter
                 </h3>
-
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Jean" value={contact.firstName} onChange={e => setContact({ ...contact, firstName: e.target.value })} />
+                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Jean" value={contact.firstName} onChange={e => setContact({...contact, firstName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Dupont" value={contact.lastName} onChange={e => setContact({ ...contact, lastName: e.target.value })} />
+                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Dupont" value={contact.lastName} onChange={e => setContact({...contact, lastName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone (le jour du vol)</label>
-                    <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="06 12 34 56 78" value={contact.phone} onChange={e => setContact({ ...contact, phone: e.target.value })} />
+                    <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="06 12 34 56 78" value={contact.phone} onChange={e => setContact({...contact, phone: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
-                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="jean@email.com" value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })} />
+                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="jean@email.com" value={contact.email} onChange={e => setContact({...contact, email: e.target.value})} />
                   </div>
                 </div>
 
                 <div className="mb-6">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Remarque (Facultatif)</label>
-                  <textarea
+                  <textarea 
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 h-24 text-slate-800"
                     placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème auditif...)"
                     value={contact.notes}
-                    onChange={e => setContact({ ...contact, notes: e.target.value })}
+                    onChange={e => setContact({...contact, notes: e.target.value})}
                   />
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer bg-sky-50 p-4 rounded-2xl border border-sky-100 hover:border-sky-300 transition-colors">
-                  <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={contact.isPassenger} onChange={e => setContact({ ...contact, isPassenger: e.target.checked })} />
+                  <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={contact.isPassenger} onChange={e => setContact({...contact, isPassenger: e.target.checked})} />
                   <span className="font-bold text-sky-900 text-sm">Je suis aussi l'un des passagers (m'ajouter au vol)</span>
                 </label>
               </div>
 
-              {/* Passagers */}
+              {/* SECTION 2 : PASSAGERS */}
               <div>
                 <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
                   <span className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
                   Les Passagers
                 </h3>
+
                 <div className="space-y-6">
                   {passengers.map((p, index) => (
-                    <PassengerCard
-                      key={p.id}
-                      passenger={p}
-                      index={index}
-                      complementsList={complementsList}
-                      appliedVoucher={appliedVoucher}
-                      flights={flights}
-                      onChange={handlePassengerChange}
-                    />
+                    <div key={p.id} className="bg-white border-2 border-slate-100 rounded-3xl p-6 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
+                      
+                      <div className="flex flex-wrap items-center gap-3 mb-5">
+                        <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
+                        <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
+                          {p.flightName} • {getDayName(p.date)} à {p.time}
+                        </span>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom de la personne qui vole</label>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" 
+                          placeholder="Prénom du passager" 
+                          value={p.firstName}
+                          onChange={e => {
+                            const newP = [...passengers];
+                            newP[index].firstName = e.target.value;
+                            setPassengers(newP);
+                          }}
+                        />
+                      </div>
+
+                      <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                        <input 
+                          type="checkbox" 
+                          className={`w-6 h-6 mt-0.5 ${p.weightChecked ? 'accent-emerald-500' : 'accent-rose-500'}`} 
+                          checked={p.weightChecked}
+                          onChange={e => {
+                            const newP = [...passengers];
+                            newP[index].weightChecked = e.target.checked;
+                            setPassengers(newP);
+                          }}
+                        />
+                        <div>
+                          <span className={`font-bold block ${p.weightChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
+                            Je certifie peser entre {p.weight_min} et {p.weight_max} kg *
+                          </span>
+                          <span className={`text-xs ${p.weightChecked ? 'text-emerald-600' : 'text-rose-500'}`}>
+                            Information obligatoire pour des raisons de sécurité.
+                          </span>
+                        </div>
+                      </label>
+
+                      {complementsList.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                          <p className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-3">Options disponibles (paiement sur place possible)</p>
+                          <div className="grid gap-3">
+                            {complementsList.map((comp: any) => {
+                              const isSelected = p.selectedComplements?.includes(comp.id) || false;
+                              
+                              // 🎯 NOUVEAU : On vérifie si cette option est couverte par le bon cadeau
+                              let isLockedByVoucher = false;
+                              const currentFlight = flights.find(f => f.id.toString() === p.flightId);
+                              
+                              if (appliedVoucher && appliedVoucher.type === 'gift_card' && currentFlight) {
+                                const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === p.flightId;
+                                if (isSameFlight) {
+                                  const vVal = Number(appliedVoucher.price_paid_cents) / 100;
+                                  const fPri = currentFlight.price_cents / 100;
+                                  const pPri = comp.price_cents / 100;
+                                  // Si le bon paie le vol + cette option, on verrouille !
+                                  if (vVal >= (fPri + pPri)) {
+                                    isLockedByVoucher = true;
+                                  }
+                                }
+                              }
+
+                              return (
+                                <label 
+                                  key={comp.id} 
+                                  // On grise légèrement et on met un curseur "interdit" si c'est verrouillé
+                                  className={`flex items-start gap-3 p-4 rounded-2xl border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed bg-sky-50/50 border-sky-200' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-sky-50 border-sky-300' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100 hover:border-sky-200' : '')}`}
+                                >
+                                  <input 
+                                    type="checkbox" 
+                                    className={`w-6 h-6 mt-0.5 accent-sky-500 ${isLockedByVoucher ? 'cursor-not-allowed' : 'cursor-pointer'}`} 
+                                    checked={isSelected}
+                                    disabled={isLockedByVoucher} // 🔒 Blocage physique du clic
+                                    onChange={(e) => {
+                                      if (isLockedByVoucher) return; // 🔒 Double sécurité
+                                      const newP = [...passengers];
+                                      newP[index] = { ...newP[index] };
+                                      const selected = newP[index].selectedComplements || [];
+                                      
+                                      if (e.target.checked) {
+                                        newP[index].selectedComplements = [...selected, comp.id];
+                                      } else {
+                                        newP[index].selectedComplements = selected.filter((id: number) => id !== comp.id);
+                                      }
+                                      setPassengers(newP);
+                                    }}
+                                  />
+                                  <div className="flex-1 flex items-center gap-4">
+                                    {comp.image_url && (
+                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-lg p-1 border flex items-center justify-center shadow-sm ${isLockedByVoucher ? 'border-sky-200' : 'border-slate-200'}`}>
+                                        <img src={comp.image_url} alt={comp.name} className="w-full h-full object-contain" />
+                                      </div>
+                                    )}
+                                    
+                                    <div>
+                                      <span className={`font-bold block ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
+                                        {/* 🎯 NOUVEAU : On remplace le prix par un texte rassurant ! */}
+                                        {comp.name} <span className={isLockedByVoucher ? 'text-emerald-600' : ''}>
+                                          {isLockedByVoucher ? '(Inclus dans le Bon)' : `(+${comp.price_cents / 100}€)`}
+                                        </span>
+                                      </span>
+                                      {comp.description && (
+                                        <span className="text-xs text-slate-500 mt-1 block leading-tight">
+                                          {comp.description}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
                   ))}
                 </div>
               </div>
@@ -759,27 +1409,125 @@ export default function ReserverPage() {
         )}
       </div>
 
-      {/* ── PANIER FLOTTANT ── */}
-      {totalItems > 0 && (
-        <CartBar
-          cart={cart}
-          flights={flights}
-          totalItems={totalItems}
-          originalPrice={originalPrice}
-          discountAmount={discountAmount}
-          finalPrice={finalPrice}
-          step={step}
-          isFormValid={isFormValid}
-          isCheckingOut={isCheckingOut}
-          onDecrement={handleDecrementCart}
-          onDelete={handleDeleteCartItem}
-          onNext={() => setStep(3)}
-          onSubmit={handleSubmit}
-        />
-      )}
+      {/* --- LE PANIER FLOTTANT --- */}
+      {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <div className="flex-1 w-full">
+              <span className="font-black text-slate-900 uppercase italic text-lg block mb-2">
+                {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
+              </span>
+              
+              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scrollbar">
+                {Object.entries(cart).map(([key, qty]) => {
+                  if (qty === 0) return null;
+                  const [fId, dStr, tStr] = key.split('|');
+                  const f = flights.find(fl => fl.id.toString() === fId);
+                  return (
+                    <div key={key} className="bg-slate-50 rounded-xl pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
+                      <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sky-500 text-sm">{qty}</span></span>
+                      <div className="flex items-center gap-1 ml-2">
+                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-lg flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
+                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                {/* 🎯 NOUVEAU : Si un bon est appliqué, on affiche l'ancien prix barré ! */}
+                {discountAmount > 0 && (
+                  <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
+                )}
+                <p className="text-2xl font-black text-sky-500">{finalPrice.toFixed(2)} €</p>
+              </div>
+              
+              {step === 3 ? (
+                 <button 
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isCheckingOut}
+                  className={`flex-1 md:flex-none px-8 md:px-10 py-4 rounded-2xl font-black uppercase text-[11px] md:text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                >
+                  {isCheckingOut 
+                    ? 'Validation...' 
+                    : (finalPrice === 0 ? '✨ Valider (Gratuit)' : '🔒 Payer la réservation')}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setStep(3)}
+                  className="flex-1 md:flex-none bg-sky-500 text-white px-10 py-4 rounded-2xl font-black uppercase text-[12px] tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-sky-500/30"
+                >
+                  Passer à l'inscription →
+                </button>
+              )}
+            </div>
 
-      {/* ── POPUP INFOS VOL ── */}
-      {infoFlight && <InfoFlightModal flight={infoFlight} onClose={() => setInfoFlight(null)} />}
+          </div>
+        </div>
+      )}
+      {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
+      {infoFlight && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
+          
+          {/* 🎯 1. La popup a maintenant une hauteur maximale (max-h-[90vh]) et une structure en colonne */}
+          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            
+            {/* 🎯 2. L'en-tête (Fixe en haut) */}
+            <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-start border-b border-slate-100">
+              {/* Le pr-4 (padding-right) empêche le titre de déborder sur la croix */}
+              <h3 className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce vol</h3>
+              
+              <button 
+                onClick={() => setInfoFlight(null)} 
+                className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0 cursor-pointer active:scale-95"
+                aria-label="Fermer"
+              >
+                {/* 🎯 Une vraie icône vectorielle au lieu d'un caractère texte */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* 🎯 3. Le contenu (Avec défilement interne activé via overflow-y-auto) */}
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar relative">
+              
+              <div className="relative prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-100 overflow-hidden shadow-inner">
+                
+                {/* 🎯 4. Le filigrane ultra-léger (10% d'opacité) placé en arrière-plan du texte */}
+                {infoFlight.image_url && (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" 
+                    style={{ backgroundImage: `url(${infoFlight.image_url})` }} 
+                  />
+                )}
+                
+                {/* Le texte formaté par-dessus le filigrane */}
+                <div className="relative z-10 text-base">
+                  {infoFlight.popup_content && infoFlight.popup_content.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => 
+                    part.startsWith('**') && part.endsWith('**') 
+                      ? <strong key={i} className="font-black text-slate-900">{part.slice(2, -2)}</strong> 
+                      : part
+                  )}
+                </div>
+              </div>
+              
+              <button 
+                onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }} 
+                className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0 active:scale-[0.98]"
+              >
+                J'ai compris
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

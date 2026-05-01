@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useState, useEffect, useRef } from 'react';
 
 export function useClientFilters() {
@@ -8,38 +8,58 @@ export function useClientFilters() {
   const [filterPayments, setFilterPayments] = useState<string[]>([]);
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
-  // Ref instead of state+setTimeout: avoids a 500ms race condition where
-  // saves could fire before the initial load completed.
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
-      const saved = JSON.parse(localStorage.getItem(`fluide_filters_${user?.id || 'default'}`) || 'null');
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = `fluide_filters_${user?.id || 'default'}`;
+      const saved = localStorage.getItem(key);
       if (saved) {
-        if (saved.filterMonitors) setFilterMonitors(saved.filterMonitors);
-        if (saved.filterFlights) setFilterFlights(saved.filterFlights);
-        if (saved.filterPayments) setFilterPayments(saved.filterPayments);
-        if (saved.filterStartDate) setFilterStartDate(saved.filterStartDate);
-        if (saved.filterEndDate) setFilterEndDate(saved.filterEndDate);
-        if (saved.search) setSearch(saved.search);
+        const parsed = JSON.parse(saved);
+        if (parsed.filterMonitors) setFilterMonitors(parsed.filterMonitors);
+        if (parsed.filterFlights) setFilterFlights(parsed.filterFlights);
+        if (parsed.filterPayments) setFilterPayments(parsed.filterPayments);
+        if (parsed.filterStartDate) setFilterStartDate(parsed.filterStartDate);
+        if (parsed.filterEndDate) setFilterEndDate(parsed.filterEndDate);
+        if (parsed.search) setSearch(parsed.search);
       }
-    } catch (e) { console.error('Erreur chargement filtres', e); }
+    } catch (e) {
+      console.error('Erreur chargement filtres', e);
+    }
     hasLoadedRef.current = true;
   }, []);
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
     try {
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
-      localStorage.setItem(`fluide_filters_${user?.id || 'default'}`, JSON.stringify({ filterMonitors, filterFlights, filterPayments, filterStartDate, filterEndDate, search }));
-    } catch (e) {}
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = `fluide_filters_${user?.id || 'default'}`;
+      localStorage.setItem(
+        key,
+        JSON.stringify({ filterMonitors, filterFlights, filterPayments, filterStartDate, filterEndDate, search })
+      );
+    } catch {}
   }, [filterMonitors, filterFlights, filterPayments, filterStartDate, filterEndDate, search]);
 
   const resetFilters = () => {
-    setFilterMonitors([]); setFilterFlights([]); setFilterPayments([]);
-    setSearch(''); setFilterStartDate(''); setFilterEndDate('');
+    setFilterMonitors([]);
+    setFilterFlights([]);
+    setFilterPayments([]);
+    setSearch('');
+    setFilterStartDate('');
+    setFilterEndDate('');
   };
+
+  const hasActiveFilters =
+    filterMonitors.length > 0 ||
+    filterFlights.length > 0 ||
+    filterPayments.length > 0 ||
+    !!search ||
+    !!filterStartDate ||
+    !!filterEndDate;
 
   return {
     search, setSearch,
@@ -49,5 +69,6 @@ export function useClientFilters() {
     filterStartDate, setFilterStartDate,
     filterEndDate, setFilterEndDate,
     resetFilters,
+    hasActiveFilters,
   };
 }
