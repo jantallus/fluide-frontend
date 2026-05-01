@@ -309,7 +309,7 @@ export default function VouchersPage() {
                           </span>
                         )}
                         {/* 🎯 Badge Commission optimisé responsive */}
-                        {c.is_partner && c.partner_amount_cents > 0 && (
+                        {c.is_partner && (c.partner_amount_cents ?? 0) > 0 && (
                           <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-md text-[10px] font-bold">
                             💰 Commission : {c.partner_billing_type === 'percentage' ? `${c.partner_amount_cents / 100}%` : `${c.partner_amount_cents / 100}€`} / vol
                           </span>
