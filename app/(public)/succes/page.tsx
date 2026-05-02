@@ -22,8 +22,7 @@ function SuccessContent() {
 
     const confirmBooking = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const res = await fetch(`${apiUrl}/api/public/confirm-booking`, {
+        const res = await fetch(`/api/proxy/public/confirm-booking`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id })
@@ -56,9 +55,7 @@ function SuccessContent() {
   // FONCTION DE TÉLÉCHARGEMENT INVISIBLE (Contourne le blocage de Chrome)
   const handleDownloadPDF = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      // On va chercher le fichier silencieusement
-      const res = await fetch(`${apiUrl}/api/public/download-gift-card/${giftCode}`);
+      const res = await fetch(`/api/proxy/public/download-gift-card/${giftCode}`);
       
       if (!res.ok) throw new Error("Erreur de téléchargement");
 

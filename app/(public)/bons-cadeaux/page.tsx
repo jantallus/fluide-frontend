@@ -29,10 +29,8 @@ export default function CadeauPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        
         // 1. On charge les offres
-        const res = await fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true`, { cache: 'no-store' });
+        const res = await fetch(`/api/proxy/gift-card-templates?publicOnly=true`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setTemplates(data);
@@ -52,7 +50,7 @@ export default function CadeauPage() {
         }
 
         // 2. On charge vos paramètres postaux
-        const setRes = await fetch(`${apiUrl}/api/public/site-settings`);
+        const setRes = await fetch(`/api/proxy/public/site-settings`);
         if (setRes.ok) {
           const s = await setRes.json();
           setShippingSettings({
@@ -61,7 +59,7 @@ export default function CadeauPage() {
           });
         }
         // 🎯 3. On charge les options additionnelles (Photos, etc.)
-        const compRes = await fetch(`${apiUrl}/api/complements`);
+        const compRes = await fetch(`/api/proxy/complements`);
         if (compRes.ok) {
           setComplements(await compRes.json());
         }
@@ -154,15 +152,14 @@ export default function CadeauPage() {
     setIsCheckingOut(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const payload = { 
-        template: selectedTemplate, 
+      const payload = {
+        template: selectedTemplate,
         buyer,
         physicalShipping: wantsShipping ? { enabled: true, address: `${address.street}, ${address.zip} ${address.city}` } : null,
-        selectedComplements // 🎯 NOUVEAU : On envoie les options au serveur
+        selectedComplements,
       };
 
-      const res = await fetch(`${apiUrl}/api/public/checkout-gift-card`, {
+      const res = await fetch(`/api/proxy/public/checkout-gift-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

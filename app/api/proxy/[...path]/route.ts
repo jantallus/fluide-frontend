@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL est une variable serveur (non NEXT_PUBLIC) — non exposée dans le bundle client.
+// Rétrocompatible avec l'ancienne variable NEXT_PUBLIC_API_URL le temps de la transition Railway.
+const BACKEND_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 type Params = Promise<{ path: string[] }>;
 

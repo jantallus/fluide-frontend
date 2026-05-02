@@ -46,5 +46,6 @@ export const config = {
     '/clients/:path*',
     '/gift-cards/:path*',
     '/config/:path*',
+    '/stats/:path*',
   ],
 };

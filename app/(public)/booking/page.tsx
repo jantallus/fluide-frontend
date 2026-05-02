@@ -1,6 +1,21 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { PublicSlot, Passenger } from '@/lib/types';
+import type { FlightType, GiftCardShopTemplate, Complement, GiftCard, PublicSlot, Setting } from '@/lib/types';
+
+// Passager avec les champs étendus propres au tunnel de réservation
+interface BookingPassenger {
+  id: string;
+  flightKey: string;
+  flightId: string;
+  flightName: string;
+  date: string;
+  time: string;
+  firstName: string;
+  weightChecked: boolean;
+  selectedComplements: number[];
+  weight_min: number;
+  weight_max: number;
+}
 import { useToast } from '@/components/ui/ToastProvider';
 import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
@@ -19,15 +34,15 @@ export default function ReserverPage() {
     }
   }, []);
 
-  const [flights, setFlights] = useState<any[]>([]);
-  const [giftTemplates, setGiftTemplates] = useState<any[]>([]);
-  const [complementsList, setComplementsList] = useState<any[]>([]);
-  const [selectedFlight, setSelectedFlight] = useState<any>(null);
+  const [flights, setFlights] = useState<FlightType[]>([]);
+  const [giftTemplates, setGiftTemplates] = useState<GiftCardShopTemplate[]>([]);
+  const [complementsList, setComplementsList] = useState<Complement[]>([]);
+  const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
   const [step, setStep] = useState<number>(1);
-  const [infoFlight, setInfoFlight] = useState<any>(null); // 🎯 Mémoire pour la popup d'infos du vol
-  const savedScrollPos = useRef(0); // 🎯 NOUVEAU : Mémoire pour retenir la position de défilement
-  const scrollTimeout = useRef<any>(null); // 🎯 NOUVEAU : Mémoire pour le délai du swipe
-  const isSwipingRef = useRef(false); // 🎯 NOUVEAU : Verrou de sécurité anti-rebond
+  const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
+  const savedScrollPos = useRef(0);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSwipingRef = useRef(false);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
 
   // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
@@ -101,17 +116,17 @@ export default function ReserverPage() {
   });
   const [gridStartDate, setGridStartDate] = useState<string>(''); 
 
-  const [rawSlots, setRawSlots] = useState<any[]>([]);
+  const [rawSlots, setRawSlots] = useState<PublicSlot[]>([]);
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
   
   const [voucherInput, setVoucherInput] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [appliedVoucher, setAppliedVoucher] = useState<GiftCard | null>(null);
   const [voucherError, setVoucherError] = useState('');
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
-  const [passengers, setPassengers] = useState<any[]>([]);
+  const [passengers, setPassengers] = useState<BookingPassenger[]>([]);
   
   // 🎯 RÉFÉRENCES SÉCURISÉES POUR ÉVITER L'EFFET DOMINO (Double-clic)
   const selectedFlightRef = useRef(selectedFlight);
@@ -172,13 +187,11 @@ export default function ReserverPage() {
 
     const fetchData = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        
         const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
-          fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }) // 🎁 On charge les bons cadeaux !
+          fetch(`/api/proxy/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/complements?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/settings?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }),
         ]);
 
         if (resFlights.ok) setFlights(await resFlights.json());
@@ -188,7 +201,7 @@ export default function ReserverPage() {
         let count = 7; 
         if (resSettings.ok) {
            const s = await resSettings.json();
-           const countSetting = s.find((x: any) => x.key === 'display_days_count');
+           const countSetting = (s as Setting[]).find(x => x.key === 'display_days_count');
            if (countSetting) count = parseInt(countSetting.value);
         }
         setDisplayDaysCount(count);
@@ -217,19 +230,15 @@ export default function ReserverPage() {
     const fetchWeekData = async () => {
       setIsSearchingTimes(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        
-        // 🎯 1. ON CALCULE LES DATES DE DÉBUT ET FIN (-10 à +10 jours)
         const dStart = new Date(gridStartDate);
         dStart.setDate(dStart.getDate() - 10);
         const startDateStr = getLocalYYYYMMDD(dStart);
-        
+
         const dEnd = new Date(gridStartDate);
         dEnd.setDate(dEnd.getDate() + 10);
         const endDateStr = getLocalYYYYMMDD(dEnd);
-        
-        // 🎯 2. LE TIR GROUPÉ : UNE SEULE REQUÊTE POUR TOUTE LA PÉRIODE !
-        const res = await fetch(`${apiUrl}/api/public/availabilities?start=${startDateStr}&end=${endDateStr}&t=${Date.now()}`, { cache: 'no-store' });
+
+        const res = await fetch(`/api/proxy/public/availabilities?start=${startDateStr}&end=${endDateStr}&t=${Date.now()}`, { cache: 'no-store' });
         const results = await res.json();
         
         setRawSlots(results);
@@ -592,8 +601,7 @@ export default function ReserverPage() {
     setIsApplyingVoucher(true);
     setVoucherError('');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/gift-cards/check/${voucherInput.trim()}`);
+      const res = await fetch(`/api/proxy/gift-cards/check/${voucherInput.trim()}`);
       
       if (!res.ok) {
         const errData = await res.json();
@@ -669,8 +677,7 @@ export default function ReserverPage() {
         return { ...p, firstName: finalName };
       });
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/public/checkout`, {
+      const res = await fetch(`/api/proxy/public/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

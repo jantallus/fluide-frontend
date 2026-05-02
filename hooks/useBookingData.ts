@@ -26,13 +26,13 @@ export function useBookingData(
 
     const fetchData = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
+        // Passe par le proxy Next.js (/api/proxy/...) pour ne pas exposer
+        // l'URL du backend dans le bundle client et garder une architecture cohérente.
         const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
-          fetch(`${apiUrl}/api/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/settings?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`${apiUrl}/api/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/complements?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/settings?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }),
         ]);
 
         if (resFlights.ok) setFlights(await resFlights.json());

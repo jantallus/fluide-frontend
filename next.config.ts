@@ -1,22 +1,38 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// Headers de sécurité appliqués à toutes les routes
+const COMMON_SECURITY_HEADERS = [
+  // Empêche le MIME-type sniffing (ex: exécuter un JS déguisé en image)
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Contrôle les infos envoyées dans le header Referer
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Force HTTPS pendant 1 an — ignoré en HTTP local, actif en prod Railway
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+  // Désactive les APIs browser non utilisées (micro, caméra, géoloc…)
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+];
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Appliqué uniquement aux pages intégrables en iframe
+        // Headers de sécurité communs sur toutes les routes
+        source: "/(.*)",
+        headers: COMMON_SECURITY_HEADERS,
+      },
+      {
+        // Pages intégrables en iframe : autorise uniquement le site Fluide
         source: "/(booking|bons-cadeaux)",
         headers: [
           {
             key: "Content-Security-Policy",
-            // Remplacez votre-site-wordpress.com par le vrai domaine WordPress
             value: "frame-ancestors 'self' https://www.fluide-parapente.fr",
           },
         ],
       },
       {
-        // Toutes les autres pages restent non-iframables (sécurité)
+        // Toutes les autres pages restent non-iframables
         source: "/((?!booking|bons-cadeaux).*)",
         headers: [
           {

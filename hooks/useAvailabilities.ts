@@ -17,16 +17,15 @@ export function useAvailabilities(
     const fetchWeekData = async () => {
       setIsSearchingTimes(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
         const dStart = new Date(gridStartDate);
         dStart.setDate(dStart.getDate() - 10);
 
         const dEnd = new Date(gridStartDate);
         dEnd.setDate(dEnd.getDate() + 10);
 
+        // Passe par le proxy Next.js pour ne pas exposer l'URL du backend dans le bundle client.
         const res = await fetch(
-          `${apiUrl}/api/public/availabilities?start=${getLocalYYYYMMDD(dStart)}&end=${getLocalYYYYMMDD(dEnd)}&t=${Date.now()}`,
+          `/api/proxy/public/availabilities?start=${getLocalYYYYMMDD(dStart)}&end=${getLocalYYYYMMDD(dEnd)}&t=${Date.now()}`,
           { cache: 'no-store' }
         );
         setRawSlots(await res.json());
