@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { ChevronUp, ChevronDown, Trash2, X, UserCheck } from 'lucide-react';
 import type { Client, User, Complement, GiftCard, ClientFlight } from '@/lib/types';
 import type { QuickEditState } from '@/hooks/useQuickEdit';
 import { PaymentBadge } from './PaymentBadge';
@@ -125,7 +126,7 @@ export function ClientTable({
                   <td className="p-6 text-center">
                     <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[10px] font-black uppercase">{c.flights?.length}</span>
                   </td>
-                  <td className="p-6 text-right">{expandedClient === c.id ? '🔼' : '🔽'}</td>
+                  <td className="p-6 text-right text-slate-400">{expandedClient === c.id ? <ChevronUp size={16} className="inline" /> : <ChevronDown size={16} className="inline" />}</td>
                 </tr>
                 {expandedClient === c.id && (
                   <tr>
@@ -145,7 +146,7 @@ export function ClientTable({
                                   onClick={e => { e.stopPropagation(); if (!f.payment_data) openMonitorEdit(f); }}
                                   className={`text-[9px] font-bold px-2 py-1 rounded-md border ${!f.payment_data ? 'bg-sky-50 text-sky-600 border-sky-100' : 'bg-slate-50 text-slate-400 border-transparent cursor-not-allowed'}`}
                                 >
-                                  👨‍✈️ {f.monitor_name || 'Assigner'}
+                                  <UserCheck size={10} className="inline mr-1" />{f.monitor_name || 'Assigner'}
                                 </button>
                               </div>
                             </div>
@@ -156,7 +157,7 @@ export function ClientTable({
                               >
                                 <PaymentBadge data={f.payment_data} />
                               </div>
-                              <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="p-2 text-rose-400">🗑️</button>
+                              <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="p-2 text-rose-400"><Trash2 size={16} /></button>
                             </div>
                             {editingSlotId === f.id && (
                               <div
@@ -167,7 +168,7 @@ export function ClientTable({
                                   ? renderMonitorSelector(f, c.id)
                                   : <PaymentEditor flight={f} clientId={c.id} complements={complements} giftCards={giftCards} edit={edit} />
                                 }
-                                <button onClick={closeEdit} className="ml-2 text-slate-400">✕</button>
+                                <button onClick={closeEdit} className="ml-2 text-slate-400"><X size={14} /></button>
                               </div>
                             )}
                           </div>
@@ -211,7 +212,7 @@ export function ClientTable({
               </div>
               <div className="flex items-center gap-2">
                 <span className="bg-slate-100 px-2 py-1 rounded-lg font-black text-slate-500 text-[10px]">{c.flights?.length}</span>
-                <span className={`text-sky-500 font-black transition-transform ${expandedClient === c.id ? 'rotate-180' : ''}`}>▼</span>
+                <ChevronDown size={16} className={`text-sky-500 transition-transform ${expandedClient === c.id ? 'rotate-180' : ''}`} />
               </div>
             </div>
             {expandedClient === c.id && (
@@ -231,11 +232,11 @@ export function ClientTable({
                             onClick={e => { e.stopPropagation(); if (!f.payment_data) openMonitorEdit(f); }}
                             className={`text-[8px] font-bold px-2 py-1 rounded-md border ${!f.payment_data ? 'bg-slate-50 text-slate-600' : 'text-slate-400'}`}
                           >
-                            👨‍✈️ {f.monitor_name || 'Assigner'}
+                            <UserCheck size={10} className="inline mr-1" />{f.monitor_name || 'Assigner'}
                           </button>
                         </div>
                       </div>
-                      <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="text-rose-300">🗑️</button>
+                      <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="text-rose-300"><Trash2 size={16} /></button>
                     </div>
                     <div
                       className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -252,7 +253,7 @@ export function ClientTable({
                           <p className="text-[10px] font-black uppercase text-sky-500">
                             {editType === 'monitor' ? '👨‍✈️ Assigner un pilote' : '💳 Encaissement'}
                           </p>
-                          <button onClick={closeEdit} className="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-xs hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>
+                          <button onClick={closeEdit} className="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-xs hover:bg-rose-100 hover:text-rose-500 transition-colors"><X size={14} /></button>
                         </div>
                         {editType === 'monitor' ? (
                           <div className="flex gap-1">

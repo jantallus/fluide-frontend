@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useConfigData } from '@/hooks/useConfigData';
 import { TemplateModal } from '@/components/config/TemplateModal';
 import { RotationModal } from '@/components/config/RotationModal';
+import { Pencil, Trash2 } from 'lucide-react';
 
 export default function ConfigPage() {
   const {
@@ -18,6 +19,23 @@ export default function ConfigPage() {
   const [templateToEdit, setTemplateToEdit] = useState<any | null>(null);
   const [showRotationModal, setShowRotationModal] = useState(false);
   const [rotationToEdit, setRotationToEdit] = useState<any | null>(null);
+  const [showNewPlanInput, setShowNewPlanInput] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+
+  const confirmNewPlan = () => {
+    const name = newPlanName.trim();
+    if (name) setActivePlan(name);
+    setShowNewPlanInput(false);
+    setNewPlanName('');
+  };
+
+  const confirmRename = async () => {
+    const name = renameValue.trim();
+    if (name && name !== activePlan) await renamePlan(activePlan, name, setActivePlan);
+    setIsRenaming(false);
+  };
 
   const uniquePlans = Array.from(new Set((definitions || []).map((d: any) => d.plan_name || 'Standard')));
   if (!uniquePlans.includes('Standard') && definitions.length === 0) uniquePlans.push('Standard');
@@ -59,8 +77,8 @@ export default function ConfigPage() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <button onClick={() => { setTemplateToEdit(tpl); setShowTemplateModal(true); }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">✏️ Modifier</button>
-                    <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors">🗑️ Supprimer</button>
+                    <button onClick={() => { setTemplateToEdit(tpl); setShowTemplateModal(true); }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors"><Pencil size={11} className="inline mr-1" />Modifier</button>
+                    <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors"><Trash2 size={11} className="inline mr-1" />Supprimer</button>
                   </div>
                 </div>
               </div>
@@ -90,7 +108,7 @@ export default function ConfigPage() {
                   <input type="date" className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none text-sm" value={season.end} onChange={e => handleSeasonChange(season.id, 'end', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
                 </div>
                 <div className="md:col-span-2 flex justify-end">
-                  <button onClick={() => handleDeleteSeason(season.id)} className="w-full p-4 bg-rose-100 text-rose-500 rounded-2xl font-black hover:bg-rose-500 hover:text-white">🗑️</button>
+                  <button onClick={() => handleDeleteSeason(season.id)} className="w-full p-4 bg-rose-100 text-rose-500 rounded-2xl font-black hover:bg-rose-500 hover:text-white flex items-center justify-center"><Trash2 size={18} /></button>
                 </div>
               </div>
             ))}
@@ -104,13 +122,42 @@ export default function ConfigPage() {
             {uniquePlans.map(plan => (
               <button key={plan} onClick={() => setActivePlan(plan)} className={`px-6 py-3 rounded-2xl font-black uppercase text-xs transition-all whitespace-nowrap ${activePlan === plan ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Plan : {plan}</button>
             ))}
-            <button onClick={() => { const n = prompt('Nom du nouveau plan:'); if (n) setActivePlan(n); }} className="px-6 py-3 rounded-2xl font-black uppercase text-xs bg-white border-2 border-dashed border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-500">+ Créer un plan</button>
+            {showNewPlanInput ? (
+              <form onSubmit={e => { e.preventDefault(); confirmNewPlan(); }} className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={newPlanName}
+                  onChange={e => setNewPlanName(e.target.value)}
+                  onKeyDown={e => e.key === 'Escape' && (setShowNewPlanInput(false), setNewPlanName(''))}
+                  placeholder="Nom du plan..."
+                  className="px-4 py-3 rounded-2xl font-bold text-xs border-2 border-indigo-400 outline-none bg-white text-slate-800 min-w-[140px]"
+                />
+                <button type="submit" className="px-4 py-3 rounded-2xl font-black text-xs bg-indigo-600 text-white">✓</button>
+                <button type="button" onClick={() => { setShowNewPlanInput(false); setNewPlanName(''); }} className="px-4 py-3 rounded-2xl font-black text-xs bg-slate-200 text-slate-500">✕</button>
+              </form>
+            ) : (
+              <button onClick={() => setShowNewPlanInput(true)} className="px-6 py-3 rounded-2xl font-black uppercase text-xs bg-white border-2 border-dashed border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-500">+ Créer un plan</button>
+            )}
           </div>
           <div className="space-y-3 mb-6">
             {activePlan !== 'Standard' && (
               <div className="flex justify-end gap-3 mb-4">
-                <button onClick={() => renamePlan(activePlan, setActivePlan)} className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-50 px-4 py-2 rounded-xl">✏️ Renommer</button>
-                <button onClick={() => deletePlan(activePlan, setActivePlan)} className="text-[10px] font-black uppercase tracking-wider text-rose-500 bg-rose-50 px-4 py-2 rounded-xl">🗑️ Supprimer</button>
+                {isRenaming ? (
+                  <form onSubmit={e => { e.preventDefault(); confirmRename(); }} className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => e.key === 'Escape' && setIsRenaming(false)}
+                      className="px-4 py-2 rounded-xl font-bold text-xs border-2 border-indigo-400 outline-none bg-white text-slate-800 min-w-[140px]"
+                    />
+                    <button type="submit" className="text-[10px] font-black uppercase tracking-wider text-white bg-indigo-600 px-4 py-2 rounded-xl">✓</button>
+                    <button type="button" onClick={() => setIsRenaming(false)} className="text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-100 px-4 py-2 rounded-xl">✕</button>
+                  </form>
+                ) : (
+                  <button onClick={() => { setRenameValue(activePlan); setIsRenaming(true); }} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-50 px-4 py-2 rounded-xl"><Pencil size={11} /> Renommer</button>
+                )}
+                <button onClick={() => deletePlan(activePlan, setActivePlan)} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-500 bg-rose-50 px-4 py-2 rounded-xl"><Trash2 size={11} /> Supprimer</button>
               </div>
             )}
             {activeDefs.length === 0 && <p className="text-center text-slate-400 font-bold italic py-6">Aucune rotation.</p>}
@@ -120,7 +167,7 @@ export default function ConfigPage() {
                   <span className="bg-white px-4 py-2 rounded-xl font-black text-indigo-600 shadow-sm">{def.start_time.slice(0, 5)}</span>
                   <div><p className="font-black uppercase text-xs text-slate-800">{def.label}</p><p className="text-[10px] font-bold text-slate-400 uppercase">{def.duration_minutes} min</p></div>
                 </div>
-                <button onClick={e => { e.stopPropagation(); deleteDef(def.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">🗑️</button>
+                <button onClick={e => { e.stopPropagation(); deleteDef(def.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>

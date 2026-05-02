@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { Pencil, Trash2, CalendarDays } from 'lucide-react';
+import type { CurrentUser, User } from '@/lib/types';
 import { useMoniteursData } from '@/hooks/useMoniteursData';
 import { MoniteurModal } from '@/components/moniteurs/MoniteurModal';
 
@@ -59,16 +61,16 @@ export default function MonitorsPage() {
               </div>
 
               <button onClick={() => copyIcalLink(u.id)} className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap" title="Copier le flux iCal pour Google Calendar / iPhone">
-                📅 Agenda
+                <CalendarDays size={12} className="inline mr-1" />Agenda
               </button>
 
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => openModal(u)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-sky-500 hover:bg-sky-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Modifier ce prestataire">
-                  <span className="text-lg md:text-xl">✏️</span>
+                  <Pencil size={18} />
                 </button>
                 {currentUser?.role === 'admin' && (
                   <button onClick={() => handleDelete(u.id, u.first_name)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-rose-500 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Supprimer définitivement">
-                    <span className="text-lg md:text-xl">🗑️</span>
+                    <Trash2 size={18} />
                   </button>
                 )}
               </div>

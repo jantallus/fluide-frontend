@@ -5,7 +5,7 @@ import { apiFetch } from '../../../../lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function ComplementsPage() {
-  const [complements, setComplements] = useState<any[]>([]);
+  const [complements, setComplements] = useState<Complement[]>([]);
   const [newComp, setNewComp] = useState({ name: '', description: '', price_cents: 2000, image_url: '' });
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);

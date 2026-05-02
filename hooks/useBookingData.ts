@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getLocalYYYYMMDD } from '@/lib/booking-utils';
+import type { FlightType, GiftCardShopTemplate, Complement, Setting } from '@/lib/types';
 
 export function useBookingData(
   onReady: (dateStr: string, daysCount: number) => void
 ) {
-  const [flights, setFlights] = useState<any[]>([]);
-  const [giftTemplates, setGiftTemplates] = useState<any[]>([]);
-  const [complementsList, setComplementsList] = useState<any[]>([]);
+  const [flights, setFlights] = useState<FlightType[]>([]);
+  const [giftTemplates, setGiftTemplates] = useState<GiftCardShopTemplate[]>([]);
+  const [complementsList, setComplementsList] = useState<Complement[]>([]);
   const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
@@ -41,7 +42,7 @@ export function useBookingData(
         let count = 7;
         if (resSettings.ok) {
           const s = await resSettings.json();
-          const countSetting = s.find((x: any) => x.key === 'display_days_count');
+          const countSetting = s.find((x: Setting) => x.key === 'display_days_count');
           if (countSetting) count = parseInt(countSetting.value);
         }
         setDisplayDaysCount(count);

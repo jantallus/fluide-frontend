@@ -1,12 +1,13 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { apiFetch } from '../../../lib/api';
+import type { StatsSummary, StatsUpcomingFlight } from '@/lib/types';
 
 export default function StatsPage() {
-  const [stats, setStats] = useState({ 
-    summary: { totalRevenue: 0, totalBookings: 0 }, 
+  const [stats, setStats] = useState<{ summary: StatsSummary; upcoming: StatsUpcomingFlight[] }>({
+    summary: { totalRevenue: 0, totalBookings: 0 },
     upcoming: [],
-    history: [] 
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +50,7 @@ export default function StatsPage() {
           className="bg-white border-2 border-slate-200 p-3 rounded-2xl shadow-sm hover:bg-slate-100 transition-all active:scale-95"
           title="Actualiser"
         >
-          🔄
+          <RefreshCw size={18} />
         </button>
       </div>
 
@@ -103,7 +104,7 @@ export default function StatsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {stats.upcoming.length > 0 ? stats.upcoming.map((item: any) => (
+              {stats.upcoming.length > 0 ? stats.upcoming.map((item: StatsUpcomingFlight) => (
                 <tr key={item.id} className="hover:bg-sky-50/30 transition-colors group">
                   <td className="p-6 font-bold text-sm text-slate-700">
                     {new Date(item.start_time).toLocaleDateString('fr-FR', { 

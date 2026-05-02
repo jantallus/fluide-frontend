@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { GiftCard } from '@/lib/types';
 
 interface Props {
@@ -91,7 +92,7 @@ export function VoucherCard({ card: c, onToggleStatus, onEdit, onDelete }: Props
             onClick={() => onEdit(c)}
             className="px-4 md:px-6 py-2 rounded-full font-black uppercase text-[10px] md:text-xs bg-sky-100 text-sky-600 hover:bg-sky-200 transition-all shadow-sm flex-1 md:flex-none text-center"
           >
-            ✏️ Modifier
+            <Pencil size={12} className="inline mr-1" />Modifier
           </button>
         )}
 
@@ -99,7 +100,7 @@ export function VoucherCard({ card: c, onToggleStatus, onEdit, onDelete }: Props
           onClick={() => onDelete(c.id)}
           className="px-2 py-2 text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors w-full md:w-auto text-center"
         >
-          🗑️ Supprimer
+          <Trash2 size={12} className="inline mr-1" />Supprimer
         </button>
       </div>
     </div>

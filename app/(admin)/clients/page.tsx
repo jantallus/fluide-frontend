@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Client } from '@/lib/types';
 import { apiFetch } from '../../../lib/api';
 import { useClientsData } from '@/hooks/useClientsData';
@@ -8,15 +8,14 @@ import { useQuickEdit } from '@/hooks/useQuickEdit';
 import { MultiSelectDropdown } from '@/components/clients/MultiSelectDropdown';
 import { ClientTable } from '@/components/clients/ClientTable';
 import { useToast } from '@/components/ui/ToastProvider';
+import { X, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ClientsPage() {
-  const { clients, setClients, monitors, flightTypes, giftCards, setGiftCards, complements, isLoading } = useClientsData();
   const { toast, confirm } = useToast();
   const filters = useClientFilters();
   const [expandedClient, setExpandedClient] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  const edit = useQuickEdit({ clients, monitors, giftCards, setClients, setGiftCards });
+  const [page, setPage] = useState(1);
 
   const {
     search, setSearch,
@@ -28,6 +27,12 @@ export default function ClientsPage() {
     resetFilters,
     hasActiveFilters,
   } = filters;
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const { clients, setClients, total, totalPages, monitors, flightTypes, giftCards, setGiftCards, complements, isLoading } = useClientsData({ q: search, page });
+
+  const edit = useQuickEdit({ clients, monitors, giftCards, setClients, setGiftCards });
 
   const usedPromoCodes = useMemo(() => {
     const codes = new Set<string>();
@@ -85,12 +90,7 @@ export default function ClientsPage() {
       return matchMon && matchFli && matchPay && matchStart && matchEnd;
     });
     return { ...c, flights: matchingFlights };
-  }).filter(c => {
-    const matchSearch =
-      c.first_name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.last_name || '').toLowerCase().includes(search.toLowerCase());
-    return c.flights.length > 0 && matchSearch;
-  });
+  }).filter(c => c.flights.length > 0);
 
   const now = Date.now();
   const upcomingClients: (Client & { sortKey: number })[] = [];
@@ -243,7 +243,7 @@ export default function ClientsPage() {
             <div className="flex justify-between items-center mt-4 border-t border-slate-50 pt-4">
               <div className="flex gap-4 items-center">
                 {hasActiveFilters && (
-                  <button onClick={resetFilters} className="text-[10px] font-black uppercase text-rose-500 hover:underline">✕ Reset</button>
+                  <button onClick={resetFilters} className="flex items-center gap-1 text-[10px] font-black uppercase text-rose-500 hover:underline"><X size={10} /> Reset</button>
                 )}
                 {selectedIds.length > 0 && (
                   <div className="flex flex-col items-end gap-1">
@@ -252,14 +252,14 @@ export default function ClientsPage() {
                       disabled={!filterStartDate || !filterEndDate}
                       className={`px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all ${(!filterStartDate || !filterEndDate) ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-rose-100 text-rose-600 border-rose-200'}`}
                     >
-                      🔥 Supprimer ({selectedIds.length})
+                      <Trash2 size={10} className="inline mr-1" />Supprimer ({selectedIds.length})
                     </button>
                     {(!filterStartDate || !filterEndDate) && <span className="text-[8px] font-bold text-rose-400 italic">⚠️ Filtre date requis</span>}
                   </div>
                 )}
               </div>
               <button onClick={handleExport} className="bg-emerald-500 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
-                📥 Export
+                <Download size={12} className="inline mr-1" />Export
               </button>
             </div>
           </div>
@@ -290,10 +290,33 @@ export default function ClientsPage() {
           onDeleteFlight={deleteFlight} edit={edit}
         />
 
-        {upcomingClients.length === 0 && pastClients.length === 0 && (
+        {upcomingClients.length === 0 && pastClients.length === 0 && !isLoading && (
           <div className="text-center py-16 bg-white rounded-[40px] shadow-sm border border-slate-100">
             <span className="text-5xl block mb-4">🕵️‍♂️</span>
             <h3 className="text-xl font-black uppercase text-slate-800">Aucun dossier trouvé</h3>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-6 mt-8 pb-4">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white border-2 border-slate-100 text-slate-700 hover:border-sky-400 hover:text-sky-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={14} className="inline" /> Précédent
+            </button>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+              {page} / {totalPages}
+              <span className="ml-2 text-slate-300 normal-case font-bold">({total} clients)</span>
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white border-2 border-slate-100 text-slate-700 hover:border-sky-400 hover:text-sky-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              Suivant <ChevronRight size={14} className="inline" />
+            </button>
           </div>
         )}
       </div>

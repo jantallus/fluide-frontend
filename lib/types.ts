@@ -60,10 +60,12 @@ export interface Monitor {
 
 export interface SlotDefinition {
   id: number;
-  monitor_id: string;
+  monitor_id?: string;
   start_time: string;
-  end_time: string;
+  end_time?: string;
   plan_name?: string;
+  duration_minutes?: number;
+  label?: string;
 }
 
 export interface OpeningPeriod {
@@ -228,6 +230,42 @@ export interface CartItem {
   price: number;
   passenger: Passenger;
   selectedOptions: number[];
+}
+
+// ── Saisons & config ──────────────────────────────────────────────────────────
+
+export interface Season {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+}
+
+export interface GiftCardShopTemplate {
+  id: number;
+  title: string;
+  price_cents: number;
+  validity_months: number;
+  is_published: boolean;
+  flight_type_id?: number | null;
+  flight_name?: string;
+}
+
+export interface Availability {
+  day: string;
+  start: string;
+  end: string;
+}
+
+// ── Statistiques détaillées ───────────────────────────────────────────────────
+
+export interface StatsUpcomingFlight {
+  id: number;
+  start_time: string;
+  client_name?: string;
+  flight_name?: string;
+  monitor_name?: string;
+  total_price: number;
 }
 
 // ── Paramètres ────────────────────────────────────────────────────────────────

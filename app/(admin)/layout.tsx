@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { LayoutDashboard, Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut } from 'lucide-react';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
@@ -55,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           const res = await apiFetch('/api/clients');
           if (res.ok) {
             const data = await res.json();
-            setClientCount(data.length);
+            setClientCount(data.total ?? data.length ?? 0);
           }
         } catch (err) {
           console.error("Erreur compteur:", err);
@@ -74,19 +75,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // 2. Configuration du menu avec filtrage par RÔLE
   const allMenuItems = [
-    { name: 'Tableau de bord', icon: '📊', path: '/dashboard', roles: ['admin'] },
-    { name: 'Calendrier', icon: '📅', path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
-    { 
-      name: 'Prestations', 
-      icon: '🪂', 
+    { name: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard', roles: ['admin'] },
+    { name: 'Calendrier', icon: Calendar, path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
+    {
+      name: 'Prestations',
+      icon: Wind,
       path: '/prestations',
       roles: ['admin'],
       subItems: [{ name: 'Photos & Vidéos', path: '/prestations/complements' }]
     },
-    { name: 'Moniteurs', icon: '👥', path: '/moniteurs', roles: ['admin', 'permanent'] }, 
-    { name: 'Clients', icon: '👤', path: '/clients', badge: clientCount, roles: ['admin'] },
-    { name: 'Bons Cadeaux', icon: '🎁', path: '/gift-cards', roles: ['admin'] },
-    { name: 'Configurations', icon: '⚙️', path: '/config', roles: ['admin'] },
+    { name: 'Moniteurs', icon: Users, path: '/moniteurs', roles: ['admin', 'permanent'] },
+    { name: 'Clients', icon: User, path: '/clients', badge: clientCount, roles: ['admin'] },
+    { name: 'Bons Cadeaux', icon: Gift, path: '/gift-cards', roles: ['admin'] },
+    { name: 'Configurations', icon: Settings, path: '/config', roles: ['admin'] },
   ];
 
   const authorizedMenus = allMenuItems.filter(item => 
@@ -141,15 +142,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setIsCollapsed(!isCollapsed)} 
             className="hidden md:block hover:bg-slate-800 p-2 rounded-xl transition-colors"
           >
-            {isCollapsed ? '➡️' : '⬅️'}
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
 
           {/* Bouton fermer (Mobile) */}
           <button 
             onClick={() => setIsMobileMenuOpen(false)} 
-            className="md:hidden hover:bg-slate-800 p-2 rounded-xl transition-colors font-black text-xl"
+            className="md:hidden hover:bg-slate-800 p-2 rounded-xl transition-colors"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -166,7 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-xl">{item.icon}</span>
+                    <item.icon size={18} strokeWidth={2} />
                     {(!isCollapsed || isMobileMenuOpen) && <span className="font-bold text-sm">{item.name}</span>}
                   </div>
 
@@ -204,7 +205,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={handleLogout}
             className="flex items-center gap-4 p-3 text-rose-400 hover:bg-rose-500/10 w-full rounded-xl transition-colors font-bold text-sm"
           >
-            <span className="text-xl">🚪</span>
+            <LogOut size={18} />
             {(!isCollapsed || isMobileMenuOpen) && <span>Déconnexion</span>}
           </button>
         </div>
@@ -220,7 +221,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="md:hidden p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-sky-100 hover:text-sky-600 transition-colors"
               onClick={() => { setIsMobileMenuOpen(true); setIsCollapsed(false); }}
             >
-              <span className="text-xl">☰</span>
+              <Menu size={20} />
             </button>
 
             <div className="flex flex-col">

@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react';
+import type { User } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export function useMoniteursData() {
   const { toast, confirm } = useToast();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadUsers = async () => {

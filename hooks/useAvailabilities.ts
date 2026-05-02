@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getLocalYYYYMMDD } from '@/lib/booking-utils';
+import type { FlightType, PublicSlot } from '@/lib/types';
 
 export function useAvailabilities(
   gridStartDate: string,
-  selectedFlight: any,
+  selectedFlight: FlightType | null,
   displayDaysCount: number
 ) {
-  const [rawSlots, setRawSlots] = useState<any[]>([]);
+  const [rawSlots, setRawSlots] = useState<PublicSlot[]>([]);
   const [isSearchingTimes, setIsSearchingTimes] = useState(false);
 
   useEffect(() => {

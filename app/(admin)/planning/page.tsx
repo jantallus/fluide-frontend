@@ -9,6 +9,8 @@ import { usePlanningData } from '@/hooks/usePlanningData';
 import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
 import { useToast } from '@/components/ui/ToastProvider';
+import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
+import type { CurrentUser, Slot, FlightType } from '@/lib/types';
 
 export default function PlanningAdmin() {
   const { toast } = useToast();
@@ -155,7 +157,7 @@ export default function PlanningAdmin() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center bg-white border-2 border-slate-200 rounded-2xl px-4 py-1 shadow-sm hover:border-sky-300 transition-colors">
-            <span className="text-xl mr-2">📅</span>
+            <CalendarDays size={18} className="mr-2 text-slate-500" />
             <input
               type="date"
               className="bg-transparent font-bold text-sm text-slate-700 outline-none cursor-pointer"
@@ -170,13 +172,16 @@ export default function PlanningAdmin() {
             onClick={toggleGoogleSync}
             className={`px-4 py-2 rounded-2xl font-black uppercase text-[10px] shadow-sm transition-all border-2 ${isGoogleSyncEnabled ? 'bg-sky-50 text-sky-600 border-sky-200 hover:bg-sky-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
           >
-            {isGoogleSyncEnabled ? '🔄 Google Sync : ON' : '⏸️ Google Sync : OFF'}
+            {isGoogleSyncEnabled
+              ? <><RefreshCw size={13} className="inline mr-1" />Google Sync : ON</>
+              : <><PauseCircle size={13} className="inline mr-1" />Google Sync : OFF</>
+            }
           </button>
           <button
             onClick={() => setShowGenModal(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
           >
-            ⚙️ Générer la semaine
+            <Wrench size={13} className="inline mr-1" />Générer la semaine
           </button>
         </div>
       </header>

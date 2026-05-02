@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from 'react';
+import type { FlightType, SlotDefinition } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export function usePrestationsData() {
   const { toast, confirm } = useToast();
-  const [flights, setFlights] = useState<any[]>([]);
-  const [slotDefs, setSlotDefs] = useState<any[]>([]);
+  const [flights, setFlights] = useState<FlightType[]>([]);
+  const [slotDefs, setSlotDefs] = useState<SlotDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {

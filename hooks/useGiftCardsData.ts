@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
-import type { GiftCard } from '@/lib/types';
+import type { GiftCard, FlightType, Complement } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export function useGiftCardsData() {
   const { confirm } = useToast();
   const [cards, setCards] = useState<GiftCard[]>([]);
-  const [flights, setFlights] = useState<any[]>([]);
-  const [complements, setComplements] = useState<any[]>([]);
+  const [flights, setFlights] = useState<FlightType[]>([]);
+  const [complements, setComplements] = useState<Complement[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {

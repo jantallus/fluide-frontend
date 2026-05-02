@@ -1,13 +1,16 @@
 "use client";
 import { useMemo } from 'react';
 import { getLocalYYYYMMDD } from '@/lib/booking-utils';
+import type { PublicSlot, FlightType } from '@/lib/types';
+
+type MutableSlot = PublicSlot & { status: string };
 
 export function useGridData(
-  rawSlots: any[],
-  selectedFlight: any,
+  rawSlots: PublicSlot[],
+  selectedFlight: FlightType | null,
   cart: Record<string, number>,
   gridStartDate: string,
-  flights: any[]
+  flights: FlightType[]
 ) {
   return useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
@@ -25,7 +28,7 @@ export function useGridData(
     const isMulti = selectedFlight.allow_multi_slots === true;
     const slotsNeeded = isMulti && flightDur > baseDur ? Math.ceil(flightDur / baseDur) : 1;
 
-    const monSchedules: Record<string, Record<number, any>> = {};
+    const monSchedules: Record<string, Record<number, MutableSlot>> = {};
     const timeToMs: Record<string, number> = {};
     const uniqueTimesByDate: Record<string, Set<string>> = {};
 

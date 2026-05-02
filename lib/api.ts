@@ -12,6 +12,7 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}): Pr
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
     ...(options.headers ?? {}),
   };
 

@@ -713,7 +713,7 @@ export default function ReserverPage() {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || isCheckingOut) return;
 
     const result = contactSchema.safeParse(contact);
     if (!result.success) {
