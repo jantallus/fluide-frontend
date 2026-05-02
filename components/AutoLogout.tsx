@@ -8,10 +8,7 @@ export default function AutoLogout() {
     const logout = async () => {
       // 1. On demande au serveur d'effacer le cookie HttpOnly (seul lui peut le faire)
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/logout`, {
-          method: 'POST',
-          credentials: 'include',
-        });
+        await fetch('/api/auth/logout', { method: 'POST' });
       } catch (_) {
         // Même si le réseau est coupé, on déconnecte quand même localement
       }

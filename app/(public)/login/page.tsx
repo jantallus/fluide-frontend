@@ -15,10 +15,9 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/login`, {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -27,18 +26,16 @@ export default function LoginPage() {
       if (res.ok) {
         const userFirst = data.user.first_name || data.user.firstName;
         const userEmail = data.user.email || email;
-        
+
         const userToStore = {
           id: data.user.id,
           role: data.user.role ? data.user.role.toLowerCase() : 'user',
           email: userEmail,
-          first_name: userFirst || userEmail.split('@')[0] 
+          first_name: userFirst || userEmail.split('@')[0],
         };
 
-        // Token pour les requêtes API + cookie HttpOnly pour la sécurité XSS
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
+        // Seules les infos d'affichage (non sensibles) vont en localStorage.
+        // Le token est dans le cookie HttpOnly posé par /api/auth/login.
         localStorage.setItem('user', JSON.stringify(userToStore));
 
         if (userToStore.role === 'admin') {

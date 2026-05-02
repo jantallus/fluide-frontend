@@ -25,33 +25,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 1. VÉRIFICATION DE SÉCURITÉ ET RÉCUPÉRATION DES DONNÉES
+  // 1. RÉCUPÉRATION DES DONNÉES D'AFFICHAGE
+  // La sécurité réelle est gérée par middleware.ts (vérifie le cookie auth_token côté serveur).
+  // Ici on lit juste localStorage.user pour afficher le nom et filtrer le menu.
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
 
-    if (!userData || !token) {
+    if (!userData) {
       router.push('/login');
-      return; 
+      return;
     }
 
     const parsed = JSON.parse(userData);
     const role = parsed.role;
     setUserRole(role);
 
-    // Lecture du nom directement depuis l'objet user (plus besoin de décoder le token)
     let finalName = parsed.first_name || parsed.firstName || parsed.email?.split('@')[0] || '';
     if (finalName) {
       finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
     }
     setUserName(finalName || 'Utilisateur');
 
-    if (role !== 'admin' && !pathname.startsWith('/planning')) {
-      router.push('/planning'); 
-      return; 
-    }
-
-    setIsAuthorized(true); 
+    setIsAuthorized(true);
 
     // Récupération du nombre de clients (uniquement si admin)
     if (role === 'admin') {
@@ -72,10 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = () => {
     localStorage.removeItem('user');
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    }).finally(() => {
+    fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
       router.push('/login');
     });
   };
