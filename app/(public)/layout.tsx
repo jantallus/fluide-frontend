@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -114,7 +115,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* --- CONTENU DE LA PAGE CLIENT --- */}
       <main style={{ flex: 1 }}>
         <ToastProvider>
-          {children}
+          <ErrorBoundary variant="public" zone="public/page">
+            {children}
+          </ErrorBoundary>
         </ToastProvider>
       </main>
 

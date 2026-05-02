@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { LayoutDashboard, Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut } from 'lucide-react';
@@ -248,7 +249,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* 🎯 NOUVEAU : PADDING RÉDUIT SUR MOBILE (p-2 au lieu de p-8) */}
         <main className="flex-1 overflow-y-auto p-2 md:p-8 lg:p-12 bg-slate-50">
           <div className="max-w-6xl mx-auto">
-            {children}
+            <ErrorBoundary variant="admin" zone="admin/page">
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

@@ -10,6 +10,7 @@ import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
 
 export default function PlanningAdmin() {
@@ -187,7 +188,9 @@ export default function PlanningAdmin() {
       </header>
 
       <div className="bg-white rounded-2xl md:rounded-[35px] shadow-2xl border border-slate-200 p-2 md:p-6 overflow-hidden">
-        {memoizedCalendar}
+        <ErrorBoundary variant="widget" zone="planning/fullcalendar">
+          {memoizedCalendar}
+        </ErrorBoundary>
       </div>
 
       {showEditModal && selectedEvent && (
