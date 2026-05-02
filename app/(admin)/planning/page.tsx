@@ -24,10 +24,10 @@ export default function PlanningAdmin() {
     loadAppointments, toggleGoogleSync,
   } = usePlanningData(getDateRange);
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [showGenModal, setShowGenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<(Slot & { isOutOfSeason?: boolean }) | null>(null);
   const [slotDuration, setSlotDuration] = useState<number>(0);
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -71,7 +71,7 @@ export default function PlanningAdmin() {
 
   const calendarEvents = useMemo(() => {
     return appointments.map(a => {
-      const flight = flightTypes?.find((f: any) => f.id === a.flight_type_id);
+      const flight = flightTypes?.find((f: FlightType) => f.id === a.flight_type_id);
       const flightColor = flight?.color_code || '#0ea5e9';
       let isSlotOutOfSeason = false;
       if (parsedOpeningPeriods.length > 0) {

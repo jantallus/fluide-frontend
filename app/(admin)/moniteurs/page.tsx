@@ -7,16 +7,16 @@ import { MoniteurModal } from '@/components/moniteurs/MoniteurModal';
 
 export default function MonitorsPage() {
   const { users, loading, loadUsers, handleDelete, copyIcalLink } = useMoniteursData();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<any | null>(null);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setCurrentUser(JSON.parse(u));
   }, []);
 
-  const openModal = (user?: any) => {
+  const openModal = (user?: User) => {
     setUserToEdit(user ?? null);
     setShowModal(true);
   };

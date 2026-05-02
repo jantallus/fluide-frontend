@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, OpeningPeriod } from '@/lib/types';
 
 type FormData = {
   title: string; flight_type_id: string; weightChecked: boolean;
@@ -9,15 +10,15 @@ type FormData = {
 };
 
 interface Props {
-  selectedEvent: any;
-  currentUser: any;
+  selectedEvent: Slot & { isOutOfSeason?: boolean };
+  currentUser: CurrentUser | null;
   slotDuration: number;
-  appointments: any[];
-  setAppointments: React.Dispatch<React.SetStateAction<any[]>>;
-  flightTypes: any[];
-  monitors: any[];
-  slotDefs: any[];
-  openingPeriods: any[];
+  appointments: Slot[];
+  setAppointments: React.Dispatch<React.SetStateAction<Slot[]>>;
+  flightTypes: FlightType[];
+  monitors: Monitor[];
+  slotDefs: SlotDefinition[];
+  openingPeriods: OpeningPeriod[];
   loadAppointments: () => Promise<void>;
   onClose: () => void;
 }
@@ -53,7 +54,7 @@ export default function EditSlotModal({
     const realTitle = selectedEvent.title;
     setFormData({
       title: realTitle === 'NOTE' ? '' : (realTitle || ''),
-      flight_type_id: selectedEvent.flight_type_id || '',
+      flight_type_id: selectedEvent.flight_type_id?.toString() ?? '',
       weightChecked: selectedEvent.weight_checked || false,
       phone: selectedEvent.phone || '',
       email: selectedEvent.email || '',
@@ -61,7 +62,7 @@ export default function EditSlotModal({
       booking_options: selectedEvent.booking_options || '',
       client_message: selectedEvent.client_message || '',
     });
-    const start = new Date(selectedEvent.start);
+    const start = new Date(selectedEvent.start as Date | string);
     const dStr = start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     const tStr = start.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
     setMoveConfig({ date: dStr, time: tStr, monitorId: selectedEvent.monitor_id || 'random' });
@@ -89,7 +90,7 @@ export default function EditSlotModal({
     const phone = selectedEvent.phone;
     const baseTitle = selectedEvent.title?.replace(/\s*\(\d+\/\d+\)$/, '').trim();
     if (!phone && !baseTitle) return [selectedEvent];
-    const dStr = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const dStr = new Date(selectedEvent.start as Date | string).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     const rootSlots = appointments.filter(a => {
       if (a.status !== 'booked' || a.title?.startsWith('↪️ Suite')) return false;
       if (new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) !== dStr) return false;
@@ -106,7 +107,7 @@ export default function EditSlotModal({
     const flight = flightTypes.find(f => f.id?.toString() === selectedEvent.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-    const startMs = new Date(selectedEvent.start).getTime();
+    const startMs = new Date(selectedEvent.start as Date | string).getTime();
     const ids = [selectedEvent.id];
     for (let i = 1; i < slotsNeeded; i++) {
       const ms = startMs + i * slotDuration * 60000;
@@ -118,8 +119,8 @@ export default function EditSlotModal({
 
   const upcomingBlockingSlots = useMemo(() => {
     if (!selectedEvent) return [];
-    const startMs = new Date(selectedEvent.start).getTime();
-    const sDate = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const startMs = new Date(selectedEvent.start as Date | string).getTime();
+    const sDate = new Date(selectedEvent.start as Date | string).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     return appointments
       .filter(a =>
         a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() &&
@@ -175,7 +176,7 @@ export default function EditSlotModal({
   }, [availableTimes]);
 
   const smartFlightOptions = useMemo(() => {
-    const dateStr = selectedEvent?.start ? new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
+    const dateStr = selectedEvent?.start ? new Date(selectedEvent.start as Date | string).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
     const planSchedules: Record<string, Set<string>> = {};
     slotDefs.forEach(d => {
       const pName = d.plan_name || 'Standard';
@@ -204,8 +205,8 @@ export default function EditSlotModal({
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-    const startMs = new Date(selectedEvent.start).getTime();
-    const dayStr = new Date(selectedEvent.start).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const startMs = new Date(selectedEvent.start as Date | string).getTime();
+    const dayStr = new Date(selectedEvent.start as Date | string).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     const allDayAvailable = appointments.filter(a =>
       a.status === 'available' &&
       new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dayStr &&
@@ -294,7 +295,7 @@ export default function EditSlotModal({
     if (activeTab === 'note') {
       const isNonBlockingNote = formData.title !== 'NON DISPO';
       targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
-      const startMs = new Date(selectedEvent.start).getTime();
+      const startMs = new Date(selectedEvent.start as Date | string).getTime();
       slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
       if (!isNonBlockingNote) {
         if (slotsToUpdate.some(slot => IS_CLIENT_SLOT(slot))) { toast.error('❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.'); return; }
@@ -344,7 +345,7 @@ export default function EditSlotModal({
       });
     } else if (slotsNeeded > 1) {
       updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
-      const startMs = new Date(selectedEvent.start).getTime();
+      const startMs = new Date(selectedEvent.start as Date | string).getTime();
       for (let i = 1; i < slotsNeeded; i++) {
         const nextMs = startMs + i * slotDuration * 60000;
         const nextSlot = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
@@ -363,7 +364,7 @@ export default function EditSlotModal({
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-    const startMs = new Date(selectedEvent.start).getTime();
+    const startMs = new Date(selectedEvent.start as Date | string).getTime();
     const updatesToApply: any[] = [];
     for (let i = 0; i < slotsNeeded; i++) {
       const ms = startMs + i * slotDuration * 60000;
@@ -400,7 +401,7 @@ export default function EditSlotModal({
     const confirmMsg = isPlural ? '🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection ?\n\n(Les réservations clients existantes seront conservées).' : '🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).';
     if (!await confirm(confirmMsg)) return;
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
-    const startMs = new Date(selectedEvent.start).getTime();
+    const startMs = new Date(selectedEvent.start as Date | string).getTime();
     const slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
     const updatesToApply: any[] = [];
     slotsToUpdate.forEach(slot => {
@@ -554,12 +555,12 @@ export default function EditSlotModal({
                       const slotsNeededOption = (f.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
                       let canFit = true; let reason = '';
                       if (f.allow_multi_slots && slotsNeededOption > 1) {
-                        const startMs = new Date(selectedEvent?.start).getTime();
+                        const startMs = new Date((selectedEvent?.start ?? selectedEvent?.start_time) as Date | string).getTime();
                         for (let i = 1; i < slotsNeededOption; i++) {
                           if (!appointments.find(a => a.monitor_id?.toString() === selectedEvent?.monitor_id?.toString() && new Date(a.start_time).getTime() === startMs + i * slotDuration * 60000 && a.status === 'available')) { canFit = false; reason = `(Bloqué : nécessite ${slotsNeededOption} créneaux)`; break; }
                         }
                       } else if (!f.allow_multi_slots && flightDuration > slotDuration) { canFit = false; reason = `(Trop long : ${flightDuration} min)`; }
-                      const slotTimeStr = selectedEvent?.start ? new Date(selectedEvent.start).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                      const slotTimeStr = selectedEvent?.start ? new Date(selectedEvent.start as Date | string).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
                       const allowedSlots = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
                       const isAllowedTime = allowedSlots.length === 0 || allowedSlots.includes(slotTimeStr);
                       const isDisabled = !canFit || !isAllowedTime;
@@ -676,7 +677,7 @@ export default function EditSlotModal({
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
-                  <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: any) => setBlockType(e.target.value)} disabled={isOutOfSeason || currentUser?.role !== 'admin'}>
+                  <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBlockType(e.target.value as 'none' | 'all' | 'specific')} disabled={isOutOfSeason || currentUser?.role !== 'admin'}>
                     <option value="none">Ce pilote uniquement</option>
                     {currentUser?.role === 'admin' && (<><option value="all">🚫 TOUS les pilotes</option><option value="specific">👥 Certains pilotes</option></>)}
                   </select>
@@ -692,7 +693,7 @@ export default function EditSlotModal({
                   )}
                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Durée (Jusqu'à quand ?)</label>
                   {selectedEvent && (
-                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockUntilMs} onChange={(e: any) => setBlockUntilMs(Number(e.target.value))} disabled={isOutOfSeason}>
+                    <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all ${isOutOfSeason ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockUntilMs} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBlockUntilMs(Number(e.target.value))} disabled={isOutOfSeason}>
                       {upcomingBlockingSlots.map((slot, index) => {
                         const end = new Date(slot.end_time);
                         const timeStr = end.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });

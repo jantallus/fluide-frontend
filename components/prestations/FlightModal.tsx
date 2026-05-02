@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { FlightType, SlotDefinition } from '@/lib/types';
 
 const EMPTY_FORM = {
   name: '',
@@ -22,8 +23,8 @@ const EMPTY_FORM = {
 };
 
 interface Props {
-  flightToEdit: any | null;
-  slotDefs: any[];
+  flightToEdit: FlightType | null;
+  slotDefs: SlotDefinition[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -38,7 +39,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
     if (flightToEdit) {
       setFormData({
         name: flightToEdit.name,
-        duration_minutes: flightToEdit.duration_minutes,
+        duration_minutes: flightToEdit.duration_minutes ?? 60,
         price_cents: flightToEdit.price_cents,
         restricted_start_time: flightToEdit.restricted_start_time || '',
         restricted_end_time: flightToEdit.restricted_end_time || '',
@@ -102,7 +103,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
     if (formData.season === 'WINTER') return s.plan_name === 'hiver';
     return true;
   });
-  const uniqueTimes = Array.from(new Set(displaySlots.map((s: any) => s.start_time.slice(0, 5)))).sort() as string[];
+  const uniqueTimes = Array.from(new Set(displaySlots.map((s: SlotDefinition) => s.start_time.slice(0, 5)))).sort() as string[];
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
@@ -199,7 +200,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
               <div className="flex gap-2">
                 <button onClick={() => {
                   const validTimes = uniqueTimes.filter(t => {
-                    const maxDuration = Math.max(...displaySlots.filter((s: any) => s.start_time.slice(0, 5) === t).map((s: any) => s.duration_minutes));
+                    const maxDuration = Math.max(...displaySlots.filter((s: SlotDefinition) => s.start_time.slice(0, 5) === t).map((s: SlotDefinition) => s.duration_minutes ?? 0));
                     return formData.allow_multi_slots ? true : maxDuration >= formData.duration_minutes;
                   });
                   set({ allowed_time_slots: validTimes });
@@ -213,7 +214,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {uniqueTimes.map(timeStr => {
-                  const maxDuration = Math.max(...displaySlots.filter((s: any) => s.start_time.slice(0, 5) === timeStr).map((s: any) => s.duration_minutes));
+                  const maxDuration = Math.max(...displaySlots.filter((s: SlotDefinition) => s.start_time.slice(0, 5) === timeStr).map((s: SlotDefinition) => s.duration_minutes ?? 0));
                   const isCompatible = formData.allow_multi_slots ? true : maxDuration >= formData.duration_minutes;
                   const isChecked = formData.allowed_time_slots.includes(timeStr);
                   return (

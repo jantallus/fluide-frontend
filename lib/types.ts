@@ -38,8 +38,12 @@ export interface Slot {
   client_message?: string | null;
   flight_type_id?: number | null;
   weight?: number | null;
+  weight_checked?: boolean | null;
+  weightChecked?: boolean;
   payment_data?: PaymentData | null;
   resourceId?: string;
+  /** FullCalendar event.start (Date object) — populated when slot comes from calendar click */
+  start?: Date | string;
 }
 
 export interface CalendarAppointment {
@@ -81,12 +85,22 @@ export interface FlightType {
   name: string;
   description?: string;
   duration_minutes?: number;
+  /** Alias used in some components */
+  duration?: number;
   price_cents: number;
   season?: string;
   is_active?: boolean;
   popup_content?: string;
   show_popup?: boolean;
   image_url?: string;
+  color_code?: string;
+  weight_min?: number;
+  weight_max?: number;
+  booking_delay_hours?: number;
+  allowed_time_slots?: string[];
+  allow_multi_slots?: boolean;
+  restricted_start_time?: string;
+  restricted_end_time?: string;
 }
 
 export interface Complement {
@@ -96,6 +110,7 @@ export interface Complement {
   price_cents: number;
   is_active?: boolean;
   flight_type_ids?: number[];
+  image_url?: string;
 }
 
 // ── Bons cadeaux & codes promo ────────────────────────────────────────────────
@@ -217,8 +232,16 @@ export interface PublicSlot {
 
 export interface Passenger {
   firstName: string;
-  lastName: string;
-  weight: string;
+  lastName?: string;
+  weight?: string;
+  flightId?: string;
+  flightName?: string;
+  date?: string;
+  time?: string;
+  weightChecked?: boolean;
+  weight_min?: number;
+  weight_max?: number;
+  selectedComplements?: number[];
 }
 
 export interface CartItem {
@@ -244,17 +267,26 @@ export interface Season {
 export interface GiftCardShopTemplate {
   id: number;
   title: string;
+  description?: string;
   price_cents: number;
   validity_months: number;
   is_published: boolean;
   flight_type_id?: number | null;
   flight_name?: string;
+  image_url?: string;
+  pdf_background_url?: string;
+  popup_content?: string;
+  show_popup?: boolean;
+  custom_line_1?: string;
+  custom_line_2?: string;
+  custom_line_3?: string;
 }
 
 export interface Availability {
-  day: string;
-  start: string;
-  end: string;
+  start_date: string;
+  end_date: string;
+  daily_start_time: string;
+  daily_end_time: string;
 }
 
 // ── Statistiques détaillées ───────────────────────────────────────────────────

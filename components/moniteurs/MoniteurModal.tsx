@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { User, CurrentUser, Availability } from '@/lib/types';
 
 const EMPTY_USER = {
   first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true,
@@ -9,8 +10,8 @@ const EMPTY_USER = {
 };
 
 interface Props {
-  userToEdit: any | null;
-  currentUser: any;
+  userToEdit: User | null;
+  currentUser: CurrentUser | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -18,7 +19,7 @@ interface Props {
 export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Props) {
   const { toast } = useToast();
   const [newUser, setNewUser] = useState({ ...EMPTY_USER });
-  const [availabilities, setAvailabilities] = useState<any[]>([]);
+  const [availabilities, setAvailabilities] = useState<Availability[]>([]);
 
   useEffect(() => {
     if (userToEdit) {
@@ -52,7 +53,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
 
     const url = userToEdit ? `/api/users/${userToEdit.id}` : '/api/users';
     const method = userToEdit ? 'PATCH' : 'POST';
-    const payload: any = { ...newUser, status: 'Actif' };
+    const payload: Record<string, unknown> = { ...newUser, status: 'Actif' };
     if (userToEdit && !payload.password) delete payload.password;
 
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });

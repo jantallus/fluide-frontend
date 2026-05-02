@@ -1,14 +1,15 @@
 "use client";
 import React from 'react';
 import { getDayName } from '@/lib/booking-utils';
+import type { Passenger, Complement, GiftCard, FlightType } from '@/lib/types';
 
 interface Props {
-  passenger: any;
+  passenger: Passenger;
   index: number;
-  complementsList: any[];
-  appliedVoucher: any;
-  flights: any[];
-  onChange: (index: number, updated: any) => void;
+  complementsList: Complement[];
+  appliedVoucher: GiftCard | null;
+  flights: FlightType[];
+  onChange: (index: number, updated: Passenger) => void;
 }
 
 export default function PassengerCard({ passenger: p, index, complementsList, appliedVoucher, flights, onChange }: Props) {
@@ -21,7 +22,7 @@ export default function PassengerCard({ passenger: p, index, complementsList, ap
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
         <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
-          {p.flightName} • {getDayName(p.date)} à {p.time}
+          {p.flightName} • {getDayName(p.date ?? '')} à {p.time}
         </span>
       </div>
 
@@ -57,11 +58,11 @@ export default function PassengerCard({ passenger: p, index, complementsList, ap
         <div className="mt-4 pt-4 border-t border-slate-100">
           <p className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-3">Options disponibles (paiement sur place possible)</p>
           <div className="grid gap-3">
-            {complementsList.map((comp: any) => {
+            {complementsList.map((comp: Complement) => {
               const isSelected = p.selectedComplements?.includes(comp.id) || false;
 
               let isLockedByVoucher = false;
-              const currentFlight = flights.find((f: any) => f.id.toString() === p.flightId);
+              const currentFlight = flights.find((f: FlightType) => f.id.toString() === p.flightId);
               if (appliedVoucher && appliedVoucher.type === 'gift_card' && currentFlight) {
                 const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === p.flightId;
                 if (isSameFlight) {

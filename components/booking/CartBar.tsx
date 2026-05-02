@@ -1,9 +1,10 @@
 "use client";
 import React from 'react';
+import type { FlightType } from '@/lib/types';
 
 interface Props {
   cart: Record<string, number>;
-  flights: any[];
+  flights: FlightType[];
   totalItems: number;
   originalPrice: number;
   discountAmount: number;

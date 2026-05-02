@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import type { GiftCard } from '@/lib/types';
+import type { GiftCard, FlightType, Complement } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -25,8 +25,8 @@ const EMPTY_VOUCHER = {
 
 interface Props {
   cardToEdit: GiftCard | null;
-  flights: any[];
-  complements: any[];
+  flights: FlightType[];
+  complements: Complement[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -78,7 +78,7 @@ export function VoucherModal({ cardToEdit, flights, complements, onClose, onSave
   }, [cardToEdit]);
 
   const handleCreate = async () => {
-    let payload: any = { type: activeTab, custom_code: newVoucher.custom_code.trim() };
+    let payload: Record<string, unknown> = { type: activeTab, custom_code: newVoucher.custom_code.trim() };
 
     if (activeTab === 'gift_card') {
       if (!newVoucher.gift_value || !newVoucher.buyer_name) {

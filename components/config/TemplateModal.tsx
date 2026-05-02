@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { GiftCardShopTemplate, FlightType } from '@/lib/types';
 
 const EMPTY_TEMPLATE = {
   title: '', description: '', price_cents: '', flight_type_id: '',
@@ -11,8 +12,8 @@ const EMPTY_TEMPLATE = {
 };
 
 interface Props {
-  templateToEdit: any | null;
-  flights: any[];
+  templateToEdit: GiftCardShopTemplate | null;
+  flights: FlightType[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -27,10 +28,14 @@ export function TemplateModal({ templateToEdit, flights, onClose, onSaved }: Pro
   useEffect(() => {
     if (templateToEdit) {
       setTpl({
-        ...templateToEdit,
+        title: templateToEdit.title,
+        description: templateToEdit.description || '',
         price_cents: (templateToEdit.price_cents / 100).toString(),
-        flight_type_id: templateToEdit.flight_type_id || '',
+        flight_type_id: templateToEdit.flight_type_id?.toString() ?? '',
+        validity_months: templateToEdit.validity_months,
+        image_url: templateToEdit.image_url || '',
         pdf_background_url: templateToEdit.pdf_background_url || '',
+        is_published: templateToEdit.is_published,
         popup_content: templateToEdit.popup_content || '',
         show_popup: templateToEdit.show_popup || false,
         custom_line_1: templateToEdit.custom_line_1 || '',

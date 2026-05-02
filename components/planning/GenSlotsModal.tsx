@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { Monitor } from '@/lib/types';
 
 interface Props {
   availablePlans: string[];
-  monitors: any[];
+  monitors: Monitor[];
   loadAppointments: () => Promise<void>;
   onClose: () => void;
 }

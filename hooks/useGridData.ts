@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { getLocalYYYYMMDD } from '@/lib/booking-utils';
 import type { PublicSlot, FlightType } from '@/lib/types';
 
-type MutableSlot = PublicSlot & { status: string };
+type MutableSlot = Omit<PublicSlot, 'status'> & { status: string };
 
 export function useGridData(
   rawSlots: PublicSlot[],

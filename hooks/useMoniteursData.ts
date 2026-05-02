@@ -20,7 +20,7 @@ export function useMoniteursData() {
 
   useEffect(() => { loadUsers(); }, []);
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!await confirm(`Supprimer définitivement le compte de ${name} ?`)) return;
     const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
     if (res.ok) {
@@ -31,7 +31,7 @@ export function useMoniteursData() {
     }
   };
 
-  const copyIcalLink = (userId: number) => {
+  const copyIcalLink = (userId: string) => {
     const backendUrl = "https://fluide-production.up.railway.app";
     navigator.clipboard.writeText(`${backendUrl}/api/ical/${userId}`);
     toast.success("Lien d'agenda copié ! 📋");

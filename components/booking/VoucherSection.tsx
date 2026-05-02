@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from 'react';
+import type { GiftCard } from '@/lib/types';
 
 interface Props {
-  appliedVoucher: any;
+  appliedVoucher: GiftCard | null;
   discountAmount: number;
   onApply: (code: string) => Promise<void>;
   onRemove: () => void;
@@ -20,8 +21,8 @@ export default function VoucherSection({ appliedVoucher, discountAmount, onApply
     try {
       await onApply(input.trim());
       setInput('');
-    } catch (msg: any) {
-      setError(msg || 'Code invalide ou expiré');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Code invalide ou expiré');
     } finally {
       setIsApplying(false);
     }

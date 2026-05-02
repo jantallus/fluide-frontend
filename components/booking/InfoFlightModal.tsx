@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useRef } from 'react';
+import type { FlightType } from '@/lib/types';
 
 interface Props {
-  flight: any;
+  flight: FlightType;
   onClose: () => void;
 }
 

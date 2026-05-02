@@ -1,10 +1,11 @@
 "use client";
 import React from 'react';
 import { getMarketingInfo } from '@/lib/booking-utils';
+import type { FlightType, GiftCardShopTemplate } from '@/lib/types';
 
 interface Props {
-  flight: any;
-  giftTemplates: any[];
+  flight: FlightType;
+  giftTemplates: GiftCardShopTemplate[];
   onSelect: () => void;
   onInfo: () => void;
   onGift: (templateId: number, flightName: string) => void;

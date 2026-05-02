@@ -2,14 +2,15 @@
 import React, { useState } from 'react';
 import { usePrestationsData } from '@/hooks/usePrestationsData';
 import { FlightModal } from '@/components/prestations/FlightModal';
+import type { FlightType } from '@/lib/types';
 
 export default function PrestationsPage() {
   const { flights, slotDefs, loading, loadData, deleteFlight } = usePrestationsData();
   const [seasonFilter, setSeasonFilter] = useState<'ALL' | 'SUMMER' | 'WINTER'>('ALL');
   const [showModal, setShowModal] = useState(false);
-  const [flightToEdit, setFlightToEdit] = useState<any | null>(null);
+  const [flightToEdit, setFlightToEdit] = useState<FlightType | null>(null);
 
-  const startEdit = (f: any) => { setFlightToEdit(f); setShowModal(true); };
+  const startEdit = (f: FlightType) => { setFlightToEdit(f); setShowModal(true); };
   const startNew = () => { setFlightToEdit(null); setShowModal(true); };
   const handleClose = () => { setShowModal(false); setFlightToEdit(null); };
 
@@ -58,8 +59,8 @@ export default function PrestationsPage() {
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⏱️ {f.duration_minutes} min</div>
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⚖️ {f.weight_min ?? 20} - {f.weight_max ?? 110} kg</div>
                     <div className="flex items-center gap-2 text-rose-500 font-bold text-[10px] uppercase">⏳ Bloqué {f.booking_delay_hours || 0}h avant</div>
-                    {f.allowed_time_slots?.length > 0 && (
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">✅ {f.allowed_time_slots.length} Créneaux</div>
+                    {(f.allowed_time_slots?.length ?? 0) > 0 && (
+                      <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">✅ {f.allowed_time_slots!.length} Créneaux</div>
                     )}
                     <div className="flex items-center gap-2 font-bold text-[10px] uppercase flex-wrap">
                       {f.season === 'SUMMER' && <span className="text-amber-500 bg-amber-50 px-2 py-1 rounded-md">☀️ Exclusif Été</span>}

@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
+import type { SlotDefinition } from '@/lib/types';
 
 interface Props {
-  rotationToEdit: any | null;
+  rotationToEdit: SlotDefinition | null;
   activePlan: string;
   onClose: () => void;
   onSaved: () => void;
@@ -19,8 +20,8 @@ export function RotationModal({ rotationToEdit, activePlan, onClose, onSaved }: 
     if (rotationToEdit) {
       setRotation({
         start_time: rotationToEdit.start_time.slice(0, 5),
-        duration_minutes: rotationToEdit.duration_minutes,
-        label: rotationToEdit.label,
+        duration_minutes: rotationToEdit.duration_minutes ?? 60,
+        label: rotationToEdit.label ?? 'VOL',
         plan_name: rotationToEdit.plan_name || 'Standard',
       });
     } else {
