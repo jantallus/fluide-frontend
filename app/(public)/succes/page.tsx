@@ -166,12 +166,20 @@ function SuccessContent() {
             <p className="text-slate-600 font-medium mb-8">
               Le paiement semble avoir été annulé ou une erreur est survenue lors de l'enregistrement. Veuillez réessayer ou nous contacter par téléphone.
             </p>
-            <button 
-              onClick={() => window.location.href = '/bons-cadeaux'}
-              className="bg-rose-500 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-900 transition-colors"
-            >
-              Retour à la boutique
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = '/booking'}
+                className="bg-rose-500 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-900 transition-colors"
+              >
+                Réessayer une réservation
+              </button>
+              <button
+                onClick={() => window.location.href = '/bons-cadeaux'}
+                className="bg-slate-100 text-slate-700 px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+              >
+                Retour à la boutique
+              </button>
+            </div>
           </div>
         )}
 

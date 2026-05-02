@@ -192,6 +192,28 @@ export default function ConfigPage() {
               </button>
             </div>
           </div>
+
+          <h2 className="text-xl font-black uppercase italic flex items-center gap-2 mb-6 mt-8">🎟️ Limites de Réservation</h2>
+          <div className="bg-slate-50 p-6 rounded-[30px] border border-slate-100">
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Nombre maximum de passagers par réservation</label>
+            <p className="text-xs text-slate-400 ml-4 mb-4">Par défaut : 8. Au-delà, la réservation en ligne est refusée (groupes → contact direct).</p>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <input
+                type="number"
+                min={1}
+                max={50}
+                className="w-full md:w-48 bg-white border-2 border-slate-200 rounded-2xl p-4 font-bold outline-none focus:border-indigo-500 text-slate-700 text-center text-xl"
+                value={settings['max_passengers_per_booking'] || '8'}
+                onChange={e => setSettings({ ...settings, max_passengers_per_booking: e.target.value })}
+              />
+              <button
+                onClick={() => saveEmailSetting('max_passengers_per_booking', settings['max_passengers_per_booking'] || '8')}
+                className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all shadow-md"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* MESSAGES AUTOMATIQUES */}
