@@ -3,49 +3,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { PublicSlot, Passenger } from '@/lib/types';
 import { useToast } from '@/components/ui/ToastProvider';
 import { contactSchema } from '@/lib/schemas';
-
-// --- UTILITAIRES ---
-const getLocalYYYYMMDD = (d: Date) => {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-};
-
-const getDayName = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-};
-
-// 🧠 MOTEUR INTELLIGENT DE DATES
-// 🧠 MOTEUR INTELLIGENT DE DATES
-const calculateGridStart = (dateStr: string, count: number) => {
-  const start = new Date(dateStr);
-  start.setHours(0, 0, 0, 0);
-
-  if (count === 7) {
-    const day = start.getDay(); 
-    const diff = day === 6 ? 0 : day + 1; 
-    start.setDate(start.getDate() - diff);
-  }
-  // 🎯 CORRECTION : On a supprimé la règle qui forçait un recul de "-1 jour" !
-  
-  return getLocalYYYYMMDD(start);
-};
-
-// --- FONCTION TEXTE COMMERCIAL ---
-const getMarketingInfo = (flightName: string) => {
-  if (!flightName) return '🪂 Vol sensationnel';
-  const name = flightName.toLowerCase();
-  
-  if (name.includes('loupiot')) return '⏱️ 8 min de vol';
-  if (name.includes('découverte') || name.includes('decouverte')) return '⏱️ 15 min de vol';
-  if (name.includes('ascendance')) return '⏱️ 30 min de vol';
-  if (name.includes('prestige')) return '⏱️ 1h de vol';
-  
-  if (name.includes('beauregard')) return '⛰️ 500m de dénivelé';
-  if (name.includes('loup')) return '⛰️ 800m de dénivelé';
-  if (name.includes('aiguille')) return '⛰️ 1200m de dénivelé';
-
-  return '🪂 Vol inoubliable';
-};
+import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
+import { calculateBookingPrice } from '@/lib/price-utils';
 
 export default function ReserverPage() {
   const { toast } = useToast();
@@ -597,49 +556,11 @@ export default function ReserverPage() {
   };
 
   let totalItems = 0;
-  let flightTotal = 0;
-  let complementsTotal = 0;
+  Object.values(cart).forEach(qty => { totalItems += qty; });
 
-  Object.entries(cart).forEach(([key, qty]) => {
-    totalItems += qty;
-    const [fId] = key.split('|');
-    const f = flights.find(fl => fl.id.toString() === fId);
-    if (f && f.price_cents) flightTotal += (f.price_cents / 100) * qty;
-  });
-
-  passengers.forEach(p => {
-    if (p.selectedComplements && p.selectedComplements.length > 0) {
-      p.selectedComplements.forEach((compId: number) => {
-        const comp = complementsList.find(c => c.id === compId);
-        if (comp && comp.price_cents) complementsTotal += (comp.price_cents / 100);
-      });
-    }
-  });
-
-  let originalPrice = flightTotal + complementsTotal;
-  let discountAmount = 0;
-  
-  if (appliedVoucher) {
-    if (appliedVoucher.type === 'gift_card') {
-      discountAmount = Number(appliedVoucher.price_paid_cents) / 100;
-    } else if (appliedVoucher.type === 'promo') {
-      const discountVal = Number(appliedVoucher.discount_value);
-      const scope = appliedVoucher.discount_scope || 'both';
-      
-      let targetAmount = originalPrice;
-      if (scope === 'flight') targetAmount = flightTotal;
-      if (scope === 'complements') targetAmount = complementsTotal;
-
-      if (appliedVoucher.discount_type === 'fixed') {
-        discountAmount = Math.min(discountVal, targetAmount); 
-      }
-      if (appliedVoucher.discount_type === 'percentage') {
-        discountAmount = targetAmount * (discountVal / 100);
-      }
-    }
-  }
-
-  const finalPrice = Math.max(0, originalPrice - discountAmount);
+  const { originalPrice, discountAmount, finalPrice } = calculateBookingPrice(
+    cart, flights, passengers, complementsList, appliedVoucher
+  );
 
   useEffect(() => {
     if (step === 3 && totalItems === 0) setStep(1);

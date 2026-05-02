@@ -129,7 +129,7 @@ export interface GiftCard {
   gift_value?: number | null;
   discount_type?: 'fixed' | 'percentage';
   discount_value?: number;
-  discount_scope?: 'flight' | 'options' | 'both';
+  discount_scope?: 'flight' | 'complements' | 'both';
   max_uses?: number;
   used_count?: number;
   is_unlimited?: boolean;
