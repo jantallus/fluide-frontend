@@ -14,6 +14,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
   const [availablePlans, setAvailablePlans] = useState<string[]>(['Standard']);
   const [timeBounds, setTimeBounds] = useState({ min: '08:00:00', max: '20:00:00' });
   const [isGoogleSyncEnabled, setIsGoogleSyncEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadAppointments = useCallback(async () => {
     const { start, end } = getDateRange();
@@ -70,6 +71,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
       }
       if (flightRes.ok) setFlightTypes(await flightRes.json());
     } catch (err) { console.error('Erreur chargement planning:', err); }
+    finally { setIsLoading(false); }
   }, []);
 
   const toggleGoogleSync = useCallback(async () => {
@@ -94,6 +96,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
     appointments, setAppointments,
     monitors, flightTypes, openingPeriods, slotDefs,
     availablePlans, timeBounds, isGoogleSyncEnabled,
+    isLoading,
     loadAppointments, toggleGoogleSync,
   };
 }

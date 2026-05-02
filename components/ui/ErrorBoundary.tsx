@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import { RefreshCw, AlertTriangle, WifiOff } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,8 +36,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
     const zone = this.props.zone ?? 'unknown';
     console.error(`[ErrorBoundary:${zone}]`, error.message);
     console.error(info.componentStack);
-    // TODO: envoyer à Sentry quand configuré
-    // Sentry.captureException(error, { extra: { zone, componentStack: info.componentStack } });
+    // Envoie l'erreur à Sentry si configuré (no-op sinon)
+    Sentry.captureException(error, {
+      extra: { zone, componentStack: info.componentStack },
+    });
   }
 
   handleReset = () => {
@@ -66,7 +69,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 function AdminFallback({ error, zone, onReset }: { error: Error | null; zone?: string; onReset: () => void }) {
   const isDev = process.env.NODE_ENV === 'development';
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+    <div role="alert" className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
       <div className="bg-white rounded-[30px] border-2 border-rose-100 p-8 max-w-lg w-full shadow-sm">
         <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <AlertTriangle size={28} className="text-rose-500" />
@@ -97,7 +100,7 @@ function AdminFallback({ error, zone, onReset }: { error: Error | null; zone?: s
 
 function PublicFallback({ onReset }: { onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white">
+    <div role="alert" className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white">
       <div className="max-w-sm w-full">
         <div className="w-16 h-16 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <WifiOff size={30} className="text-sky-400" />
@@ -126,7 +129,7 @@ function PublicFallback({ onReset }: { onReset: () => void }) {
 
 function WidgetFallback({ zone, onReset }: { zone?: string; onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 rounded-[20px] border-2 border-dashed border-rose-200 bg-rose-50/50 text-center gap-3">
+    <div role="alert" className="flex flex-col items-center justify-center p-8 rounded-[20px] border-2 border-dashed border-rose-200 bg-rose-50/50 text-center gap-3">
       <AlertTriangle size={20} className="text-rose-400" />
       <p className="text-sm font-bold text-rose-600">
         {zone ? `Erreur dans "${zone}"` : 'Ce bloc a rencontré une erreur'}

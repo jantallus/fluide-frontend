@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   error: Error & { digest?: string };
@@ -11,13 +12,15 @@ interface Props {
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
     console.error('[Global Error]', error);
+    // Envoie l'erreur à Sentry si configuré (no-op sinon)
+    Sentry.captureException(error, { tags: { boundary: 'global' } });
   }, [error]);
 
   return (
     <html lang="fr">
       <body style={{ margin: 0, fontFamily: 'sans-serif', background: '#f8fafc' }}>
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+          <div role="alert" style={{ textAlign: 'center', maxWidth: '400px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🪂</div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', fontStyle: 'italic', marginBottom: '0.5rem' }}>
               Fluide est temporairement indisponible

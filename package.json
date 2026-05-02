@@ -18,6 +18,7 @@
     "@fullcalendar/resource-timegrid": "^6.1.20",
     "@fullcalendar/scrollgrid": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@sentry/nextjs": "^10.51.0",
     "autoprefixer": "^10.4.27",
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",

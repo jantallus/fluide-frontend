@@ -22,13 +22,14 @@ export default function Navbar() {
       <div className="nav-container-fluid">
         
         {/* LOGO */}
-        <Link href="/booking" className="logo-escalier">
-          <span className="letter l1">f</span>
-          <span className="letter l2">l</span>
-          <span className="letter l3">u</span>
-          <span className="letter l4">i</span>
-          <span className="letter l5">d</span>
-          <span className="letter l6">e</span>
+        <Link href="/booking" className="logo-escalier" aria-label="Fluide Parapente – Accueil">
+          {/* Les lettres sont purement décoratives — aria-hidden évite la lecture lettre par lettre */}
+          <span className="letter l1" aria-hidden="true">f</span>
+          <span className="letter l2" aria-hidden="true">l</span>
+          <span className="letter l3" aria-hidden="true">u</span>
+          <span className="letter l4" aria-hidden="true">i</span>
+          <span className="letter l5" aria-hidden="true">d</span>
+          <span className="letter l6" aria-hidden="true">e</span>
         </Link>
 
         {/* MENU DESKTOP */}

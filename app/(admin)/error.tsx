@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   error: Error & { digest?: string };
@@ -9,6 +10,8 @@ interface Props {
 export default function AdminError({ error, reset }: Props) {
   useEffect(() => {
     console.error('[Admin Error]', error);
+    // Envoie l'erreur à Sentry si configuré (no-op sinon)
+    Sentry.captureException(error, { tags: { boundary: 'admin' } });
   }, [error]);
 
   return (

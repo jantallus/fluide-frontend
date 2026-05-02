@@ -22,6 +22,7 @@ export default function PlanningAdmin() {
     appointments, setAppointments,
     monitors, flightTypes, openingPeriods, slotDefs,
     availablePlans, timeBounds, isGoogleSyncEnabled,
+    isLoading,
     loadAppointments, toggleGoogleSync,
   } = usePlanningData(getDateRange);
 
@@ -188,9 +189,38 @@ export default function PlanningAdmin() {
       </header>
 
       <div className="bg-white rounded-2xl md:rounded-[35px] shadow-2xl border border-slate-200 p-2 md:p-6 overflow-hidden">
-        <ErrorBoundary variant="widget" zone="planning/fullcalendar">
-          {memoizedCalendar}
-        </ErrorBoundary>
+        {isLoading ? (
+          /* Skeleton calendrier — simule des colonnes de moniteurs avec des créneaux */
+          <div className="animate-pulse">
+            {/* Barre de titre fictive */}
+            <div className="flex gap-3 mb-4 px-2">
+              <div className="h-8 bg-slate-200 rounded-xl w-24"></div>
+              <div className="h-8 bg-slate-200 rounded-xl w-24"></div>
+              <div className="flex-1"></div>
+              <div className="h-8 bg-slate-100 rounded-xl w-48"></div>
+            </div>
+            {/* Header colonnes moniteurs */}
+            <div className="flex gap-2 mb-3 px-2">
+              <div className="w-14 shrink-0"></div>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex-1 h-10 bg-slate-200/70 rounded-xl"></div>
+              ))}
+            </div>
+            {/* Lignes de créneaux */}
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="flex gap-2 mb-2 items-center px-2">
+                <div className="w-14 shrink-0 h-4 bg-slate-100 rounded"></div>
+                {[1, 2, 3, 4].map(j => (
+                  <div key={j} className={`flex-1 rounded-xl ${i % 3 === 1 && j === 2 ? 'h-16 bg-sky-100' : 'h-10 bg-slate-50 border border-slate-100'}`}></div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ErrorBoundary variant="widget" zone="planning/fullcalendar">
+            {memoizedCalendar}
+          </ErrorBoundary>
+        )}
       </div>
 
       {showEditModal && selectedEvent && (

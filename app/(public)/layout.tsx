@@ -29,7 +29,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      
+
+      {/* ── Lien d'évitement (accessibilité clavier) ──────────────────────────────
+          Invisible par défaut, visible seulement quand il reçoit le focus.
+          Permet aux utilisateurs clavier/lecteurs d'écran de sauter la navigation. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[99999] focus:bg-white focus:text-blue-700 focus:font-black focus:px-4 focus:py-2 focus:rounded-xl focus:shadow-lg focus:outline-2 focus:outline-blue-500"
+      >
+        Aller au contenu principal
+      </a>
+
       {/* 🚀 3. NOUVEAU NINJA SCRIPT : Cache instantanément les éléments avant même l'affichage */}
       <script dangerouslySetInnerHTML={{ __html: `
         if (window.location.search.includes('embed=true')) {
@@ -113,7 +123,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       )}*/}
 
       {/* --- CONTENU DE LA PAGE CLIENT --- */}
-      <main style={{ flex: 1 }}>
+      <main id="main-content" style={{ flex: 1 }}>
         <ToastProvider>
           <ErrorBoundary variant="public" zone="public/page">
             {children}

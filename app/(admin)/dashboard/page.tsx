@@ -6,6 +6,7 @@ import type { DashboardStats, UpcomingFlight } from '@/lib/types';
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({ todaySlots: 0, bookedSlots: 0, revenue: 0 });
   const [nextFlights, setNextFlights] = useState<UpcomingFlight[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadDashboard = async () => {
     try {
@@ -16,6 +17,7 @@ export default function DashboardPage() {
         setNextFlights(data.upcoming);
       }
     } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
   };
 
   useEffect(() => { loadDashboard(); }, []);
@@ -32,25 +34,47 @@ export default function DashboardPage() {
 
         {/* CARTES DE STATISTIQUES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
-            <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Taux d'occupation</p>
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-black italic text-slate-900">
-                {stats.todaySlots > 0 ? Math.round((stats.bookedSlots / stats.todaySlots) * 100) : 0}%
-              </span>
-              <span className="text-slate-300 font-bold mb-1">({stats.bookedSlots}/{stats.todaySlots} vols)</span>
-            </div>
-          </div>
+          {isLoading ? (
+            <>
+              {/* Skeleton carte 1 */}
+              <div className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 animate-pulse">
+                <div className="h-3 bg-slate-200 rounded-lg w-32 mb-4"></div>
+                <div className="h-10 bg-slate-200/80 rounded-xl w-24"></div>
+              </div>
+              {/* Skeleton carte 2 */}
+              <div className="bg-sky-100 p-8 rounded-[40px] shadow-xl animate-pulse">
+                <div className="h-3 bg-sky-200 rounded-lg w-40 mb-4"></div>
+                <div className="h-10 bg-sky-200 rounded-xl w-28"></div>
+              </div>
+              {/* Skeleton carte 3 */}
+              <div className="bg-slate-800 p-8 rounded-[40px] shadow-xl animate-pulse">
+                <div className="h-3 bg-slate-600 rounded-lg w-32 mb-4"></div>
+                <div className="h-7 bg-slate-600 rounded-xl w-24"></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Taux d'occupation</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-black italic text-slate-900">
+                    {stats.todaySlots > 0 ? Math.round((stats.bookedSlots / stats.todaySlots) * 100) : 0}%
+                  </span>
+                  <span className="text-slate-300 font-bold mb-1">({stats.bookedSlots}/{stats.todaySlots} vols)</span>
+                </div>
+              </div>
 
-          <div className="bg-sky-500 p-8 rounded-[40px] shadow-xl shadow-sky-100 text-white">
-            <p className="text-[10px] font-black uppercase text-sky-100 mb-2">Chiffre d'Affaires Jour</p>
-            <span className="text-4xl font-black italic">{stats.revenue / 100}€</span>
-          </div>
+              <div className="bg-sky-500 p-8 rounded-[40px] shadow-xl shadow-sky-100 text-white">
+                <p className="text-[10px] font-black uppercase text-sky-100 mb-2">Chiffre d'Affaires Jour</p>
+                <span className="text-4xl font-black italic">{stats.revenue / 100}€</span>
+              </div>
 
-          <div className="bg-slate-900 p-8 rounded-[40px] shadow-xl text-white">
-            <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Status Structure</p>
-            <span className="text-xl font-black uppercase italic text-emerald-400">Ouvert 🟢</span>
-          </div>
+              <div className="bg-slate-900 p-8 rounded-[40px] shadow-xl text-white">
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Status Structure</p>
+                <span className="text-xl font-black uppercase italic text-emerald-400">Ouvert 🟢</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* LISTE DES PROCHAINS VOLS */}
@@ -58,9 +82,22 @@ export default function DashboardPage() {
           <h2 className="text-xl font-black uppercase italic mb-8 flex items-center gap-3">
             <span className="w-2 h-8 bg-sky-500 rounded-full"></span> Prochains décollages
           </h2>
-          
+
           <div className="space-y-4">
-            {nextFlights.length > 0 ? nextFlights.map((f: UpcomingFlight) => (
+            {isLoading ? (
+              /* Skeleton liste de vols */
+              [1, 2, 3].map(i => (
+                <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[30px] border border-slate-100 animate-pulse">
+                  <div className="flex items-center gap-6">
+                    <div className="h-9 w-16 bg-slate-200 rounded-xl"></div>
+                    <div>
+                      <div className="h-4 bg-slate-200 rounded-lg w-40 mb-2"></div>
+                      <div className="h-3 bg-slate-100 rounded-lg w-56"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : nextFlights.length > 0 ? nextFlights.map((f: UpcomingFlight) => (
               <div key={f.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-[30px] border border-slate-100">
                 <div className="flex items-center gap-6">
                   <span className="bg-white px-4 py-2 rounded-xl font-black text-sky-600 shadow-sm border border-slate-100">

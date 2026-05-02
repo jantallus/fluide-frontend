@@ -761,8 +761,8 @@ export default function ReserverPage() {
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl inline-flex shadow-xl border border-slate-200">
-                <button onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
-                <button onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-sky-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>❄️ Vols Hiver</button>
+                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
+                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-sky-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>❄️ Vols Hiver</button>
               </div>
             </div>
 
@@ -1075,9 +1075,19 @@ export default function ReserverPage() {
                                           </span>
                                         </div>
                                         <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
-                                          <button onClick={() => handleRemove(dateStr, timeStr)} disabled={qtyInCart === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}>-</button>
-                                          <span className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
-                                          <button onClick={() => handleAdd(dateStr, timeStr)} disabled={capacity === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'}`}>+</button>
+                                          <button
+                                            aria-label={`Retirer un passager – ${getDayName(dateStr)} à ${timeStr}`}
+                                            onClick={() => handleRemove(dateStr, timeStr)}
+                                            disabled={qtyInCart === 0}
+                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}
+                                          >-</button>
+                                          <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
+                                          <button
+                                            aria-label={`Ajouter un passager – ${getDayName(dateStr)} à ${timeStr}`}
+                                            onClick={() => handleAdd(dateStr, timeStr)}
+                                            disabled={capacity === 0}
+                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'}`}
+                                          >+</button>
                                         </div>
                                       </div>
                                     );
@@ -1448,14 +1458,20 @@ export default function ReserverPage() {
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
-          
-          {/* 🎯 1. La popup a maintenant une hauteur maximale (max-h-[90vh]) et une structure en colonne */}
-          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+
+          {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="info-flight-dialog-title"
+            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            onClick={e => e.stopPropagation()}
+          >
             
             {/* 🎯 2. L'en-tête (Fixe en haut) */}
             <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-start border-b border-slate-100">
               {/* Le pr-4 (padding-right) empêche le titre de déborder sur la croix */}
-              <h3 className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce vol</h3>
+              <h3 id="info-flight-dialog-title" className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce vol</h3>
               
               <button 
                 onClick={() => setInfoFlight(null)} 

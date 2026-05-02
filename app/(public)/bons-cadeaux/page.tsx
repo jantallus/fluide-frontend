@@ -280,7 +280,33 @@ export default function CadeauPage() {
           </div>
 
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '50px 0' }}><p style={{ color: '#1e40af', fontWeight: 900 }}>Chargement des offres...</p></div>
+            /* ☠️ SKELETON — même structure que les vraies cartes */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 flex flex-col justify-between animate-pulse">
+                  {/* Fausse image */}
+                  <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-2xl mb-6"></div>
+                  <div>
+                    {/* Faux titre */}
+                    <div className="h-8 bg-slate-200/80 rounded-xl w-3/4 mb-4"></div>
+                    {/* Faux tags */}
+                    <div className="flex gap-2 mb-6">
+                      <div className="h-6 bg-slate-100 rounded-lg w-28"></div>
+                      <div className="h-6 bg-slate-100 rounded-lg w-20"></div>
+                    </div>
+                    {/* Fausse description */}
+                    <div className="h-3 bg-slate-100 rounded-lg w-full mb-2"></div>
+                    <div className="h-3 bg-slate-100 rounded-lg w-5/6 mb-2"></div>
+                    <div className="h-3 bg-slate-100 rounded-lg w-4/6 mb-6"></div>
+                  </div>
+                  {/* Faux prix et bouton */}
+                  <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
+                    <div className="h-10 bg-slate-200/80 rounded-xl w-20"></div>
+                    <div className="h-12 bg-slate-200/50 rounded-2xl w-36"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : templates.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '50px 0', backgroundColor: 'white', borderRadius: '20px' }}><p style={{ color: '#64748b', fontWeight: 900 }}>Aucune offre n'est disponible.</p></div>
           ) : (
@@ -329,9 +355,18 @@ export default function CadeauPage() {
               </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-                <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Qui offre ? (Acheteur)</label><input type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={inputStyle} /></div>
-                <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Email (Réception du bon)</label><input type="email" placeholder="jean@email.com" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} style={inputStyle} /></div>
-                <div><label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Téléphone</label><input type="tel" placeholder="06 12 34 56 78" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} style={inputStyle} /></div>
+                <div>
+                  <label htmlFor="gc-buyer-name" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Qui offre ? (Acheteur)</label>
+                  <input id="gc-buyer-name" type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label htmlFor="gc-buyer-email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Email (Réception du bon)</label>
+                  <input id="gc-buyer-email" type="email" placeholder="jean@email.com" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label htmlFor="gc-buyer-phone" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Votre Téléphone</label>
+                  <input id="gc-buyer-phone" type="tel" placeholder="06 12 34 56 78" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} style={inputStyle} />
+                </div>
               </div>
               {/* 🎯 NOUVEAU : Les Options additionnelles */}
               {complements.length > 0 && (
@@ -395,10 +430,16 @@ export default function CadeauPage() {
       {/* 🎯 POPUP D'INFORMATION SUR LE BON CADEAU */}
       {infoTemplate && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoTemplate(null)}>
-          <div className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="info-template-dialog-title"
+            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            onClick={e => e.stopPropagation()}
+          >
             
             <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-start border-b border-slate-100">
-              <h3 className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce bon</h3>
+              <h3 id="info-template-dialog-title" className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce bon</h3>
               <button 
                 onClick={(e) => { e.stopPropagation(); setInfoTemplate(null); }} 
                 className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0 cursor-pointer active:scale-95"
