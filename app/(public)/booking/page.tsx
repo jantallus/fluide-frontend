@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { PublicSlot, Passenger } from '@/lib/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { contactSchema } from '@/lib/schemas';
 
 // --- UTILITAIRES ---
 const getLocalYYYYMMDD = (d: Date) => {
@@ -150,6 +151,7 @@ export default function ReserverPage() {
   const [voucherError, setVoucherError] = useState('');
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
+  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const [passengers, setPassengers] = useState<any[]>([]);
   
   // 🎯 RÉFÉRENCES SÉCURISÉES POUR ÉVITER L'EFFET DOMINO (Double-clic)
@@ -700,8 +702,30 @@ export default function ReserverPage() {
     }
   };
 
+  const validateField = (field: string, value: string) => {
+    const result = contactSchema.safeParse({ ...contact, [field]: value });
+    if (!result.success) {
+      const issue = result.error.issues.find(i => i.path[0] === field);
+      setContactErrors(prev => ({ ...prev, [field]: issue?.message ?? '' }));
+    } else {
+      setContactErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!isFormValid) return;
+
+    const result = contactSchema.safeParse(contact);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach(issue => {
+        const field = issue.path[0] as string;
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+      });
+      setContactErrors(fieldErrors);
+      return;
+    }
+    setContactErrors({});
     setIsCheckingOut(true);
 
     try {
@@ -1236,19 +1260,49 @@ export default function ReserverPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Jean" value={contact.firstName} onChange={e => setContact({...contact, firstName: e.target.value})} />
+                    <input
+                      type="text"
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      placeholder="Jean"
+                      value={contact.firstName}
+                      onChange={e => { setContact({...contact, firstName: e.target.value}); if (contactErrors.firstName) validateField('firstName', e.target.value); }}
+                    />
+                    {contactErrors.firstName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.firstName}</p>}
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom</label>
-                    <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="Dupont" value={contact.lastName} onChange={e => setContact({...contact, lastName: e.target.value})} />
+                    <input
+                      type="text"
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      placeholder="Dupont"
+                      value={contact.lastName}
+                      onChange={e => { setContact({...contact, lastName: e.target.value}); if (contactErrors.lastName) validateField('lastName', e.target.value); }}
+                    />
+                    {contactErrors.lastName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.lastName}</p>}
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone (le jour du vol)</label>
-                    <input type="tel" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="06 12 34 56 78" value={contact.phone} onChange={e => setContact({...contact, phone: e.target.value})} />
+                    <input
+                      type="tel"
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      placeholder="06 12 34 56 78"
+                      value={contact.phone}
+                      onChange={e => { setContact({...contact, phone: e.target.value}); if (contactErrors.phone) validateField('phone', e.target.value); }}
+                      onBlur={e => { if (e.target.value) validateField('phone', e.target.value); }}
+                    />
+                    {contactErrors.phone && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.phone}</p>}
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
-                    <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" placeholder="jean@email.com" value={contact.email} onChange={e => setContact({...contact, email: e.target.value})} />
+                    <input
+                      type="email"
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      placeholder="jean@email.com"
+                      value={contact.email}
+                      onChange={e => { setContact({...contact, email: e.target.value}); if (contactErrors.email) validateField('email', e.target.value); }}
+                      onBlur={e => { if (e.target.value) validateField('email', e.target.value); }}
+                    />
+                    {contactErrors.email && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.email}</p>}
                   </div>
                 </div>
 
