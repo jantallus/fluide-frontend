@@ -112,7 +112,7 @@ function SuccessContent() {
             </div>
             <br/>
             <button 
-              onClick={() => window.location.href = '/booking'}
+              onClick={() => window.location.href = 'https://fluide-parapente.fr'}
               className="bg-slate-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-violet-600 transition-colors shadow-lg shadow-slate-900/20"
             >
               Retour à l'accueil
@@ -147,7 +147,7 @@ function SuccessContent() {
             </button>
             <br/>
             <button 
-              onClick={() => window.location.href = '/booking'}
+              onClick={() => window.location.href = 'https://fluide-parapente.fr'}
               className="text-slate-400 font-bold uppercase text-xs hover:text-slate-900 transition-colors"
             >
               Retour à l'accueil
@@ -165,7 +165,7 @@ function SuccessContent() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => window.location.href = '/booking'}
+                onClick={() => window.location.href = 'https://fluide-parapente.fr'}
                 className="bg-rose-500 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-900 transition-colors"
               >
                 Réessayer une réservation
