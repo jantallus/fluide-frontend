@@ -15,8 +15,9 @@ interface UseQuickEditProps {
 export function useQuickEdit({ clients, monitors, giftCards, setClients, setGiftCards }: UseQuickEditProps) {
   const { toast } = useToast();
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
-  const [editType, setEditType] = useState<'monitor' | 'payment' | null>(null);
+  const [editType, setEditType] = useState<'monitor' | 'payment' | 'billing' | null>(null);
   const [tempMonitorId, setTempMonitorId] = useState('');
+  const [tempBillingName, setTempBillingName] = useState('');
   const [tempPayMethod, setTempPayMethod] = useState('CB');
   const [tempPayAmount, setTempPayAmount] = useState(0);
   const [tempPayCode, setTempPayCode] = useState('');
@@ -48,6 +49,12 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
     setEditType('monitor');
   };
 
+  const openBillingEdit = (flight: ClientFlight, clientBillingName?: string | null) => {
+    setTempBillingName(flight.billing_name || clientBillingName || '');
+    setEditingSlotId(flight.id);
+    setEditType('billing');
+  };
+
   type NumericPaymentKey = 'cb' | 'especes' | 'cheque' | 'ancv';
   const methodToKey = (method: string): NumericPaymentKey => {
     const map: Record<string, NumericPaymentKey> = {
@@ -66,6 +73,8 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
 
     if (editType === 'monitor') {
       payload.monitor_id = tempMonitorId;
+    } else if (editType === 'billing') {
+      payload.billing_name = tempBillingName.trim() || null;
     } else if (editType === 'payment') {
       if (tempPayAmount === 0 && tempPayAmount2 === 0 && tempAddedOptions.length === 0) {
         closeEdit();
@@ -131,7 +140,19 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
         setClients(prev =>
           prev.map(c => {
             if (c.id !== clientId) return c;
+            const newBilling = editType === 'billing' ? (tempBillingName.trim() || null) : undefined;
             const newFlights = c.flights?.map(f => {
+              if (editType === 'billing') {
+                // Propage à tous les vols du même group_id (ou juste celui-ci si pas de group)
+                const flightGroupId = c.flights?.find(fl => fl.id === slotId)?.group_id;
+                if (flightGroupId && f.group_id === flightGroupId) {
+                  return { ...f, billing_name: newBilling };
+                }
+                if (!flightGroupId && f.id === slotId) {
+                  return { ...f, billing_name: newBilling };
+                }
+                return f;
+              }
               if (f.id !== slotId) return f;
               if (editType === 'monitor') {
                 const m = monitors.find(x => x.id.toString() === tempMonitorId);
@@ -139,7 +160,7 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
               }
               return { ...f, payment_data: newPaymentData };
             });
-            return { ...c, flights: newFlights };
+            return { ...c, flights: newFlights, ...(newBilling !== undefined ? { billing_name: newBilling } : {}) };
           })
         );
         closeEdit();
@@ -156,6 +177,8 @@ export function useQuickEdit({ clients, monitors, giftCards, setClients, setGift
     editingSlotId, setEditingSlotId,
     editType,
     tempMonitorId, setTempMonitorId,
+    tempBillingName, setTempBillingName,
+    openBillingEdit,
     tempPayMethod, setTempPayMethod,
     tempPayAmount, setTempPayAmount,
     tempPayCode, setTempPayCode,

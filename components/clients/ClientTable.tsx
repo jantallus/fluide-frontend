@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { ChevronUp, ChevronDown, Trash2, X, UserCheck } from 'lucide-react';
+import { ChevronUp, ChevronDown, Trash2, X, UserCheck, Pencil, Check } from 'lucide-react';
 import type { Client, User, Complement, GiftCard, ClientFlight } from '@/lib/types';
 import type { QuickEditState } from '@/hooks/useQuickEdit';
 import { PaymentBadge } from './PaymentBadge';
@@ -15,6 +15,7 @@ interface ClientTableProps {
   icon: string;
   bgColor: string;
   textColor: string;
+  highlight?: boolean;
   clientsList: ClientWithSort[];
   allClients: Client[];
   monitors: User[];
@@ -29,7 +30,7 @@ interface ClientTableProps {
 }
 
 export function ClientTable({
-  title, icon, bgColor, textColor,
+  title, icon, bgColor, textColor, highlight = false,
   clientsList, allClients, monitors,
   complements, giftCards,
   selectedIds, setSelectedIds,
@@ -37,7 +38,7 @@ export function ClientTable({
   onDeleteFlight,
   edit,
 }: ClientTableProps) {
-  const { editingSlotId, editType, tempMonitorId, setTempMonitorId, openPaymentEdit, openMonitorEdit, closeEdit, saveQuickEdit } = edit;
+  const { editingSlotId, editType, tempMonitorId, setTempMonitorId, tempBillingName, setTempBillingName, openPaymentEdit, openMonitorEdit, openBillingEdit, closeEdit, saveQuickEdit } = edit;
 
   const renderMonitorSelector = (f: ClientFlight, clientId: number) => (
     <>
@@ -66,12 +67,21 @@ export function ClientTable({
     </>
   );
 
+  if (clientsList.length === 0 && !highlight) return null;
+
   return (
     <div className="mb-12">
-      <div className="flex items-center gap-4 mb-6 ml-4">
+      <div className={`flex items-center gap-4 mb-6 ml-4 ${highlight && clientsList.length > 0 ? 'animate-in fade-in' : ''}`}>
         <div className={`${bgColor} ${textColor} w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm font-bold`}>{icon}</div>
-        <h2 className="text-2xl font-black uppercase text-slate-800">{title}</h2>
-        <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-full text-xs font-black">{clientsList.length}</span>
+        <div>
+          <h2 className="text-2xl font-black uppercase text-slate-800">{title}</h2>
+          {highlight && clientsList.length === 0 && (
+            <p className="text-xs text-slate-400 font-bold">Aucun vol prévu aujourd'hui</p>
+          )}
+        </div>
+        {clientsList.length > 0 && (
+          <span className={`px-3 py-1 rounded-full text-xs font-black ${highlight ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400'}`}>{clientsList.length}</span>
+        )}
       </div>
 
       {/* 💻 DESKTOP */}
@@ -151,6 +161,17 @@ export function ClientTable({
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
+                              {/* Nom facturation */}
+                              <div
+                                className="flex items-center gap-1 cursor-pointer group"
+                                onClick={e => { e.stopPropagation(); openBillingEdit(f, c.billing_name); }}
+                                title="Nom de facturation"
+                              >
+                                <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-sky-500 transition-colors">
+                                  🧾 {f.billing_name || c.billing_name || '—'}
+                                </span>
+                                <Pencil size={10} className="text-slate-300 group-hover:text-sky-500 transition-colors" />
+                              </div>
                               <div
                                 className="cursor-pointer hover:opacity-80 transition-opacity"
                                 onClick={e => { e.stopPropagation(); openPaymentEdit(f); }}
@@ -164,7 +185,22 @@ export function ClientTable({
                                 className="absolute right-0 top-full mt-2 bg-white shadow-2xl border border-slate-200 p-4 rounded-2xl z-[100] flex items-center gap-3 animate-in fade-in"
                                 onClick={e => e.stopPropagation()}
                               >
-                                {editType === 'monitor'
+                                {editType === 'billing' ? (
+                                  <>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-black uppercase text-slate-400">Nom facturation</label>
+                                      <input
+                                        autoFocus
+                                        className="border-2 border-slate-200 rounded-lg px-3 py-2 font-bold text-xs outline-none focus:border-sky-400 w-48"
+                                        value={tempBillingName}
+                                        onChange={e => setTempBillingName(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') saveQuickEdit(f.id, c.id); if (e.key === 'Escape') closeEdit(); }}
+                                        placeholder="Nom Prénom du payeur"
+                                      />
+                                    </div>
+                                    <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-sky-500 text-white p-2 rounded-lg"><Check size={14} /></button>
+                                  </>
+                                ) : editType === 'monitor'
                                   ? renderMonitorSelector(f, c.id)
                                   : <PaymentEditor flight={f} clientId={c.id} complements={complements} giftCards={giftCards} edit={edit} />
                                 }
@@ -238,11 +274,23 @@ export function ClientTable({
                       </div>
                       <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="text-rose-300"><Trash2 size={16} /></button>
                     </div>
-                    <div
-                      className="cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={e => { e.stopPropagation(); openPaymentEdit(f); }}
-                    >
-                      <PaymentBadge data={f.payment_data} />
+                    <div className="flex items-center justify-between">
+                      {/* Nom facturation mobile */}
+                      <div
+                        className="flex items-center gap-1 cursor-pointer"
+                        onClick={e => { e.stopPropagation(); openBillingEdit(f, c.billing_name); }}
+                      >
+                        <span className="text-[9px] font-black uppercase text-slate-400">
+                          🧾 {f.billing_name || c.billing_name || 'Facturation —'}
+                        </span>
+                        <Pencil size={9} className="text-slate-300" />
+                      </div>
+                      <div
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={e => { e.stopPropagation(); openPaymentEdit(f); }}
+                      >
+                        <PaymentBadge data={f.payment_data} />
+                      </div>
                     </div>
                     {editingSlotId === f.id && (
                       <div
@@ -251,11 +299,23 @@ export function ClientTable({
                       >
                         <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
                           <p className="text-[10px] font-black uppercase text-sky-500">
-                            {editType === 'monitor' ? '👨‍✈️ Assigner un pilote' : '💳 Encaissement'}
+                            {editType === 'billing' ? '🧾 Facturation' : editType === 'monitor' ? '👨‍✈️ Assigner un pilote' : '💳 Encaissement'}
                           </p>
                           <button onClick={closeEdit} className="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-xs hover:bg-rose-100 hover:text-rose-500 transition-colors"><X size={14} /></button>
                         </div>
-                        {editType === 'monitor' ? (
+                        {editType === 'billing' ? (
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              className="border-2 border-slate-200 rounded-lg px-3 py-2 font-bold text-xs outline-none focus:border-sky-400 flex-1"
+                              value={tempBillingName}
+                              onChange={e => setTempBillingName(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') saveQuickEdit(f.id, c.id); if (e.key === 'Escape') closeEdit(); }}
+                              placeholder="Nom du payeur"
+                            />
+                            <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-sky-500 text-white px-3 py-2 rounded-lg font-black text-xs">OK</button>
+                          </div>
+                        ) : editType === 'monitor' ? (
                           <div className="flex gap-1">
                             {renderMonitorSelector(f, c.id)}
                           </div>

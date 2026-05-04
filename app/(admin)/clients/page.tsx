@@ -92,21 +92,31 @@ export default function ClientsPage() {
     return { ...c, flights: matchingFlights };
   }).filter(c => c.flights.length > 0);
 
-  const now = Date.now();
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+  const todayClients:    (Client & { sortKey: number })[] = [];
   const upcomingClients: (Client & { sortKey: number })[] = [];
-  const pastClients: (Client & { sortKey: number })[] = [];
+  const pastClients:     (Client & { sortKey: number })[] = [];
 
   filtered.forEach(c => {
-    const futureFlights = (c.flights || []).filter(f => new Date(f.start_time).getTime() >= now);
-    if (futureFlights.length > 0) {
-      upcomingClients.push({ ...c, sortKey: Math.min(...futureFlights.map(f => new Date(f.start_time).getTime())) });
+    const flightDate = (f: { start_time: string }) =>
+      new Date(f.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+
+    const todayFlts    = (c.flights || []).filter(f => flightDate(f) === todayStr);
+    const futureFlts   = (c.flights || []).filter(f => flightDate(f) >  todayStr);
+    const pastFlts     = (c.flights || []).filter(f => flightDate(f) <  todayStr);
+
+    if (todayFlts.length > 0) {
+      todayClients.push({ ...c, sortKey: Math.min(...todayFlts.map(f => new Date(f.start_time).getTime())) });
+    } else if (futureFlts.length > 0) {
+      upcomingClients.push({ ...c, sortKey: Math.min(...futureFlts.map(f => new Date(f.start_time).getTime())) });
     } else {
-      pastClients.push({ ...c, sortKey: Math.max(...(c.flights || []).map(f => new Date(f.start_time).getTime())) });
+      pastClients.push({ ...c, sortKey: Math.max(...pastFlts.map(f => new Date(f.start_time).getTime())) });
     }
   });
 
+  todayClients.sort((a, b)    => a.sortKey - b.sortKey);
   upcomingClients.sort((a, b) => a.sortKey - b.sortKey);
-  pastClients.sort((a, b) => b.sortKey - a.sortKey);
+  pastClients.sort((a, b)     => b.sortKey - a.sortKey);
 
   const deleteFlight = async (slotId: number, clientId: number) => {
     if (!await confirm('Supprimer ce vol ?')) return;
@@ -140,7 +150,7 @@ export default function ClientsPage() {
   const handleExport = () => {
     if (filtered.length === 0) return toast.info('Aucun dossier à exporter avec les filtres actuels.');
     const headers = [
-      'Date', 'Client', 'Email', 'Telephone Passager', 'Prestation', 'Pilote',
+      'Date', 'Nom Facturation', 'Passager', 'Email', 'Telephone', 'Prestation', 'Pilote',
       'Statut Brut', 'CB (€)', 'Espèces (€)', 'Chèque (€)', 'ANCV (€)', 'Bons & Promos (€)',
       'Code (Bon/Promo)', "Acheteur d'origine", 'Téléphone Acheteur', 'Net à facturer Partenaire',
     ];
@@ -178,9 +188,11 @@ export default function ClientsPage() {
           pd.ancv ? `ANCV ${pd.ancv / 100}€` : '',
           pd.voucher && pd.code ? `${pd.code_type === 'gift_card' ? 'Bon Cadeau' : 'Promo'} ${pd.code} ${pd.voucher / 100}€` : '',
         ].filter(Boolean).join(' + ');
+        const billingDisplay = f.billing_name || c.billing_name || `${c.last_name} ${c.first_name}`.trim();
         return [
           new Date(f.start_time).toLocaleDateString('fr-FR'),
-          `${c.last_name} ${c.first_name}`,
+          billingDisplay,
+          `${c.last_name} ${c.first_name}`.trim(),
           c.email,
           c.phone ? `="${c.phone}"` : '',
           f.flight_name,
@@ -274,6 +286,14 @@ export default function ClientsPage() {
         )}
 
         <ClientTable
+          title="Clients du jour" icon="📅" bgColor="bg-sky-100" textColor="text-sky-600" highlight
+          clientsList={todayClients} allClients={clients} monitors={monitors}
+          complements={complements} giftCards={giftCards}
+          selectedIds={selectedIds} setSelectedIds={setSelectedIds}
+          expandedClient={expandedClient} setExpandedClient={setExpandedClient}
+          onDeleteFlight={deleteFlight} edit={edit}
+        />
+        <ClientTable
           title="Vols à venir" icon="⏳" bgColor="bg-amber-100" textColor="text-amber-500"
           clientsList={upcomingClients} allClients={clients} monitors={monitors}
           complements={complements} giftCards={giftCards}
@@ -290,7 +310,7 @@ export default function ClientsPage() {
           onDeleteFlight={deleteFlight} edit={edit}
         />
 
-        {upcomingClients.length === 0 && pastClients.length === 0 && !isLoading && (
+        {todayClients.length === 0 && upcomingClients.length === 0 && pastClients.length === 0 && !isLoading && (
           <div className="text-center py-16 bg-white rounded-[40px] shadow-sm border border-slate-100">
             <span className="text-5xl block mb-4">🕵️‍♂️</span>
             <h3 className="text-xl font-black uppercase text-slate-800">Aucun dossier trouvé</h3>

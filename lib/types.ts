@@ -186,6 +186,8 @@ export interface ClientFlight {
   monitor_id?: string;
   flight_name?: string;
   price_cents?: number;
+  billing_name?: string | null;
+  group_id?: string | null;
 }
 
 export interface Client {
@@ -194,6 +196,8 @@ export interface Client {
   last_name?: string;
   email?: string;
   phone?: string;
+  billing_name?: string | null;
+  billing_email?: string | null;
   has_upcoming?: boolean | number;
   flights?: ClientFlight[];
 }
