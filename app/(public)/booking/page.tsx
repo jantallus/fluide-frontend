@@ -354,7 +354,7 @@ export default function ReserverPage() {
 
     // GridSlot étend PublicSlot avec 'booked_by_cart' — valeur interne utilisée
     // pour marquer les créneaux réservés dans le panier sans toucher au backend.
-    type GridSlot = Omit<PublicSlot, 'status'> & { status: 'available' | 'booked' | 'booked_by_cart' };
+    type GridSlot = Omit<PublicSlot, 'status'> & { status: 'available' | 'booked' | 'booked_by_cart' | 'unavailable' };
     const monSchedules: Record<string, Record<number, GridSlot>> = {};
     const timeToMs: Record<string, number> = {};
     const uniqueTimesByDate: Record<string, Set<string>> = {};
