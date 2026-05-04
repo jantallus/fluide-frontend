@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
+import type { EventClickArg } from '@fullcalendar/core';
 
 export default function PlanningAdmin() {
   const { toast } = useToast();
@@ -39,7 +40,7 @@ export default function PlanningAdmin() {
     if (u) setCurrentUser(JSON.parse(u));
   }, []);
 
-  const handleEventClick = useCallback((info: any) => {
+  const handleEventClick = useCallback((info: EventClickArg) => {
     if (currentUser?.role === 'monitor') return;
     if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
       toast.warning("Vous ne pouvez agir que sur votre propre colonne.");

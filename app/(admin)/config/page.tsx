@@ -4,6 +4,7 @@ import { useConfigData } from '@/hooks/useConfigData';
 import { TemplateModal } from '@/components/config/TemplateModal';
 import { RotationModal } from '@/components/config/RotationModal';
 import { Pencil, Trash2 } from 'lucide-react';
+import type { GiftCardShopTemplate, SlotDefinition } from '@/lib/types';
 
 export default function ConfigPage() {
   const {
@@ -16,9 +17,9 @@ export default function ConfigPage() {
 
   const [activePlan, setActivePlan] = useState('Standard');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [templateToEdit, setTemplateToEdit] = useState<any | null>(null);
+  const [templateToEdit, setTemplateToEdit] = useState<GiftCardShopTemplate | null>(null);
   const [showRotationModal, setShowRotationModal] = useState(false);
-  const [rotationToEdit, setRotationToEdit] = useState<any | null>(null);
+  const [rotationToEdit, setRotationToEdit] = useState<SlotDefinition | null>(null);
   const [showNewPlanInput, setShowNewPlanInput] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -37,9 +38,9 @@ export default function ConfigPage() {
     setIsRenaming(false);
   };
 
-  const uniquePlans = Array.from(new Set((definitions || []).map((d: any) => d.plan_name || 'Standard')));
+  const uniquePlans = Array.from(new Set((definitions || []).map(d => d.plan_name || 'Standard')));
   if (!uniquePlans.includes('Standard') && definitions.length === 0) uniquePlans.push('Standard');
-  const activeDefs = definitions.filter((d: any) => (d.plan_name || 'Standard') === activePlan);
+  const activeDefs = definitions.filter(d => (d.plan_name || 'Standard') === activePlan);
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
@@ -61,7 +62,7 @@ export default function ConfigPage() {
           </div>
           <div className="space-y-4">
             {templates.length === 0 && <p className="text-center text-slate-400 font-bold italic py-6">Aucun modèle créé pour la boutique.</p>}
-            {templates.map((tpl: any) => (
+            {templates.map(tpl => (
               <div key={tpl.id} className="flex flex-col md:flex-row justify-between items-center bg-slate-50 p-4 rounded-3xl border border-slate-100">
                 <div>
                   <h3 className="font-black text-slate-900">{tpl.title}</h3>
@@ -161,7 +162,7 @@ export default function ConfigPage() {
               </div>
             )}
             {activeDefs.length === 0 && <p className="text-center text-slate-400 font-bold italic py-6">Aucune rotation.</p>}
-            {activeDefs.map((def: any) => (
+            {activeDefs.map(def => (
               <div key={def.id} onClick={() => { setRotationToEdit(def); setShowRotationModal(true); }} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-indigo-50">
                 <div className="flex items-center gap-6">
                   <span className="bg-white px-4 py-2 rounded-xl font-black text-indigo-600 shadow-sm">{def.start_time.slice(0, 5)}</span>
@@ -260,7 +261,7 @@ export default function ConfigPage() {
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-8">
-                {flights.map((flight: any) => (
+                {flights.map(flight => (
                   <div key={flight.id} className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
                     <h4 className="font-black text-slate-800 uppercase italic mb-6 text-xl">{flight.name}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

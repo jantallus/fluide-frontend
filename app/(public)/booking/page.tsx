@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { FlightType, GiftCardShopTemplate, Complement, GiftCard, PublicSlot, Setting } from '@/lib/types';
+import type { FlightType, GiftCard, PublicSlot } from '@/lib/types';
+import { useBookingData } from '@/hooks/useBookingData';
+import { useAvailabilities } from '@/hooks/useAvailabilities';
 
 // Passager avec les champs étendus propres au tunnel de réservation
 interface BookingPassenger {
@@ -34,9 +36,6 @@ export default function ReserverPage() {
     }
   }, []);
 
-  const [flights, setFlights] = useState<FlightType[]>([]);
-  const [giftTemplates, setGiftTemplates] = useState<GiftCardShopTemplate[]>([]);
-  const [complementsList, setComplementsList] = useState<Complement[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
   const [step, setStep] = useState<number>(1);
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
@@ -102,22 +101,27 @@ export default function ReserverPage() {
     };
   }, [infoFlight]);
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
-  const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
+
+  // pickedDate et gridStartDate déclarés avant les hooks pour que le callback onReady puisse les setter
   const [pickedDate, setPickedDate] = useState<string>(() => {
     const defaultDate = new Date();
-    // 🎯 Si on est à midi (12h) ou plus tard, on passe à demain
-    if (defaultDate.getHours() >= 12) {
-      defaultDate.setDate(defaultDate.getDate() + 1);
-    }
+    if (defaultDate.getHours() >= 12) defaultDate.setDate(defaultDate.getDate() + 1);
     return getLocalYYYYMMDD(defaultDate);
   });
-  const [gridStartDate, setGridStartDate] = useState<string>(''); 
+  const [gridStartDate, setGridStartDate] = useState<string>('');
 
-  const [rawSlots, setRawSlots] = useState<PublicSlot[]>([]);
-  const [isSearchingTimes, setIsSearchingTimes] = useState(false);
+  // Données de base : vols, compléments, templates, saison, displayDaysCount
+  const { flights, giftTemplates, complementsList, displayDaysCount, isLoading, activeSeason, setActiveSeason } = useBookingData(
+    (dateStr, count) => {
+      setPickedDate(dateStr);
+      setGridStartDate(calculateGridStart(dateStr, count));
+    }
+  );
+
+  // Disponibilités : se recharge automatiquement quand gridStartDate ou selectedFlight change
+  const { rawSlots, isSearchingTimes } = useAvailabilities(gridStartDate, selectedFlight, displayDaysCount);
+
   const [cart, setCart] = useState<Record<string, number>>({});
   
   const [voucherInput, setVoucherInput] = useState('');
@@ -174,79 +178,6 @@ export default function ReserverPage() {
     }
   }, [step]);
   
-  useEffect(() => {
-    const currentMonth = new Date().getMonth(); 
-    let defaultSeason: 'Standard' | 'Hiver' = (currentMonth >= 9 || currentMonth <= 3) ? 'Hiver' : 'Standard';
-
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('saison')?.toLowerCase() === 'hiver') defaultSeason = 'Hiver';
-      if (params.get('saison')?.toLowerCase() === 'ete') defaultSeason = 'Standard';
-    }
-    setActiveSeason(defaultSeason);
-
-    const fetchData = async () => {
-      try {
-        const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
-          fetch(`/api/proxy/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`/api/proxy/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`/api/proxy/settings?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`/api/proxy/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }),
-        ]);
-
-        if (resFlights.ok) setFlights(await resFlights.json());
-        if (resComplements.ok) setComplementsList(await resComplements.json());
-        if (resTemplates.ok) setGiftTemplates(await resTemplates.json());
-
-        let count = 7; 
-        if (resSettings.ok) {
-           const s = await resSettings.json();
-           const countSetting = (s as Setting[]).find(x => x.key === 'display_days_count');
-           if (countSetting) count = parseInt(countSetting.value);
-        }
-        setDisplayDaysCount(count);
-        
-        // 🎯 NOUVEAU : On affiche "Aujourd'hui" le matin, et "Demain" l'après-midi (dès 12h)
-        const defaultDate = new Date();
-        if (defaultDate.getHours() >= 12) {
-          defaultDate.setDate(defaultDate.getDate() + 1);
-        }
-        const defaultDateStr = getLocalYYYYMMDD(defaultDate);
-        
-        setPickedDate(defaultDateStr);
-        setGridStartDate(calculateGridStart(defaultDateStr, count));
-
-      } catch (err) { 
-        console.error("Erreur chargement données", err); 
-      } finally { 
-        setIsLoading(false); 
-      }
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (!gridStartDate || !selectedFlight) return;
-    const fetchWeekData = async () => {
-      setIsSearchingTimes(true);
-      try {
-        const dStart = new Date(gridStartDate);
-        dStart.setDate(dStart.getDate() - 10);
-        const startDateStr = getLocalYYYYMMDD(dStart);
-
-        const dEnd = new Date(gridStartDate);
-        dEnd.setDate(dEnd.getDate() + 10);
-        const endDateStr = getLocalYYYYMMDD(dEnd);
-
-        const res = await fetch(`/api/proxy/public/availabilities?start=${startDateStr}&end=${endDateStr}&t=${Date.now()}`, { cache: 'no-store' });
-        const results = await res.json();
-        
-        setRawSlots(results);
-      } catch (err) { console.error("Erreur dispos", err); } 
-      finally { setIsSearchingTimes(false); }
-    };
-    fetchWeekData();
-  }, [gridStartDate, selectedFlight, displayDaysCount]);
 
   useEffect(() => {
     if (step === 3) {

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { articles } from './articles';
 
 export default function MagPage() {
-  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [selectedArticle, setSelectedArticle] = useState<typeof articles[number] | null>(null);
   const [filter, setFilter] = useState("Tous"); // État pour le filtre
 
   // Logique de filtrage des articles
