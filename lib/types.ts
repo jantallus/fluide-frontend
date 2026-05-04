@@ -226,7 +226,7 @@ export interface PublicSlot {
   id: number;
   start_time: string;
   end_time: string;
-  status: 'available' | 'booked';
+  status: 'available' | 'booked' | 'unavailable';
   monitor_id: string;
 }
 
