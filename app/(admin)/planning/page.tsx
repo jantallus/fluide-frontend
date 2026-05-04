@@ -56,7 +56,7 @@ export default function PlanningAdmin() {
     const end = new Date(event.end);
     setSlotDuration(Math.round((end.getTime() - start.getTime()) / 60000));
     setSelectedEvent({
-      id: event.id,
+      id: parseInt(event.id),
       title: event.extendedProps.title,
       start: event.start,
       monitor_id: event.getResources()[0]?.id,
