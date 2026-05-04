@@ -1,14 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import type { GiftCardTemplate, FlightType, Complement } from '@/lib/types';
+import type { GiftCardShopTemplate, Complement } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function CadeauPage() {
   const { toast } = useToast();
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<GiftCardShopTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<GiftCardShopTemplate | null>(null);
   
   const [buyer, setBuyer] = useState({ name: '', email: '', phone: '' });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -18,10 +18,10 @@ export default function CadeauPage() {
   const [wantsShipping, setWantsShipping] = useState(false);
   const [address, setAddress] = useState({ street: '', zip: '', city: '' });
   // 🎯 NOUVEAU : Gestion des options additionnelles
-  const [complements, setComplements] = useState<any[]>([]);
-  const [selectedComplements, setSelectedComplements] = useState<any[]>([]);
+  const [complements, setComplements] = useState<Complement[]>([]);
+  const [selectedComplements, setSelectedComplements] = useState<Complement[]>([]);
 
-  const [infoTemplate, setInfoTemplate] = useState<any>(null); // 🎯 Mémoire pour la popup
+  const [infoTemplate, setInfoTemplate] = useState<GiftCardShopTemplate | null>(null);
   const savedScrollPos = React.useRef(0); // 🎯 Mémoire pour le défilement
   const hasAutoScrolled = React.useRef(false); // 🎯 NOUVEAU : Mémoire pour la téléportation
   const [urlFlightName, setUrlFlightName] = useState<string | null>(null); // 🎯 NOUVEAU : Nom du vol venant de la réservation

@@ -141,7 +141,7 @@ export default function ReserverPage() {
       const hash = window.location.hash;
       
       // On lit les références "secrètes" pour ne pas déclencher de rechargement en boucle
-      const itemsInCart = Object.values(cartRef.current).reduce((sum: any, qty: any) => sum + qty, 0);
+      const itemsInCart = Object.values(cartRef.current).reduce((sum: number, qty: number) => sum + qty, 0);
       const needsReset = (hash === '#etape-2' && !selectedFlightRef.current) || (hash === '#etape-3' && itemsInCart === 0);
 
       if (needsReset) {
@@ -250,7 +250,7 @@ export default function ReserverPage() {
 
   useEffect(() => {
     if (step === 3) {
-      const newPassengers: any[] = [];
+      const newPassengers: BookingPassenger[] = [];
       
       // 🎯 1. RECHERCHE ROBUSTE : On cherche l'option peu importe son nom (photo, vidéo, gopro...)
       const photoOption = complementsList.find(c => 
@@ -421,7 +421,7 @@ export default function ReserverPage() {
     const isMulti = selectedFlight.allow_multi_slots === true;
     const slotsNeeded = (isMulti && flightDur > baseDur) ? Math.ceil(flightDur / baseDur) : 1;
 
-    const monSchedules: Record<string, Record<number, any>> = {};
+    const monSchedules: Record<string, Record<number, PublicSlot & { status: string }>> = {};
     const timeToMs: Record<string, number> = {};
     const uniqueTimesByDate: Record<string, Set<string>> = {};
 
@@ -1319,7 +1319,7 @@ export default function ReserverPage() {
                         <div className="mt-4 pt-4 border-t border-slate-100">
                           <p className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-3">Options disponibles (paiement sur place possible)</p>
                           <div className="grid gap-3">
-                            {complementsList.map((comp: any) => {
+                            {complementsList.map((comp) => {
                               const isSelected = p.selectedComplements?.includes(comp.id) || false;
                               
                               // 🎯 NOUVEAU : On vérifie si cette option est couverte par le bon cadeau
