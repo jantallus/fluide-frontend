@@ -61,7 +61,7 @@ export default function PlanningAdmin() {
       start: event.start,
       monitor_id: event.getResources()[0]?.id,
       ...event.extendedProps,
-    });
+    } as Slot & { isOutOfSeason?: boolean });
     setShowEditModal(true);
   }, [currentUser, toast]);
 
