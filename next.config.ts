@@ -13,7 +13,21 @@ const COMMON_SECURITY_HEADERS = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+// Pages publiques temporairement masquées (remplaceront le site WordPress plus tard)
+const HIDDEN_PUBLIC_PAGES = [
+  '/', '/cgv', '/equipe', '/ete', '/hiver',
+  '/infos', '/mentions-legales', '/tarifs', '/mag', '/disponibilites',
+];
+
 const nextConfig: NextConfig = {
+  async redirects() {
+    return HIDDEN_PUBLIC_PAGES.map(path => ({
+      source: path,
+      destination: '/booking',
+      permanent: false, // 302 — facile à annuler quand le site sera prêt
+    }));
+  },
+
   async headers() {
     return [
       {
