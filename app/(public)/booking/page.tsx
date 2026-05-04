@@ -421,7 +421,10 @@ export default function ReserverPage() {
     const isMulti = selectedFlight.allow_multi_slots === true;
     const slotsNeeded = (isMulti && flightDur > baseDur) ? Math.ceil(flightDur / baseDur) : 1;
 
-    const monSchedules: Record<string, Record<number, PublicSlot & { status: string }>> = {};
+    // GridSlot étend PublicSlot avec 'booked_by_cart' — valeur interne utilisée
+    // pour marquer les créneaux réservés dans le panier sans toucher au backend.
+    type GridSlot = Omit<PublicSlot, 'status'> & { status: 'available' | 'booked' | 'booked_by_cart' };
+    const monSchedules: Record<string, Record<number, GridSlot>> = {};
     const timeToMs: Record<string, number> = {};
     const uniqueTimesByDate: Record<string, Set<string>> = {};
 
