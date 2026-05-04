@@ -51,6 +51,7 @@ export default function PlanningAdmin() {
       toast.warning("Pour modifier, déplacer ou supprimer ce vol, cliquez sur son premier créneau (celui contenant le nom du client).");
       return;
     }
+    if (!event.start || !event.end) return;
     const start = new Date(event.start);
     const end = new Date(event.end);
     setSlotDuration(Math.round((end.getTime() - start.getTime()) / 60000));
