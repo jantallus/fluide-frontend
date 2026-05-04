@@ -533,10 +533,12 @@ export default function ReserverPage() {
   };
 
   const handleAdd = (date: string, time: string) => {
+    if (!selectedFlight) return;
     const key = `${selectedFlight.id}|${date}|${time}`;
     setCart(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
   };
   const handleRemove = (date: string, time: string) => {
+    if (!selectedFlight) return;
     const key = `${selectedFlight.id}|${date}|${time}`;
     setCart(prev => {
       const newCart = { ...prev };
@@ -892,19 +894,21 @@ export default function ReserverPage() {
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
                       <div className="text-3xl md:text-4xl font-black text-sky-600 shrink-0">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                       <div className="flex gap-2 flex-wrap justify-end">
-                        {giftTemplates.find(t => t.price_cents === flight.price_cents) && (
-                          <button 
+                        {(() => {
+                          const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
+                          if (!matchedTpl) return null;
+                          return (
+                          <button
                             onClick={(e) => {
-                              e.stopPropagation(); 
-                              const templateId = giftTemplates.find(t => t.price_cents === flight.price_cents).id;
-                              // 🎯 NOUVEAU : On envoie le nom du vol dans l'URL !
-                              window.location.href = `/bons-cadeaux?templateId=${templateId}&flightName=${encodeURIComponent(flight.name)}`; 
+                              e.stopPropagation();
+                              window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
                             }}
                             className="cursor-pointer bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
                           >
                             🎁 Offrir
                           </button>
-                        )}
+                          );
+                        })()}
                         <button className="cursor-pointer bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
@@ -1018,7 +1022,7 @@ export default function ReserverPage() {
                         
                         // 🎯 NOUVEAU : Synchronisation magique du Swipe (Uniquement sur mobile)
                         if (window.innerWidth < 768) {
-                          clearTimeout(scrollTimeout.current);
+                          clearTimeout(scrollTimeout.current ?? undefined);
                           scrollTimeout.current = setTimeout(() => {
                             if (!bodyScrollRef.current) return;
                             const container = bodyScrollRef.current;
