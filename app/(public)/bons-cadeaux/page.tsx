@@ -32,7 +32,7 @@ export default function CadeauPage() {
         // 1. On charge les offres
         const res = await fetch(`/api/proxy/gift-card-templates?publicOnly=true`, { cache: 'no-store' });
         if (res.ok) {
-          const data = await res.json();
+          const data: GiftCardShopTemplate[] = await res.json();
           setTemplates(data);
 
           // 🎯 On se contente de sélectionner le modèle, le moteur de scroll fera le reste
@@ -41,7 +41,7 @@ export default function CadeauPage() {
           const incomingFlightName = params.get('flightName'); // 🎯 On lit le nom du vol
 
           if (targetId) {
-            const found = data.find((t: any) => t.id.toString() === targetId);
+            const found = data.find(t => t.id.toString() === targetId);
             if (found) {
               setSelectedTemplate(found);
               if (incomingFlightName) setUrlFlightName(incomingFlightName); // 🎯 On le sauvegarde

@@ -5,7 +5,7 @@ import type { PublicSlot } from '@/lib/types';
 import { apiFetch } from '@/lib/api'; // On ajoute l'import manquant
 
 export default function PlanningPage() {
-  const [slots, setSlots] = useState([]);
+  const [slots, setSlots] = useState<PublicSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [newSlotDate, setNewSlotDate] = useState('');
   const [userName, setUserName] = useState('');
@@ -82,8 +82,8 @@ export default function PlanningPage() {
       });
 
       if (res.ok) {
-        setSlots((prev: any) => 
-          prev.map((s: any) => s.id === slotId ? { ...s, status: newStatus } : s)
+        setSlots(prev =>
+          prev.map(s => s.id === slotId ? { ...s, status: newStatus } : s)
         );
       }
     } catch (err) {
@@ -129,7 +129,7 @@ export default function PlanningPage() {
 
         <div className="space-y-4">
           {slots.length === 0 && <p className="text-center text-slate-400 py-10 italic">Aucun créneau créé pour le moment.</p>}
-          {slots.map((s: any) => (
+          {slots.map(s => (
             <div key={s.id} className={`p-6 rounded-[32px] border flex justify-between items-center transition-all ${s.status === 'booked' ? 'bg-blue-50 border-blue-100 shadow-inner' : 'bg-white border-slate-100 shadow-sm'}`}>
               <div>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
