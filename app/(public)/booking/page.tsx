@@ -889,7 +889,7 @@ export default function ReserverPage() {
                               {isFirstDesktop && (
                                 <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-lg items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-black">←</span></button>
                               )}
-                              <div className="flex-1 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center" style={{ background: 'linear-gradient(135deg, #312783 0%, #1D1D1B 100%)' }}>
+                              <div className="flex-1 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center" style={{ backgroundColor: '#312783' }}>
                                 <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                               </div>
                               {isLastDesktop && (
