@@ -321,7 +321,7 @@ export default function CadeauPage() {
                           onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }}
                           onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
                         >
-                          <span className="font-bold text-lg leading-none">i</span>
+                          <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                         </button>
                       )}
                     </div>
