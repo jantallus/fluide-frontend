@@ -627,23 +627,23 @@ export default function ReserverPage() {
         .hero-gradient-infos {
           position: relative;
           width: 100%;
-          height: 55vh;
+          height: 62vh;
           display: flex;
           align-items: center;
           color: white;
           text-align: left;
           padding-left: 10vw;
           overflow: hidden;
-          background: linear-gradient(135deg, #312783 0%, #E6007E 100%);
+          background: linear-gradient(160deg, #312783 0%, #7B2393 100%);
         }
         @media (max-width: 1024px) {
-          .hero-gradient-infos { height: 50vh; padding-left: 8vw; }
+          .hero-gradient-infos { height: 55vh; padding-left: 8vw; }
         }
       `}} />
 
       <section className="hero-gradient-infos">
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+          <h1 style={{ fontSize: 'clamp(2.2rem, 5.5vw, 3.5rem)', fontWeight: 700, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
             Réservez votre <span style={{ color: '#009FE3' }}>Vol</span>
           </h1>
           <p style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', opacity: 0.95, fontWeight: 500, maxWidth: '700px' }}>
