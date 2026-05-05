@@ -192,7 +192,7 @@ export default function CadeauPage() {
       `}} />
 
       <section className="hero-cadeau" style={{
-          position: 'relative', width: '100%', height: '63vh',
+          position: 'relative', width: '100%', height: '64.5vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
         }}>
@@ -202,7 +202,7 @@ export default function CadeauPage() {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
-          <p style={{ color: 'white', fontSize: 'clamp(1.2rem, 2.2vw, 1.6rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
+          <p style={{ color: 'white', fontSize: 'clamp(1.35rem, 2.5vw, 1.8rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
       </section>
 
