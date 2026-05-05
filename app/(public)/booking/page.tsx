@@ -629,10 +629,14 @@ export default function ReserverPage() {
           display: 'flex', alignItems: 'center', paddingLeft: '10.6vw', paddingTop: '10.2vh',
           overflow: 'hidden',
         }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, #4D5EBE 0%, #B8C2EE 100%)', zIndex: 1 }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply' as const, opacity: 0.82, filter: 'saturate(1.25)' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(230, 0, 126, 0.13) 0%, transparent 45%)', zIndex: 3 }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, transparent 40%)', zIndex: 4 }} />
+        {/* Couche 1 : photo en fond */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hhero.jpg)', backgroundSize: 'cover', backgroundPosition: 'center 30%', zIndex: 1 }} />
+        {/* Couche 2 : voile bleu dominant pour tirer vers le bleu et rendre la photo en filigrane */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(22, 55, 130, 0.68)', zIndex: 2 }} />
+        {/* Couche 3 : dégradé bleu plus dense à gauche (zone texte) vers transparent à droite */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(15, 40, 110, 0.55) 0%, transparent 65%)', zIndex: 3 }} />
+        {/* Couche 4 : assombrissement bas pour contraste texte */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.22) 0%, transparent 45%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.72rem, 6.72vw, 4.35rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>
             Réservez votre <span style={{ color: '#009FE3' }}>vol</span>
