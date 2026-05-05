@@ -346,8 +346,8 @@ export default function CadeauPage() {
           )}
 
           {selectedTemplate && (
-            <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '14px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)', border: '2px solid #e2e8f0', scrollMarginTop: '100px' }}>
-              <h3 style={{ fontSize: '2rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '10px' }}>Personnalisez votre bon</h3>
+            <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '14px', padding: '40px', boxShadow: 'none', border: '1px solid #e2e8f0', scrollMarginTop: '100px' }}>
+              <h3 style={{ fontSize: '2rem', fontWeight: 700, color: '#312783', marginBottom: '10px' }}>Personnalisez votre bon</h3>
               <p style={{ color: '#E6007E', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>
                 {urlFlightName ? `Bon ${urlFlightName}` : selectedTemplate.title} - {selectedTemplate.price_cents / 100}€
               </p>
