@@ -187,7 +187,7 @@ export default function CadeauPage() {
         .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: all 0.4s ease !important; padding: 18px 45px; border-radius: 50px; text-decoration: none; font-weight: 900; display: inline-block; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(230, 0, 126, 0.3); cursor: pointer; }
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(49, 39, 131, 0.4); }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
-        .hero-cadeau { background-color: #312783 !important; background-image: url('/bg-heatmap.svg') !important; background-size: cover !important; background-position: center !important; }
+        .hero-cadeau { background-image: url('/bg-heatmap.svg'), url('/bg-fond.png') !important; background-size: cover, cover !important; background-position: center, center !important; background-color: #312783 !important; }
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
@@ -195,7 +195,7 @@ export default function CadeauPage() {
           position: 'relative', width: '100%', height: '68vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          backgroundColor: '#312783',
+          backgroundColor: '#312783', backgroundImage: 'url(/bg-heatmap.svg), url(/bg-fond.png)', backgroundSize: 'cover, cover', backgroundPosition: 'center, center',
         }}>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
