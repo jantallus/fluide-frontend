@@ -303,7 +303,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`bg-white rounded-[14px] p-8 shadow-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between group ${selectedTemplate?.id === tpl.id ? 'border-sky-400 ring-4 ring-sky-50 -translate-y-2' : 'border-slate-100 hover:border-sky-400 hover:-translate-y-2'}`}>
+                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`bg-white rounded-[14px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -324,7 +324,7 @@ export default function CadeauPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2 text-sm font-bold mb-6">
-                      <span className="bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100">⏳ Valable {tpl.validity_months} mois</span>
+                      <span className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100" style={{ color: '#E6007E' }}>⏳ Valable {tpl.validity_months} mois</span>
                       {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: '#E8F5FC', color: '#E6007E', border: '1px solid #B8DFF0' }}>💶 Avoir libre</span>}
                     </div>
                     <p className="text-base leading-relaxed mb-6" style={{ color: '#1D1D1B' }}>{tpl.description}</p>
@@ -333,9 +333,9 @@ export default function CadeauPage() {
                     <div className="text-4xl font-black" style={{ color: '#312783' }}>{tpl.price_cents / 100}€</div>
                     <button
                       className="cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
-                      style={{ backgroundColor: selectedTemplate?.id === tpl.id ? '#E6007E' : '#312783', transition: 'background-color 0.3s ease, border-color 0.3s ease' }}
-                      onMouseEnter={e => { if (selectedTemplate?.id !== tpl.id) e.currentTarget.style.backgroundColor = '#E6007E'; }}
-                      onMouseLeave={e => { if (selectedTemplate?.id !== tpl.id) e.currentTarget.style.backgroundColor = '#312783'; }}
+                      style={{ backgroundColor: '#E6007E', transition: 'background-color 0.3s ease' }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#312783'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E6007E'; }}
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
