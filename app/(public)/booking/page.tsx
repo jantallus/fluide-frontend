@@ -617,13 +617,9 @@ export default function ReserverPage() {
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-        body { font-family: 'Aeonik', sans-serif; }
+        html { font-family: 'Aeonik', sans-serif !important; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .modal-overlay { will-change: opacity; animation: overlayIn 0.2s ease forwards; }
-        .modal-content { will-change: transform, opacity; animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .hero-booking { background: transparent !important; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
         .btn-reserver:hover { background-color: #312783 !important; }
@@ -1370,14 +1366,14 @@ export default function ReserverPage() {
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50" onClick={() => setInfoFlight(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
 
           {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-flight-dialog-title"
-            className="modal-content bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]"
+            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
             onClick={e => e.stopPropagation()}
           >
             
