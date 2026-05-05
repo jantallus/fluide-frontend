@@ -194,7 +194,7 @@ export default function CadeauPage() {
           position: 'relative', width: '100%', height: '55vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          background: 'linear-gradient(to right, #312783 0%, #009FE3 100%)',
+          background: 'linear-gradient(135deg, #312783 0%, #E6007E 100%)',
         }}>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>

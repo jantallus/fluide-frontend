@@ -634,7 +634,7 @@ export default function ReserverPage() {
           text-align: left;
           padding-left: 10vw;
           overflow: hidden;
-          background: linear-gradient(to right, #312783 0%, #009FE3 100%);
+          background: linear-gradient(135deg, #312783 0%, #E6007E 100%);
         }
         @media (max-width: 1024px) {
           .hero-gradient-infos { height: 50vh; padding-left: 8vw; }
