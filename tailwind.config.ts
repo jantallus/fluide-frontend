@@ -14,7 +14,7 @@ module.exports = {
         'fluide-noir':      '#1D1D1B',
       },
       fontFamily: {
-        sans: ['Aeonik', 'sans-serif'],
+        sans: ['var(--font-aeonik)', 'sans-serif'],
       },
     },
   },

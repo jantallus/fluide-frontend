@@ -1,59 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Light.woff2') format('woff2'),
-       url('/fonts/Aeonik-Light.woff') format('woff');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-LightItalic.woff2') format('woff2'),
-       url('/fonts/Aeonik-LightItalic.woff') format('woff');
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Regular.woff2') format('woff2'),
-       url('/fonts/Aeonik-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-RegularItalic.woff2') format('woff2'),
-       url('/fonts/Aeonik-RegularItalic.woff') format('woff');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Bold.woff2') format('woff2'),
-       url('/fonts/Aeonik-Bold.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-BoldItalic.woff2') format('woff2'),
-       url('/fonts/Aeonik-BoldItalic.woff') format('woff');
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-
 :root {
   --fluide-primary:   #312783;
   --fluide-secondary: #E6007E;
@@ -64,5 +10,5 @@
 }
 
 body {
-  font-family: 'Aeonik', sans-serif;
+  font-family: var(--font-aeonik), sans-serif;
 }
