@@ -213,17 +213,17 @@ export default function CadeauPage() {
 
       <section style={{ backgroundColor: 'white' }}>
         <div className="content-section">
-          <div style={{ flex: 1, position: ‘relative’, width: ‘100%’, minHeight: ‘400px’, borderRadius: ‘12px’, overflow: ‘hidden’ }}>
-            <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: ‘cover’ }} />
+          <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: '400px', borderRadius: '12px', overflow: 'hidden' }}>
+            <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: 'cover' }} />
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: ‘2.4rem’, fontWeight: 700, color: ‘#1D1D1B’, marginBottom: ‘25px’ }}>Offrez une carte cadeau !</h2>
-            <p style={{ color: ‘#1D1D1B’, fontSize: ‘1.15rem’, lineHeight: ‘1.8’, marginBottom: ‘35px’ }}>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
+            <p style={{ color: '#1D1D1B', fontSize: '1.15rem', lineHeight: '1.8', marginBottom: '35px' }}>
               Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz !
               <br /><br />
-              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l’été ou l’hiver.
+              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l'été ou l'hiver.
             </p>
-            <button onClick={() => document.getElementById(‘boutique’)?.scrollIntoView({ behavior: ‘smooth’ })} className="btn-page-action">Voir les offres</button>
+            <button onClick={() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' })} className="btn-page-action">Voir les offres</button>
           </div>
         </div>
       </section>
