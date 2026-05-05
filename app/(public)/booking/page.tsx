@@ -614,40 +614,30 @@ export default function ReserverPage() {
     <div className="min-h-screen font-sans text-slate-900 overflow-clip" style={{ backgroundColor: '#F3F3F3' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes ultraSmoothReveal {
-          0% { opacity: 0; transform: translateY(100px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        .hero-animation-block {
-          will-change: transform, opacity;
-          animation: ultraSmoothReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          position: relative;
-          z-index: 10;
-        }
-        .hero-gradient-infos {
-          position: relative;
-          width: 100%;
-          height: 68vh;
-          display: flex;
-          align-items: center;
-          color: white;
-          text-align: left;
-          padding-left: 10vw;
-          overflow: hidden;
-          background-color: #312783;
-          background-image: linear-gradient(45deg, rgba(47, 82, 160, 1) 15%, rgba(47, 82, 160, 0) 80%);
-        }
+        @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+        .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-fill-mode: forwards; }
+        .hero-booking { background: transparent !important; }
+        .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
+        .btn-reserver:hover { background-color: #312783 !important; }
         @media (max-width: 1024px) {
-          .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
+          .hero-booking { height: 60vh !important; padding-left: 8vw !important; }
         }
       `}} />
 
-      <section className="hero-gradient-infos">
+      <section className="hero-booking" style={{
+          position: 'relative', width: '100%', height: '64.75vh',
+          display: 'flex', alignItems: 'center', paddingLeft: '10.6vw', paddingTop: '10.2vh',
+          overflow: 'hidden',
+        }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, #4D5EBE 0%, #B8C2EE 100%)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply' as const, opacity: 0.82, filter: 'saturate(1.25)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(230, 0, 126, 0.13) 0%, transparent 45%)', zIndex: 3 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, transparent 40%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 400, marginBottom: '15px' }}>
-            Réservez votre <span style={{ color: '#009FE3' }}>Vol</span>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.72rem, 6.72vw, 4.35rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>
+            Réservez votre <span style={{ color: '#009FE3' }}>vol</span>
           </h1>
-          <p style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', opacity: 0.95, fontWeight: 500, maxWidth: '700px' }}>
+          <p style={{ color: 'white', fontSize: 'clamp(1.44rem, 2.62vw, 1.88rem)', fontWeight: 400, marginTop: '8px', opacity: 0.9, textTransform: 'none' }}>
             Choisissez votre expérience et préparez-vous au décollage.
           </p>
         </div>
@@ -667,13 +657,13 @@ export default function ReserverPage() {
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-10 rounded-[24px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
+          <div className="max-w-7xl mx-auto mb-10 rounded-[12px] p-6 backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
                 <div>
-                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
+                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
                   </p>
@@ -683,7 +673,7 @@ export default function ReserverPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
                 <div>
-                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
+                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
@@ -693,7 +683,7 @@ export default function ReserverPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
                 <div>
-                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
+                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
                   </p>
@@ -707,7 +697,7 @@ export default function ReserverPage() {
               /* ☠️ EFFET "SKELETON" POUR LES CARTES DE VOLS */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 flex flex-col justify-between animate-pulse">
+                  <div key={i} className="bg-white rounded-[14px] p-8 border border-slate-100 flex flex-col justify-between animate-pulse">
                     {/* Fausse image */}
                     <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-2xl md:rounded-[20px] mb-6"></div>
                     
@@ -732,7 +722,7 @@ export default function ReserverPage() {
                 ))}
               </div>
             ) : filteredFlights.length === 0 ? (
-               <div className="text-center py-20 bg-white rounded-[35px] shadow-xl border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-black uppercase text-slate-800">Aucun vol configuré pour cette saison</h3></div>
+               <div className="text-center py-20 bg-white rounded-[14px] border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-bold" style={{ color: '#312783' }}>Aucun vol configuré pour cette saison</h3></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredFlights.map((flight) => {
@@ -742,19 +732,19 @@ export default function ReserverPage() {
                   if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
 
                   return (
-                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" style={{ '--hover-border': '#009FE3' } as React.CSSProperties} onMouseEnter={e => (e.currentTarget.style.borderColor = '#009FE3')} onMouseLeave={e => (e.currentTarget.style.borderColor = '')} onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="bg-white rounded-[14px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" style={{ '--hover-border': '#009FE3' } as React.CSSProperties} onMouseEnter={e => (e.currentTarget.style.borderColor = '#009FE3')} onMouseLeave={e => (e.currentTarget.style.borderColor = '')} onClick={() => { setSelectedFlight(flight); setStep(2); }}>
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
                       <div 
-                        className="w-full h-40 md:h-52 bg-cover bg-center rounded-2xl md:rounded-[20px] mb-6 shadow-sm border border-slate-100"
+                        className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 border border-slate-100"
                         style={{ backgroundImage: `url(${flight.image_url})` }}
                       />
                     )}
 
                     <div>
                       <div className="flex justify-between items-start mb-3 gap-2">
-                        <h3 className="text-2xl font-black uppercase italic text-slate-900">{flight.name}</h3>
+                        <h3 className="text-2xl font-black" style={{ color: '#312783' }}>{flight.name}</h3>
                         
                         {/* On n'affiche le bouton 'i' que si vous l'avez activé et rempli dans le backoffice ! */}
                         {flight.show_popup && flight.popup_content && (
@@ -780,7 +770,7 @@ export default function ReserverPage() {
                       </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="text-3xl md:text-4xl font-black shrink-0" style={{ color: '#312783' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="text-3xl md:text-4xl font-black shrink-0" style={{ color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                       <div className="flex gap-2 flex-wrap justify-end">
                         {(() => {
                           const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
@@ -800,7 +790,7 @@ export default function ReserverPage() {
                           </button>
                           );
                         })()}
-                        <button className="cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-md" style={{ backgroundColor: '#312783' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#E6007E')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}>
+                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-sm" onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
@@ -819,12 +809,12 @@ export default function ReserverPage() {
               ← Retour au catalogue
             </button>
             
-            <div className="bg-white rounded-[40px] shadow-sm p-6 md:p-10 border border-slate-200">
+            <div className="bg-white rounded-[14px] p-6 md:p-10 border border-slate-200">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-3xl font-black text-slate-900 leading-tight">Réservation :</h2>
+                    <h2 className="text-3xl font-bold leading-tight" style={{ color: '#312783' }}>Réservation :</h2>
                     <div className="relative">
                       <select 
                         className="text-2xl md:text-3xl font-black bg-opacity-5 border-2 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#312783', backgroundColor: 'rgba(49,39,131,0.05)', borderColor: 'rgba(49,39,131,0.15)' }}
@@ -1026,11 +1016,11 @@ export default function ReserverPage() {
               ← Modifier le panier
             </button>
 
-            <div className="bg-white rounded-[40px] shadow-2xl p-8 md:p-12 border border-slate-100">
+            <div className="bg-white rounded-[14px] p-8 md:p-12 border border-slate-100">
               
               <div className="text-center mb-10 pb-10 border-b border-slate-100">
                 <span className="text-6xl mb-6 block animate-bounce">📝</span>
-                <h2 className="text-3xl font-black uppercase italic text-slate-900 leading-tight">Détails des passagers</h2>
+                <h2 className="text-3xl font-bold leading-tight" style={{ color: '#312783' }}>Détails des passagers</h2>
                 <p className="text-slate-500 font-medium mt-2">Dernière étape avant de voler !</p>
               </div>
 
@@ -1039,8 +1029,8 @@ export default function ReserverPage() {
               <div className="mb-12 border-2 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' }}>
                 <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
                 
-                <h3 className="font-black text-xl mb-2 uppercase tracking-widest flex items-center gap-3 relative z-10" style={{ color: '#312783' }}>
-                  Vous avez un Bon Cadeau ou un Code Promo ?
+                <h3 className="font-bold text-xl mb-2 flex items-center gap-3 relative z-10" style={{ color: '#312783' }}>
+                  Vous avez un bon cadeau ou un code promo ?
                 </h3>
                 <p className="font-bold mb-6 text-sm relative z-10" style={{ color: '#312783', opacity: 0.8 }}>
                   Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
@@ -1091,8 +1081,8 @@ export default function ReserverPage() {
 
               {/* SECTION 1 : CONTACT */}
               <div className="mb-12">
-                <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
-                  <span className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                <h3 className="font-bold text-xl mb-6 flex items-center gap-3" style={{ color: '#312783' }}>
+                  <span className="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: '#312783' }}>1</span>
                   Personne à contacter
                 </h3>
                 
@@ -1163,9 +1153,9 @@ export default function ReserverPage() {
 
               {/* SECTION 2 : PASSAGERS */}
               <div>
-                <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
+                <h3 className="font-bold text-xl mb-6 flex items-center gap-3" style={{ color: '#312783' }}>
                   <span className="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: '#009FE3' }}>2</span>
-                  Les Passagers
+                  Les passagers
                 </h3>
 
                 <div className="space-y-6">
@@ -1312,7 +1302,7 @@ export default function ReserverPage() {
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
-              <span className="font-black text-slate-900 uppercase italic text-lg block mb-2">
+              <span className="font-bold text-lg block mb-2" style={{ color: '#312783' }}>
                 {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
               </span>
               
@@ -1386,7 +1376,7 @@ export default function ReserverPage() {
             {/* 🎯 2. L'en-tête (Fixe en haut) */}
             <div className="p-6 md:p-8 pb-4 shrink-0 flex justify-between items-start border-b border-slate-100">
               {/* Le pr-4 (padding-right) empêche le titre de déborder sur la croix */}
-              <h3 id="info-flight-dialog-title" className="text-2xl font-black uppercase italic text-slate-900 pr-4">À propos de ce vol</h3>
+              <h3 id="info-flight-dialog-title" className="text-2xl font-bold pr-4" style={{ color: '#312783' }}>À propos de ce vol</h3>
               
               <button 
                 onClick={() => setInfoFlight(null)} 
