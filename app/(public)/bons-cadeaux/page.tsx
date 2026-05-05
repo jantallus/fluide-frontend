@@ -187,18 +187,18 @@ export default function CadeauPage() {
         .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: all 0.4s ease !important; padding: 18px 45px; border-radius: 50px; text-decoration: none; font-weight: 900; display: inline-block; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(230, 0, 126, 0.3); cursor: pointer; }
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(49, 39, 131, 0.4); }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
-        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 55vh !important; } }
+        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
       <section className="hero-cadeau" style={{
-          position: 'relative', width: '100%', height: '62vh',
+          position: 'relative', width: '100%', height: '68vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          background: 'linear-gradient(160deg, #312783 0%, #7B2393 100%)',
+          background: 'linear-gradient(160deg, #271F6B 0%, #621A7A 100%)',
         }}>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ color: 'white', fontSize: 'clamp(2.2rem, 5.5vw, 3.5rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
-          <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.4rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
+          <p style={{ color: 'white', fontSize: 'clamp(1.1rem, 2.2vw, 1.5rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
       </section>
 
