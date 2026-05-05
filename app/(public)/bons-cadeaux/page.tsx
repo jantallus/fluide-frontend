@@ -325,7 +325,7 @@ export default function CadeauPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 text-sm font-bold mb-6">
                       <span className="bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100">⏳ Valable {tpl.validity_months} mois</span>
-                      {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg border border-amber-100">💶 Avoir Libre</span>}
+                      {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: '#E8F5FC', color: '#E6007E', border: '1px solid #B8DFF0' }}>💶 Avoir libre</span>}
                     </div>
                     <p className="text-base leading-relaxed mb-6" style={{ color: '#1D1D1B' }}>{tpl.description}</p>
                   </div>
