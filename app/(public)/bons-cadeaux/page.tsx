@@ -393,10 +393,10 @@ export default function CadeauPage() {
 
               {/* 🎯 LA NOUVELLE OPTION POSTALE ! */}
               {shippingSettings.enabled && (
-                <div className="mb-8 p-6 bg-orange-50 border-2 border-orange-100 rounded-[10px] transition-all">
+                <div className="mb-8 p-6 rounded-[10px] transition-all" style={{ backgroundColor: '#E8F5FC', border: '2px solid #B8DFF0' }}>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-5 h-5 accent-orange-500" checked={wantsShipping} onChange={e => setWantsShipping(e.target.checked)} />
-                    <span className="font-black text-orange-900 md:text-lg">📮 Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
+                    <input type="checkbox" className="w-5 h-5 accent-[#009FE3]" checked={wantsShipping} onChange={e => setWantsShipping(e.target.checked)} />
+                    <span className="font-black md:text-lg" style={{ color: '#006A99' }}>📮 Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
                   </label>
                   
                   {wantsShipping && (
