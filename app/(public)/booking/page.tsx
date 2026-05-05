@@ -809,7 +809,7 @@ export default function ReserverPage() {
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
           <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
-            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Retour au catalogue
             </button>
             
@@ -1016,7 +1016,7 @@ export default function ReserverPage() {
         {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
           <div id="etape-3-container" className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
-            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Modifier le panier
             </button>
 
