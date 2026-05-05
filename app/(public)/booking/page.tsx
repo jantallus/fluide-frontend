@@ -648,7 +648,7 @@ export default function ReserverPage() {
         </div>
       </section>
 
-      <div className="relative z-20 max-w-7xl mx-auto px-4 -mt-16 md:-mt-32 pb-48">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 pt-12 pb-48">
         
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
@@ -662,34 +662,34 @@ export default function ReserverPage() {
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-10 rounded-[12px] p-6 backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
+          <div className="max-w-7xl mx-auto mb-12 rounded-[12px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
+                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
                 <div>
-                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
+                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
+                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
                     Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
+                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
                 <div>
-                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
-                    Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.
+                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
+                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
+                    Option accessible plus tard dans le processus de réservation ! Pas complètement décidé ? Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
+                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
                 <div>
-                  <h4 className="font-bold text-sm mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
+                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
+                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
                     Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
                   </p>
                 </div>
