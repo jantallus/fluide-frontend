@@ -307,7 +307,7 @@ export default function CadeauPage() {
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
-                      <h3 className="text-2xl font-black text-slate-900">{tpl.title}</h3>
+                      <h3 className="text-3xl font-black text-slate-900">{tpl.title}</h3>
                       {tpl.show_popup && tpl.popup_content && (
                         <button
                           onClick={(e) => { 
@@ -323,15 +323,20 @@ export default function CadeauPage() {
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs font-bold mb-6">
+                    <div className="flex flex-wrap gap-2 text-sm font-bold mb-6">
                       <span className="bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100">⏳ Valable {tpl.validity_months} mois</span>
                       {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg border border-amber-100">💶 Avoir Libre</span>}
                     </div>
-                    <p className="text-sm leading-relaxed mb-6" style={{ color: '#1D1D1B' }}>{tpl.description}</p>
+                    <p className="text-base leading-relaxed mb-6" style={{ color: '#1D1D1B' }}>{tpl.description}</p>
                   </div>
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black" style={{ color: '#312783' }}>{tpl.price_cents / 100}€</div>
-                    <button className="cursor-pointer px-6 py-4 rounded-[10px] font-black text-sm transition-all shadow-md text-white" style={{ backgroundColor: selectedTemplate?.id === tpl.id ? '#E6007E' : '#312783' }}>
+                    <button
+                      className="cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
+                      style={{ backgroundColor: selectedTemplate?.id === tpl.id ? '#E6007E' : '#312783', transition: 'background-color 0.3s ease, border-color 0.3s ease' }}
+                      onMouseEnter={e => { if (selectedTemplate?.id !== tpl.id) e.currentTarget.style.backgroundColor = '#E6007E'; }}
+                      onMouseLeave={e => { if (selectedTemplate?.id !== tpl.id) e.currentTarget.style.backgroundColor = '#312783'; }}
+                    >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
                   </div>
