@@ -190,15 +190,14 @@ export default function CadeauPage() {
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
-      <section className="hero-cadeau" style={{ position: 'relative', width: '100%', height: '70vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', background: 'linear-gradient(135deg, #312783 0%, #1D1D1B 100%)', overflow: 'hidden' }}>
-        {/* Décoration : flèches en arrière-plan */}
-        <img src="/bg-fleches-blanc.svg" alt="" aria-hidden="true" style={{ position: 'absolute', right: 0, top: 0, height: '100%', opacity: 0.08, pointerEvents: 'none', zIndex: 1 }} />
+      <section className="hero-cadeau" style={{ position: 'relative', width: '100%', height: '70vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden', backgroundImage: 'url(/cadeau-body.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        {/* Overlay gradient-titre (identique au site Fluide) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.15) 80%)', zIndex: 1 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textShadow: '0 4px 15px rgba(0,0,0,0.3)', textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.5rem)', fontWeight: 500, marginTop: '20px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
-        <div style={{ position: 'absolute', bottom: -5, left: 0, width: '100%', zIndex: 5, lineHeight: 0 }}><img src="/montagnes.svg" alt="Montagnes" style={{ width: '100%', height: 'auto', display: 'block' }} /></div>
       </section>
 
       <section style={{ backgroundColor: 'white' }}>
@@ -218,7 +217,7 @@ export default function CadeauPage() {
         </div>
       </section>
 
-      <section id="boutique" style={{ backgroundColor: '#f8fafc', padding: '100px 4vw' }}>
+      <section id="boutique" style={{ backgroundColor: '#F3F3F3', padding: '100px 4vw' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#312783', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>

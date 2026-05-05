@@ -611,7 +611,7 @@ export default function ReserverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-clip">
+    <div className="min-h-screen font-sans text-slate-900 overflow-clip" style={{ backgroundColor: '#F3F3F3' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal {
@@ -625,7 +625,6 @@ export default function ReserverPage() {
           z-index: 10;
         }
         .hero-gradient-infos {
-          background: linear-gradient(135deg, #312783 0%, #1D1D1B 100%);
           position: relative;
           width: 100%;
           height: 70vh;
@@ -635,19 +634,15 @@ export default function ReserverPage() {
           text-align: left;
           padding-left: 15vw;
           overflow: hidden;
+          background-image: url('/hero-parapente.jpg');
+          background-size: cover;
+          background-position: center;
         }
-        .mountains-container {
+        .hero-gradient-infos .hero-overlay {
           position: absolute;
-          bottom: -5px;
-          left: 0;
-          width: 100%;
-          z-index: 5;
-          line-height: 0;
-        }
-        .mountains-container img { 
-          width: 100%; 
-          height: auto; 
-          display: block; 
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.15) 80%);
+          z-index: 1;
         }
         @media (max-width: 1024px) {
           .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
@@ -655,9 +650,8 @@ export default function ReserverPage() {
       `}} />
 
       <section className="hero-gradient-infos">
-        {/* Décoration : flèches en arrière-plan */}
-        <img src="/bg-fleches-blanc.svg" alt="" aria-hidden="true" style={{ position: 'absolute', right: 0, top: 0, height: '100%', opacity: 0.08, pointerEvents: 'none', zIndex: 1 }} />
-        <div className="hero-animation-block">
+        <div className="hero-overlay" />
+        <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
             Réservez votre <span style={{ color: '#009FE3' }}>Vol</span>
@@ -665,9 +659,6 @@ export default function ReserverPage() {
           <p style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', opacity: 0.95, fontWeight: 500, maxWidth: '700px' }}>
             Choisissez votre expérience et préparez-vous au décollage.
           </p>
-        </div>
-        <div className="mountains-container">
-          <img src="/montagnes.svg" alt="Montagnes Fluide Parapente" />
         </div>
       </section>
 
