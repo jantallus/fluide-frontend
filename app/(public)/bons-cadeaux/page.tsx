@@ -190,13 +190,20 @@ export default function CadeauPage() {
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
-      <section className="hero-cadeau" style={{ position: 'relative', width: '100%', height: '70vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden', backgroundImage: 'url(/cadeau-body.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        {/* Overlay gradient-titre (identique au site Fluide) */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.15) 80%)', zIndex: 1 }} />
+      <section className="hero-cadeau" style={{
+          position: 'relative', width: '100%', height: '55vh',
+          display: 'flex', alignItems: 'center', paddingLeft: '10vw',
+          overflow: 'hidden',
+          backgroundImage: `url('/bg-fleches-blanc.svg'), linear-gradient(to right, #312783 0%, #2F52A0 50%, #009FE3 100%)`,
+          backgroundSize: 'cover, cover',
+          backgroundRepeat: 'no-repeat, no-repeat',
+          backgroundPosition: 'center, center',
+        }}>
+        {/* Voile semi-transparent pour que les flèches soient subtiles comme sur le site */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(49,39,131,0.6) 0%, rgba(47,82,160,0.3) 50%, rgba(0,159,227,0.1) 100%)', zIndex: 1 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
-          <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textShadow: '0 4px 15px rgba(0,0,0,0.3)', textTransform: 'none' }}>Cartes cadeaux</h1>
-          <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.5rem)', fontWeight: 500, marginTop: '20px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
+          <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.4rem)', fontWeight: 400, marginTop: '16px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
       </section>
 

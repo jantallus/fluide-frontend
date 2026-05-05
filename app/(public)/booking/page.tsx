@@ -627,32 +627,32 @@ export default function ReserverPage() {
         .hero-gradient-infos {
           position: relative;
           width: 100%;
-          height: 70vh;
+          height: 55vh;
           display: flex;
           align-items: center;
           color: white;
           text-align: left;
-          padding-left: 15vw;
+          padding-left: 10vw;
           overflow: hidden;
-          background-image: url('/hero-parapente.jpg');
-          background-size: cover;
-          background-position: center;
+          background-image: url('/bg-fleches-blanc.svg'), linear-gradient(to right, #312783 0%, #2F52A0 50%, #009FE3 100%);
+          background-size: cover, cover;
+          background-repeat: no-repeat, no-repeat;
+          background-position: center, center;
         }
         .hero-gradient-infos .hero-overlay {
           position: absolute;
-          top: 0; left: 0; width: 100%; height: 100%;
-          background: linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.15) 80%);
+          inset: 0;
+          background: linear-gradient(to right, rgba(49,39,131,0.6) 0%, rgba(47,82,160,0.3) 50%, rgba(0,159,227,0.1) 100%);
           z-index: 1;
         }
         @media (max-width: 1024px) {
-          .hero-gradient-infos { height: 60vh; padding-left: 8vw; }
+          .hero-gradient-infos { height: 50vh; padding-left: 8vw; }
         }
       `}} />
 
       <section className="hero-gradient-infos">
         <div className="hero-overlay" />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
             Réservez votre <span style={{ color: '#009FE3' }}>Vol</span>
           </h1>
