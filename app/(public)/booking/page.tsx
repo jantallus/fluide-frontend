@@ -624,8 +624,6 @@ export default function ReserverPage() {
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
         .btn-reserver:hover { background-color: #312783 !important; }
         .flight-card:hover .btn-reserver { background-color: #312783 !important; }
-        @keyframes modalAppear { from { opacity: 0; transform: scale(0.96) translateZ(0); } to { opacity: 1; transform: scale(1) translateZ(0); } }
-        .info-modal-content { will-change: transform, opacity; animation: modalAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 8vw !important; } }
       `}} />
 
@@ -1375,7 +1373,7 @@ export default function ReserverPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-flight-dialog-title"
-            className="info-modal-content bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]"
+            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
             onClick={e => e.stopPropagation()}
           >
             
