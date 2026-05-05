@@ -624,8 +624,8 @@ export default function ReserverPage() {
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
         .btn-reserver:hover { background-color: #312783 !important; }
         .flight-card:hover .btn-reserver { background-color: #312783 !important; }
-        .info-modal-overlay { will-change: opacity; transform: translateZ(0); }
-        .info-modal-overlay > div { will-change: transform, opacity; transform: translateZ(0); }
+        @keyframes modalAppear { from { opacity: 0; transform: scale(0.96) translateZ(0); } to { opacity: 1; transform: scale(1) translateZ(0); } }
+        .info-modal-content { will-change: transform, opacity; animation: modalAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 8vw !important; } }
       `}} />
 
@@ -1368,14 +1368,14 @@ export default function ReserverPage() {
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="info-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={() => setInfoFlight(null)}>
 
           {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-flight-dialog-title"
-            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            className="info-modal-content bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
             
