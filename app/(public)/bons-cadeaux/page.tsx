@@ -192,14 +192,14 @@ export default function CadeauPage() {
       `}} />
 
       <section className="hero-cadeau" style={{
-          position: 'relative', width: '100%', height: '68vh',
+          position: 'relative', width: '100%', height: '62vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
         }}>
         {/* Couche 1 : bg-fond */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-fond.png)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap en mode multiply pour laisser bg-fond transparaître */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, opacity: 0.93 }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, opacity: 0.97 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
