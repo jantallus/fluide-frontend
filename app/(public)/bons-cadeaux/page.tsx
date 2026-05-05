@@ -184,14 +184,17 @@ export default function CadeauPage() {
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(100px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .btn-page-action { background-color: #f026b8 !important; color: white !important; border: 2px solid #f026b8 !important; transition: all 0.4s ease !important; padding: 18px 45px; border-radius: 50px; text-decoration: none; font-weight: 900; display: inline-block; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(240, 38, 184, 0.3); cursor: pointer; }
-        .btn-page-action:hover { background-color: #1e40af !important; border-color: #1e40af !important; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(30, 64, 175, 0.4); }
+        .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: all 0.4s ease !important; padding: 18px 45px; border-radius: 50px; text-decoration: none; font-weight: 900; display: inline-block; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(230, 0, 126, 0.3); cursor: pointer; }
+        .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(49, 39, 131, 0.4); }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
-      <section className="hero-cadeau" style={{ position: 'relative', width: '100%', height: '70vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', background: 'linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%)', overflow: 'hidden' }}>
+      <section className="hero-cadeau" style={{ position: 'relative', width: '100%', height: '70vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', background: 'linear-gradient(135deg, #312783 0%, #1D1D1B 100%)', overflow: 'hidden' }}>
+        {/* Décoration : flèches en arrière-plan */}
+        <img src="/bg-fleches-blanc.svg" alt="" aria-hidden="true" style={{ position: 'absolute', right: 0, top: 0, height: '100%', opacity: 0.08, pointerEvents: 'none', zIndex: 1 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
+          <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textShadow: '0 4px 15px rgba(0,0,0,0.3)', textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.5rem)', fontWeight: 500, marginTop: '20px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
@@ -201,7 +204,7 @@ export default function CadeauPage() {
       <section style={{ backgroundColor: 'white' }}>
         <div className="content-section">
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1e40af', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#312783', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
             <p style={{ color: '#475569', fontSize: '1.1rem', lineHeight: '1.8', marginBottom: '35px' }}>
               Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz ! 
               <br /><br />
@@ -218,39 +221,39 @@ export default function CadeauPage() {
       <section id="boutique" style={{ backgroundColor: '#f8fafc', padding: '100px 4vw' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#1e40af', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#312783', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>
             <p style={{ color: '#64748b', fontSize: '1.2rem', fontWeight: 500 }}>Sélectionnez l'offre de votre choix pour la personnaliser.</p>
           </div>
 
           {/* 💡 BANDEAU DE RÉASSURANCE BONS CADEAUX */}
-          <div className="max-w-7xl mx-auto mb-12 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto mb-12 rounded-[24px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              
+
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">💌</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>💌</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Code & PDF Immédiats</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Code & PDF Immédiats</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Dès le paiement validé, vous recevrez par email un joli bon cadeau au format PDF contenant un code unique à offrir.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📅</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📅</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Réservation Facile</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Réservation Facile</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Le bénéficiaire pourra utiliser son code cadeau directement sur notre site web ou par téléphone pour réserver la date de son vol.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📮</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📮</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Envoi Postal Optionnel</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Envoi Postal Optionnel</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Envie de marquer le coup ? Vous pourrez choisir de faire envoyer une belle carte glacée par courrier lors de l'étape de paiement.
                   </p>
                 </div>
@@ -303,8 +306,10 @@ export default function CadeauPage() {
                             e.stopPropagation(); 
                             setInfoTemplate(tpl); 
                           }}
-                          className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-all border border-slate-200"
+                          className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200"
                           title="Plus d'informations sur ce bon"
+                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
                         >
                           <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                         </button>
@@ -317,8 +322,8 @@ export default function CadeauPage() {
                     <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">{tpl.description}</p>
                   </div>
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
-                    <div className="text-4xl font-black text-sky-600">{tpl.price_cents / 100}€</div>
-                    <button className={`cursor-pointer px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-md ${selectedTemplate?.id === tpl.id ? 'bg-fuchsia-500 text-white shadow-fuchsia-500/30' : 'bg-indigo-700 text-white group-hover:bg-fuchsia-500 hover:shadow-fuchsia-500/30'}`}>
+                    <div className="text-4xl font-black" style={{ color: '#312783' }}>{tpl.price_cents / 100}€</div>
+                    <button className="cursor-pointer px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-md text-white" style={{ backgroundColor: selectedTemplate?.id === tpl.id ? '#E6007E' : '#312783' }}>
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
                   </div>
@@ -329,8 +334,8 @@ export default function CadeauPage() {
 
           {selectedTemplate && (
             <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '30px', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)', border: '2px solid #e2e8f0', scrollMarginTop: '100px' }}>
-              <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#1e40af', marginBottom: '10px' }}>Personnalisez votre bon</h3>
-              <p style={{ color: '#f026b8', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>
+              <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#312783', marginBottom: '10px' }}>Personnalisez votre bon</h3>
+              <p style={{ color: '#E6007E', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>
                 {urlFlightName ? `Bon ${urlFlightName}` : selectedTemplate.title} - {selectedTemplate.price_cents / 100}€
               </p>
               
@@ -356,7 +361,7 @@ export default function CadeauPage() {
                     {complements.map(comp => {
                       const isSelected = selectedComplements.some(c => c.id === comp.id);
                       return (
-                        <label key={comp.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-sky-500 bg-sky-50 shadow-md' : 'border-slate-200 bg-white hover:border-sky-300'}`}>
+                        <label key={comp.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'shadow-md' : 'border-slate-200 bg-white'}`} style={isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}}>
                           <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={isSelected} onChange={(e) => {
                             if (e.target.checked) setSelectedComplements([...selectedComplements, comp]);
                             else setSelectedComplements(selectedComplements.filter(c => c.id !== comp.id));
@@ -365,7 +370,7 @@ export default function CadeauPage() {
                             <span className="font-bold text-slate-800 text-sm md:text-base block mb-0.5">{comp.name}</span>
                             {comp.description && <span className="text-xs font-medium text-slate-500">{comp.description}</span>}
                           </div>
-                          <span className="font-black text-sky-600 text-lg">+{comp.price_cents / 100}€</span>
+                          <span className="font-black text-lg" style={{ color: '#312783' }}>+{comp.price_cents / 100}€</span>
                         </label>
                       )
                     })}
@@ -448,9 +453,12 @@ export default function CadeauPage() {
                 </div>
               </div>
               
-              <button 
-                onClick={(e) => { e.stopPropagation(); setInfoTemplate(null); }} 
-                className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0 active:scale-[0.98]"
+              <button
+                onClick={(e) => { e.stopPropagation(); setInfoTemplate(null); }}
+                className="mt-8 w-full text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                style={{ backgroundColor: '#312783' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
               >
                 J'ai compris
               </button>

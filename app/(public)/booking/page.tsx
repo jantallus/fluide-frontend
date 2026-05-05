@@ -625,7 +625,7 @@ export default function ReserverPage() {
           z-index: 10;
         }
         .hero-gradient-infos {
-          background: radial-gradient(circle at center, #3b82f6 0%, #1e3a8a 50%, #4c1d95 100%);
+          background: linear-gradient(135deg, #312783 0%, #1D1D1B 100%);
           position: relative;
           width: 100%;
           height: 70vh;
@@ -655,9 +655,12 @@ export default function ReserverPage() {
       `}} />
 
       <section className="hero-gradient-infos">
+        {/* Décoration : flèches en arrière-plan */}
+        <img src="/bg-fleches-blanc.svg" alt="" aria-hidden="true" style={{ position: 'absolute', right: 0, top: 0, height: '100%', opacity: 0.08, pointerEvents: 'none', zIndex: 1 }} />
         <div className="hero-animation-block">
+          <img src="/logo-fluide-blanc.svg" alt="Fluide Parapente" style={{ height: '48px', marginBottom: '24px', display: 'block' }} />
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, marginBottom: '15px', textShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
-            Réservez votre <span style={{ color: '#0ea5e9' }}>Vol</span>
+            Réservez votre <span style={{ color: '#009FE3' }}>Vol</span>
           </h1>
           <p style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', opacity: 0.95, fontWeight: 500, maxWidth: '700px' }}>
             Choisissez votre expérience et préparez-vous au décollage.
@@ -676,40 +679,40 @@ export default function ReserverPage() {
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl inline-flex shadow-xl border border-slate-200">
-                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'bg-amber-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>☀️ Vols Été</button>
-                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'bg-sky-500 text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`}>❄️ Vols Hiver</button>
+                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E' } : {}}>☀️ Vols Été</button>
+                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all duration-300 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783' } : {}}>❄️ Vols Hiver</button>
               </div>
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-10 bg-sky-50/50 border border-sky-100 rounded-[24px] p-6 shadow-sm backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto mb-10 rounded-[24px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              
+
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎁</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Bon Cadeau</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">📸</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Photos & Vidéos</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Option accessible plus tard dans le processus de réservation ! Pas complètement decidez ! Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm border border-sky-50">🎢</div>
+                <div className="text-3xl bg-white p-3 rounded-2xl shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
                 <div>
-                  <h4 className="font-black text-sky-900 text-sm uppercase tracking-wider mb-1">Sensations Fortes</h4>
-                  <p className="text-xs text-sky-700 font-medium leading-relaxed">
+                  <h4 className="font-black text-sm uppercase tracking-wider mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: '#312783', opacity: 0.7 }}>
                     Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
                   </p>
                 </div>
@@ -757,7 +760,7 @@ export default function ReserverPage() {
                   if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
 
                   return (
-                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:border-sky-400 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="bg-white rounded-[35px] p-8 shadow-xl border border-slate-100 hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between group" style={{ '--hover-border': '#009FE3' } as React.CSSProperties} onMouseEnter={e => (e.currentTarget.style.borderColor = '#009FE3')} onMouseLeave={e => (e.currentTarget.style.borderColor = '')} onClick={() => { setSelectedFlight(flight); setStep(2); }}>
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
@@ -779,7 +782,7 @@ export default function ReserverPage() {
                               setInfoFlight(flight); 
                             }}
                             // 🎯 Bouton rendu transparent (bg-transparent) avec un contour subtil qui s'allume au survol
-                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-all border border-slate-200"
+                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
                             title="Plus d'informations sur ce vol"
                           >
                             <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
@@ -795,7 +798,7 @@ export default function ReserverPage() {
                       </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="text-3xl md:text-4xl font-black text-sky-600 shrink-0">{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="text-3xl md:text-4xl font-black shrink-0" style={{ color: '#312783' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                       <div className="flex gap-2 flex-wrap justify-end">
                         {(() => {
                           const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
@@ -806,13 +809,16 @@ export default function ReserverPage() {
                               e.stopPropagation();
                               window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
                             }}
-                            className="cursor-pointer bg-fuchsia-100 text-fuchsia-600 px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-fuchsia-500 hover:text-white transition-colors"
+                            className="cursor-pointer px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
+                            style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E' }}
+                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
+                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
                           >
                             🎁 Offrir
                           </button>
                           );
                         })()}
-                        <button className="cursor-pointer bg-indigo-700 text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest group-hover:bg-fuchsia-500 transition-all shadow-md hover:shadow-fuchsia-500/30">
+                        <button className="cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-md" style={{ backgroundColor: '#312783' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#E6007E')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}>
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
@@ -827,7 +833,7 @@ export default function ReserverPage() {
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
           <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
-            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
+            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Retour au catalogue
             </button>
             
@@ -839,7 +845,7 @@ export default function ReserverPage() {
                     <h2 className="text-3xl font-black text-slate-900 leading-tight">Réservation :</h2>
                     <div className="relative">
                       <select 
-                        className="text-2xl md:text-3xl font-black text-sky-600 bg-sky-50 border-2 border-sky-100 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer focus:border-sky-300 hover:bg-sky-100 transition-all appearance-none shadow-sm"
+                        className="text-2xl md:text-3xl font-black bg-opacity-5 border-2 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#312783', backgroundColor: 'rgba(49,39,131,0.05)', borderColor: 'rgba(49,39,131,0.15)' }}
                         value={selectedFlight.id}
                         onChange={(e) => {
                           const newFlight = flights.find(f => f.id.toString() === e.target.value);
@@ -850,10 +856,10 @@ export default function ReserverPage() {
                           <option key={f.id} value={f.id}>{f.name}</option>
                         ))}
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sky-500 text-sm">▼</div>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#312783' }}>▼</div>
                     </div>
                   </div>
-                  <p className="text-sky-500 font-bold uppercase tracking-widest text-sm mt-3">{getMarketingInfo(selectedFlight.name)}</p>
+                  <p className="font-bold uppercase tracking-widest text-sm mt-3" style={{ color: '#009FE3' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
                 <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
@@ -903,13 +909,13 @@ export default function ReserverPage() {
                           return (
                             <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                               {isFirstDesktop && (
-                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"><span className="text-2xl font-black">←</span></button>
+                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-lg items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-black">←</span></button>
                               )}
-                              <div className="flex-1 bg-gradient-to-br from-violet-600 to-violet-700 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                              <div className="flex-1 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center" style={{ background: 'linear-gradient(135deg, #312783 0%, #1D1D1B 100%)' }}>
                                 <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                               </div>
                               {isLastDesktop && (
-                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 bg-sky-700 shadow-md rounded-lg items-center justify-center text-white hover:bg-sky-500 transition-colors cursor-pointer outline-none border-none"><span className="text-2xl font-black">→</span></button>
+                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-lg items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-black">→</span></button>
                               )}
                             </div>
                           );
@@ -984,9 +990,9 @@ export default function ReserverPage() {
                                     const qtyInCart = cart[currentFlightKey] || 0;
                                     const isSelected = qtyInCart > 0;
                                     return (
-                                      <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'bg-sky-100 border-sky-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}>
+                                      <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`} style={isSelected ? { backgroundColor: 'rgba(49,39,131,0.08)', borderColor: '#312783' } : {}}>
                                         <div className="flex justify-between items-center mb-4">
-                                          <span className={`font-bold text-lg ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>{timeStr}</span>
+                                          <span className={`font-bold text-lg ${isSelected ? '' : 'text-slate-700'}`} style={isSelected ? { color: '#312783' } : {}}>{timeStr}</span>
                                           <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded shadow-sm border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
@@ -998,12 +1004,15 @@ export default function ReserverPage() {
                                             disabled={qtyInCart === 0}
                                             className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}
                                           >-</button>
-                                          <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className={`font-bold text-lg w-8 text-center ${isSelected ? 'text-sky-700' : 'text-slate-700'}`}>{qtyInCart}</span>
+                                          <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className="font-bold text-lg w-8 text-center" style={isSelected ? { color: '#312783' } : { color: '#334155' }}>{qtyInCart}</span>
                                           <button
                                             aria-label={`Ajouter un passager – ${getDayName(dateStr)} à ${timeStr}`}
                                             onClick={() => handleAdd(dateStr, timeStr)}
                                             disabled={capacity === 0}
-                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'}`}
+                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-white shadow-sm'}`}
+                                            style={capacity > 0 ? { backgroundColor: '#009FE3' } : {}}
+                                            onMouseEnter={e => { if (capacity > 0) e.currentTarget.style.backgroundColor = '#312783'; }}
+                                            onMouseLeave={e => { if (capacity > 0) e.currentTarget.style.backgroundColor = '#009FE3'; }}
                                           >+</button>
                                         </div>
                                       </div>
@@ -1031,7 +1040,7 @@ export default function ReserverPage() {
         {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
           <div id="etape-3-container" className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
-            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 hover:text-sky-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit">
+            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Modifier le panier
             </button>
 
@@ -1045,13 +1054,13 @@ export default function ReserverPage() {
 
               {/* 🎯 NOUVEAU : LA SECTION BON CADEAU EST MAINTENANT TOUT EN HAUT ! */}
               {/* 🎯 SECTION BON CADEAU (Douce et Rassurante) */}
-              <div className="mb-12 bg-sky-50 border-2 border-sky-200 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm">
+              <div className="mb-12 border-2 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' }}>
                 <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
                 
-                <h3 className="font-black text-xl text-violet-900 mb-2 uppercase tracking-widest flex items-center gap-3 relative z-10">
+                <h3 className="font-black text-xl mb-2 uppercase tracking-widest flex items-center gap-3 relative z-10" style={{ color: '#312783' }}>
                   Vous avez un Bon Cadeau ou un Code Promo ?
                 </h3>
-                <p className="text-violet-700 font-bold mb-6 text-sm relative z-10">
+                <p className="font-bold mb-6 text-sm relative z-10" style={{ color: '#312783', opacity: 0.8 }}>
                   Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
                 </p>
 
@@ -1077,17 +1086,17 @@ export default function ReserverPage() {
                 ) : (
                   <div className="relative z-10">
                     <div className="flex flex-col md:flex-row gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="Ex: FLUIDE-1234 ou NOEL2024" 
-                        className="flex-1 bg-white border-2 border-sky-100 rounded-2xl p-4 font-black uppercase text-slate-800 focus:border-violet-500 outline-none transition-colors shadow-sm"
+                      <input
+                        type="text"
+                        placeholder="Ex: FLUIDE-1234 ou NOEL2024"
+                        className="flex-1 bg-white border-2 rounded-2xl p-4 font-black uppercase text-slate-800 outline-none transition-colors shadow-sm" style={{ borderColor: 'rgba(49,39,131,0.15)' }}
                         value={voucherInput}
                         onChange={e => setVoucherInput(e.target.value.toUpperCase())}
                       />
                       <button 
                         onClick={handleApplyVoucher}
                         disabled={isApplyingVoucher || !voucherInput.trim()}
-                        className={`px-8 py-4 md:py-0 rounded-2xl font-black uppercase tracking-widest text-sm transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'bg-sky-200/50 text-sky-500' : 'bg-violet-500 text-white hover:bg-violet-600 shadow-md hover:-translate-y-0.5'}`}
+                        className={`px-8 py-4 md:py-0 rounded-2xl font-black uppercase tracking-widest text-sm transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'text-slate-400' : 'text-white shadow-md hover:-translate-y-0.5'}`} style={!voucherInput.trim() || isApplyingVoucher ? { backgroundColor: 'rgba(49,39,131,0.1)' } : { backgroundColor: '#312783' }}
                       >
                         {isApplyingVoucher ? '...' : 'Appliquer'}
                       </button>
@@ -1110,7 +1119,7 @@ export default function ReserverPage() {
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom</label>
                     <input
                       type="text"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="Jean"
                       value={contact.firstName}
                       onChange={e => { setContact({...contact, firstName: e.target.value}); if (contactErrors.firstName) validateField('firstName', e.target.value); }}
@@ -1121,7 +1130,7 @@ export default function ReserverPage() {
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom</label>
                     <input
                       type="text"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="Dupont"
                       value={contact.lastName}
                       onChange={e => { setContact({...contact, lastName: e.target.value}); if (contactErrors.lastName) validateField('lastName', e.target.value); }}
@@ -1132,7 +1141,7 @@ export default function ReserverPage() {
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone (le jour du vol)</label>
                     <input
                       type="tel"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="06 12 34 56 78"
                       value={contact.phone}
                       onChange={e => { setContact({...contact, phone: e.target.value}); if (contactErrors.phone) validateField('phone', e.target.value); }}
@@ -1144,7 +1153,7 @@ export default function ReserverPage() {
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
                     <input
                       type="email"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="jean@email.com"
                       value={contact.email}
                       onChange={e => { setContact({...contact, email: e.target.value}); if (contactErrors.email) validateField('email', e.target.value); }}
@@ -1157,30 +1166,30 @@ export default function ReserverPage() {
                 <div className="mb-6">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Remarque (Facultatif)</label>
                   <textarea 
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-500 h-24 text-slate-800"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-[#312783] h-24 text-slate-800"
                     placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème auditif...)"
                     value={contact.notes}
                     onChange={e => setContact({...contact, notes: e.target.value})}
                   />
                 </div>
 
-                <label className="flex items-center gap-3 cursor-pointer bg-sky-50 p-4 rounded-2xl border border-sky-100 hover:border-sky-300 transition-colors">
-                  <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={contact.isPassenger} onChange={e => setContact({...contact, isPassenger: e.target.checked})} />
-                  <span className="font-bold text-sky-900 text-sm">Je suis aussi l'un des passagers (m'ajouter au vol)</span>
+                <label className="flex items-center gap-3 cursor-pointer p-4 rounded-2xl border transition-colors" style={{ backgroundColor: 'rgba(0,159,227,0.06)', borderColor: 'rgba(0,159,227,0.2)' }}>
+                  <input type="checkbox" className="w-5 h-5" style={{ accentColor: '#009FE3' }} checked={contact.isPassenger} onChange={e => setContact({...contact, isPassenger: e.target.checked})} />
+                  <span className="font-bold text-sm" style={{ color: '#312783' }}>Je suis aussi l'un des passagers (m'ajouter au vol)</span>
                 </label>
               </div>
 
               {/* SECTION 2 : PASSAGERS */}
               <div>
                 <h3 className="font-black text-xl text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-3">
-                  <span className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                  <span className="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: '#009FE3' }}>2</span>
                   Les Passagers
                 </h3>
 
                 <div className="space-y-6">
                   {passengers.map((p, index) => (
                     <div key={p.id} className="bg-white border-2 border-slate-100 rounded-3xl p-6 relative overflow-hidden group">
-                      <div className="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
+                      <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: '#009FE3' }}></div>
                       
                       <div className="flex flex-wrap items-center gap-3 mb-5">
                         <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
@@ -1193,7 +1202,7 @@ export default function ReserverPage() {
                         <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom de la personne qui vole</label>
                         <input 
                           type="text" 
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-sky-500 outline-none text-slate-800" 
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800" 
                           placeholder="Prénom du passager" 
                           value={p.firstName}
                           onChange={e => {
@@ -1253,7 +1262,11 @@ export default function ReserverPage() {
                                 <label 
                                   key={comp.id} 
                                   // On grise légèrement et on met un curseur "interdit" si c'est verrouillé
-                                  className={`flex items-start gap-3 p-4 rounded-2xl border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed bg-sky-50/50 border-sky-200' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-sky-50 border-sky-300' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100 hover:border-sky-200' : '')}`}
+                                  className={`flex items-start gap-3 p-4 rounded-2xl border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-slate-50' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100' : '')}`}
+                                  style={
+                                    isLockedByVoucher ? { backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' } :
+                                    isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}
+                                  }
                                 >
                                   <input 
                                     type="checkbox" 
@@ -1346,7 +1359,7 @@ export default function ReserverPage() {
                 {discountAmount > 0 && (
                   <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
                 )}
-                <p className="text-2xl font-black text-sky-500">{finalPrice.toFixed(2)} €</p>
+                <p className="text-2xl font-black" style={{ color: '#009FE3' }}>{finalPrice.toFixed(2)} €</p>
               </div>
               
               {step === 3 ? (
@@ -1360,9 +1373,12 @@ export default function ReserverPage() {
                     : (finalPrice === 0 ? '✨ Valider (Gratuit)' : '🔒 Payer la réservation')}
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => setStep(3)}
-                  className="flex-1 md:flex-none bg-sky-500 text-white px-10 py-4 rounded-2xl font-black uppercase text-[12px] tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-sky-500/30"
+                  className="flex-1 md:flex-none text-white px-10 py-4 rounded-2xl font-black uppercase text-[12px] tracking-widest transition-all shadow-lg"
+                  style={{ backgroundColor: '#312783' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
                 >
                   Passer à l'inscription →
                 </button>
@@ -1425,9 +1441,12 @@ export default function ReserverPage() {
                 </div>
               </div>
               
-              <button 
-                onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }} 
-                className="mt-8 w-full bg-sky-500 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-sky-600 transition-colors shadow-md shrink-0 active:scale-[0.98]"
+              <button
+                onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }}
+                className="mt-8 w-full text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                style={{ backgroundColor: '#312783' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
               >
                 J'ai compris
               </button>
