@@ -231,7 +231,7 @@ export default function CadeauPage() {
       <section id="boutique" style={{ backgroundColor: '#F3F3F3', padding: '100px 4vw' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#312783', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>
             <p style={{ color: '#1D1D1B', fontSize: '1.2rem', fontWeight: 400 }}>Sélectionnez l'offre de votre choix pour la personnaliser.</p>
           </div>
 
@@ -334,8 +334,7 @@ export default function CadeauPage() {
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
-                      className="cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
-                      className="btn-choisir"
+                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
