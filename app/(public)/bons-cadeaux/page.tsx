@@ -194,11 +194,10 @@ export default function CadeauPage() {
           position: 'relative', width: '100%', height: '68vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          backgroundColor: '#E6007E',
-          backgroundImage: 'linear-gradient(45deg, rgba(47, 82, 160, 1) 15%, rgba(47, 82, 160, 0) 80%)',
+          background: 'linear-gradient(to right, #312783 0%, #E6007E 100%)',
         }}>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 400, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1.1rem, 2.2vw, 1.5rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
         </div>
       </section>
