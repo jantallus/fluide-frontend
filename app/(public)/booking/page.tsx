@@ -623,6 +623,7 @@ export default function ReserverPage() {
         .hero-booking { background: transparent !important; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
         .btn-reserver:hover { background-color: #312783 !important; }
+        .flight-card:hover .btn-reserver { background-color: #312783 !important; }
         @media (max-width: 1024px) {
           .hero-booking { height: 60vh !important; padding-left: 8vw !important; }
         }
@@ -737,7 +738,7 @@ export default function ReserverPage() {
                   if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
 
                   return (
-                  <div key={flight.id} className="bg-white rounded-[14px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" style={{ '--hover-border': '#009FE3' } as React.CSSProperties} onMouseEnter={e => (e.currentTarget.style.borderColor = '#009FE3')} onMouseLeave={e => (e.currentTarget.style.borderColor = '')} onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="flight-card bg-white rounded-[14px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
@@ -776,7 +777,7 @@ export default function ReserverPage() {
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
                       <div className="text-3xl md:text-4xl font-black shrink-0" style={{ color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
-                      <div className="flex gap-2 flex-wrap justify-end">
+                      <div className="flex flex-col gap-2 items-stretch">
                         {(() => {
                           const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
                           if (!matchedTpl) return null;
@@ -786,7 +787,7 @@ export default function ReserverPage() {
                               e.stopPropagation();
                               window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
                             }}
-                            className="cursor-pointer px-4 py-3 md:py-4 md:px-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all"
+                            className="cursor-pointer px-4 py-3 rounded-[10px] font-bold text-sm transition-all"
                             style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E' }}
                             onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
                             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
@@ -795,7 +796,7 @@ export default function ReserverPage() {
                           </button>
                           );
                         })()}
-                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-sm" onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
+                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-sm">
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
