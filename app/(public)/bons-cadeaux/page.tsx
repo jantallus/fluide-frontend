@@ -188,6 +188,8 @@ export default function CadeauPage() {
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
         .hero-cadeau { background: transparent !important; }
+        .card-template .btn-choisir { background-color: #E6007E; transition: background-color 0.3s ease; }
+        .card-template:hover .btn-choisir { background-color: #312783; }
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 8vw !important; height: 60vh !important; } }
       `}} />
 
@@ -211,17 +213,17 @@ export default function CadeauPage() {
 
       <section style={{ backgroundColor: 'white' }}>
         <div className="content-section">
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
-            <p style={{ color: '#1D1D1B', fontSize: '1.15rem', lineHeight: '1.8', marginBottom: '35px' }}>
-              Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz ! 
-              <br /><br />
-              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l’été ou l’hiver. 
-            </p>
-            <button onClick={() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' })} className="btn-page-action">Voir les offres</button>
+          <div style={{ flex: 1, position: ‘relative’, width: ‘100%’, minHeight: ‘400px’, borderRadius: ‘12px’, overflow: ‘hidden’ }}>
+            <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: ‘cover’ }} />
           </div>
-          <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: '400px', borderRadius: '12px', overflow: 'hidden' }}>
-            <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: 'cover' }} />
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: ‘2.4rem’, fontWeight: 700, color: ‘#1D1D1B’, marginBottom: ‘25px’ }}>Offrez une carte cadeau !</h2>
+            <p style={{ color: ‘#1D1D1B’, fontSize: ‘1.15rem’, lineHeight: ‘1.8’, marginBottom: ‘35px’ }}>
+              Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz !
+              <br /><br />
+              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l’été ou l’hiver.
+            </p>
+            <button onClick={() => document.getElementById(‘boutique’)?.scrollIntoView({ behavior: ‘smooth’ })} className="btn-page-action">Voir les offres</button>
           </div>
         </div>
       </section>
@@ -303,7 +305,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`bg-white rounded-[14px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
+                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`card-template bg-white rounded-[14px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -333,9 +335,7 @@ export default function CadeauPage() {
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
                       className="cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
-                      style={{ backgroundColor: '#E6007E', transition: 'background-color 0.3s ease' }}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#312783'; }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E6007E'; }}
+                      className="btn-choisir"
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
