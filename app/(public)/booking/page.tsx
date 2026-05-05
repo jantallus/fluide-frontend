@@ -617,13 +617,15 @@ export default function ReserverPage() {
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-        html { font-family: 'Aeonik', sans-serif !important; }
+        body, *:not(.font-georgia) { font-family: 'Aeonik', sans-serif !important; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .hero-booking { background: transparent !important; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
         .btn-reserver:hover { background-color: #312783 !important; }
         .flight-card:hover .btn-reserver { background-color: #312783 !important; }
+        .info-modal-overlay { will-change: opacity; transform: translateZ(0); }
+        .info-modal-overlay > div { will-change: transform, opacity; transform: translateZ(0); }
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 8vw !important; } }
       `}} />
 
@@ -761,7 +763,7 @@ export default function ReserverPage() {
                             className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
                             title="Plus d'informations sur ce vol"
                           >
-                            <span className="font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
+                            <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                           </button>
                         )}
                       </div>
@@ -1366,7 +1368,7 @@ export default function ReserverPage() {
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
+        <div className="info-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setInfoFlight(null)}>
 
           {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
           <div
