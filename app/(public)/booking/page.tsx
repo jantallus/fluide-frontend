@@ -634,15 +634,15 @@ export default function ReserverPage() {
           text-align: left;
           padding-left: 10vw;
           overflow: hidden;
-          background-image: url('/bg-fleches-blanc.svg'), linear-gradient(to right, #312783 0%, #2F52A0 50%, #009FE3 100%);
-          background-size: cover, cover;
-          background-repeat: no-repeat, no-repeat;
-          background-position: center, center;
+          background-image: url('/bg-heatmap.svg');
+          background-size: cover;
+          background-repeat: no-repeat;
+          background-position: center;
         }
         .hero-gradient-infos .hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to right, rgba(49,39,131,0.6) 0%, rgba(47,82,160,0.3) 50%, rgba(0,159,227,0.1) 100%);
+          background: linear-gradient(45deg, rgba(30,30,30,0.7) 0%, rgba(30,30,30,0) 100%);
           z-index: 1;
         }
         @media (max-width: 1024px) {

@@ -194,13 +194,13 @@ export default function CadeauPage() {
           position: 'relative', width: '100%', height: '55vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          backgroundImage: `url('/bg-fleches-blanc.svg'), linear-gradient(to right, #312783 0%, #2F52A0 50%, #009FE3 100%)`,
-          backgroundSize: 'cover, cover',
-          backgroundRepeat: 'no-repeat, no-repeat',
-          backgroundPosition: 'center, center',
+          backgroundImage: `url('/bg-heatmap.svg')`,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
         }}>
-        {/* Voile semi-transparent pour que les flèches soient subtiles comme sur le site */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(49,39,131,0.6) 0%, rgba(47,82,160,0.3) 50%, rgba(0,159,227,0.1) 100%)', zIndex: 1 }} />
+        {/* Overlay gradient-one (identique au site Fluide) : assombrit la gauche */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, rgba(30,30,30,0.7) 0%, rgba(30,30,30,0) 100%)', zIndex: 1 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1rem, 2vw, 1.4rem)', fontWeight: 400, marginTop: '16px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
