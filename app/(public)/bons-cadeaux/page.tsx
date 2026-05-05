@@ -192,12 +192,12 @@ export default function CadeauPage() {
       `}} />
 
       <section className="hero-cadeau" style={{
-          position: 'relative', width: '100%', height: '65vh',
+          position: 'relative', width: '100%', height: '64.75vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
         }}>
         {/* Couche 1 : dégradé violet→fuchsia */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #312783 0%, #E6007E 100%)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #312783 0%, #E6007E 100%)', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap texture par-dessus */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.55 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
