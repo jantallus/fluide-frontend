@@ -200,6 +200,8 @@ export default function CadeauPage() {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-fond.png)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25)' }} />
+        {/* Couche 3 : très léger voile fuchsia en bas */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(230, 0, 126, 0.13) 0%, transparent 45%)', zIndex: 3 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1.35rem, 2.5vw, 1.8rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
