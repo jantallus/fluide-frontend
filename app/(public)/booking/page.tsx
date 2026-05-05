@@ -835,7 +835,7 @@ export default function ReserverPage() {
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#312783' }}>▼</div>
                     </div>
                   </div>
-                  <p className="font-bold uppercase tracking-widest text-sm mt-3" style={{ color: '#009FE3' }}>{getMarketingInfo(selectedFlight.name)}</p>
+                  <p className="font-bold text-sm mt-3" style={{ color: '#009FE3' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
                 <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
@@ -957,7 +957,7 @@ export default function ReserverPage() {
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
                                 {times.length === 0 ? (
                                   <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Complet</p>
+                                    <p className="text-slate-400 text-xs font-bold">Complet</p>
                                   </div>
                                 ) : (
                                   times.map(timeStr => {
@@ -969,7 +969,7 @@ export default function ReserverPage() {
                                       <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`} style={isSelected ? { backgroundColor: 'rgba(49,39,131,0.08)', borderColor: '#312783' } : {}}>
                                         <div className="flex justify-between items-center mb-4">
                                           <span className={`font-bold text-lg ${isSelected ? '' : 'text-slate-700'}`} style={isSelected ? { color: '#312783' } : {}}>{timeStr}</span>
-                                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded shadow-sm border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
+                                          <span className={`text-[10px] font-bold px-2 py-1 rounded shadow-sm border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
                                         </div>
