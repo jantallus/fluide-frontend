@@ -197,7 +197,7 @@ export default function CadeauPage() {
           overflow: 'hidden',
         }}>
         {/* Couche 1 : dégradé CSS lisse (remplace bg-fond.png) */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #4556B5 0%, #C8D0F5 100%)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #4D5EBE 0%, #B8C2EE 100%)', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25)' }} />
         {/* Couche 3 : très léger voile fuchsia + assombrissement en bas */}
