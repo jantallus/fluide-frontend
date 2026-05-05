@@ -632,9 +632,9 @@ export default function ReserverPage() {
         {/* Couche 1 : photo en fond */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.jpg)', backgroundSize: 'cover', backgroundPosition: 'center 25%', zIndex: 1 }} />
         {/* Couche 2 : dégradé radial — clair en bas à droite, bleu se diffusant vers la gauche */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse at 85% 85%, transparent 10%, rgba(20, 22, 140, 0.82) 65%)', zIndex: 2 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse at 85% 85%, rgba(0,0,0,0.15) 10%, rgba(20, 22, 140, 0.75) 65%)', zIndex: 2 }} />
         {/* Couche 3 : renfort bleu à gauche pour la lisibilité du texte */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(15, 15, 110, 0.45) 0%, transparent 50%)', zIndex: 3 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(15, 15, 110, 0.28) 0%, transparent 50%)', zIndex: 3 }} />
         {/* Couche 4 : assombrissement bas */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 40%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
