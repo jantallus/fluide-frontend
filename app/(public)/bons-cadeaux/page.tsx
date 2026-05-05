@@ -199,7 +199,7 @@ export default function CadeauPage() {
         {/* Couche 1 : bg-fond */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-fond.png)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25) blur(18px)' }} />
+        <div style={{ position: 'absolute', inset: '-30px', backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25) blur(22px)' }} />
         {/* Couche 3 : très léger voile fuchsia + assombrissement en bas */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(230, 0, 126, 0.13) 0%, transparent 45%)', zIndex: 3 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, transparent 40%)', zIndex: 4 }} />
