@@ -642,7 +642,7 @@ export default function ReserverPage() {
         {/* Couche 4 : assombrissement bas */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 40%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ color: 'white', fontSize: 'clamp(2.3rem, 5.6vw, 3.7rem)', fontWeight: 700, margin: 0, lineHeight: 1.05, textTransform: 'none' }}>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.72rem, 6.72vw, 4.35rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>
             Réservez votre vol et<br />baptême de parapente<br />à La Clusaz
           </h1>
         </div>
