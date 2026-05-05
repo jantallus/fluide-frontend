@@ -217,7 +217,7 @@ export default function CadeauPage() {
             <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: 'cover' }} />
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 700, color: '#312783', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
             <p style={{ color: '#1D1D1B', fontSize: '1.15rem', lineHeight: '1.8', marginBottom: '35px' }}>
               Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz !
               <br /><br />
@@ -335,6 +335,7 @@ export default function CadeauPage() {
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
                       className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] font-bold text-sm text-white"
+                      style={selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}}
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
