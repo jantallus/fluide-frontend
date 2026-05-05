@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const BACKEND_URL = process.env.API_URL ?? 'http://localhost:3001';
 
 export async function POST() {
   // Notifie le backend (il efface son propre cookie)

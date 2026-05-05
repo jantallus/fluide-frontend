@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import type { GiftCardShopTemplate, Complement } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -22,7 +23,6 @@ export default function CadeauPage() {
   const [selectedComplements, setSelectedComplements] = useState<Complement[]>([]);
 
   const [infoTemplate, setInfoTemplate] = useState<GiftCardShopTemplate | null>(null);
-  const savedScrollPos = React.useRef(0); // 🎯 Mémoire pour le défilement
   const hasAutoScrolled = React.useRef(false); // 🎯 NOUVEAU : Mémoire pour la téléportation
   const [urlFlightName, setUrlFlightName] = useState<string | null>(null); // 🎯 NOUVEAU : Nom du vol venant de la réservation
 
@@ -124,24 +124,7 @@ export default function CadeauPage() {
     }
   }, [selectedTemplate]);
 
-  // 🎯 NOUVEAU : Moteur de défilement intelligent + Blocage de l'arrière-plan pour la popup
-  useEffect(() => {
-    if (infoTemplate) {
-      savedScrollPos.current = window.scrollY;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-      if (savedScrollPos.current > 0) {
-        const targetPos = savedScrollPos.current;
-        setTimeout(() => {
-          window.scrollTo({ top: targetPos, behavior: 'smooth' });
-        }, 50);
-        savedScrollPos.current = 0; 
-      }
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [infoTemplate]);
+  useScrollLock(!!infoTemplate);
 
   // 🎯 SÉCURITÉ : Le formulaire vérifie aussi l'adresse si la case est cochée
   const isShippingValid = !wantsShipping || (address.street && address.zip && address.city);

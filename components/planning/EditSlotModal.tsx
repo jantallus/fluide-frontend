@@ -9,6 +9,12 @@ type FormData = {
   phone: string; email: string; notes: string; booking_options: string; client_message: string;
 };
 
+/** Mise à jour d'un slot envoyée à l'API et appliquée en local */
+type SlotUpdate = { id: number; data: Record<string, unknown> };
+
+/** Groupe horaire pour la répartition multi-passagers */
+type TimeGroup = { time: string; count: number; capacity: number; slots: Slot[] };
+
 interface Props {
   selectedEvent: Slot & { isOutOfSeason?: boolean };
   currentUser: CurrentUser | null;
@@ -23,7 +29,7 @@ interface Props {
   onClose: () => void;
 }
 
-const IS_CLIENT_SLOT = (slot: any) =>
+const IS_CLIENT_SLOT = (slot: Slot) =>
   slot.status === 'booked' && slot.title &&
   !['NOTE', '☕ PAUSE', 'NON DISPO'].some((t: string) => slot.title?.includes(t)) &&
   !slot.title?.includes('❌');
@@ -212,7 +218,7 @@ export default function EditSlotModal({
       new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dayStr &&
       new Date(a.start_time).getTime() >= startMs
     );
-    const validStartSlots: any[] = [];
+    const validStartSlots: Slot[] = [];
     allDayAvailable.forEach(slot => {
       const sTime = new Date(slot.start_time).getTime();
       let canDoFlight = true;
@@ -221,7 +227,7 @@ export default function EditSlotModal({
       }
       if (canDoFlight) validStartSlots.push(slot);
     });
-    const groups: Record<string, any[]> = {};
+    const groups: Record<string, Slot[]> = {};
     validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()).forEach(slot => {
       const timeStr = new Date(slot.start_time).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
       if (!groups[timeStr]) groups[timeStr] = [];
@@ -232,7 +238,7 @@ export default function EditSlotModal({
 
   const displayDistribution = useMemo(() => {
     let remaining = groupSize;
-    const result: { time: string; count: number; capacity: number; slots: any[] }[] = [];
+    const result: TimeGroup[] = [];
     let canFit = true;
     if (!isManual) {
       for (const group of availableTimeGroups) {
@@ -254,7 +260,7 @@ export default function EditSlotModal({
         result.push({ ...group, count: manualCounts[group.time] || 0 });
       }
     }
-    const slotsToUse: any[] = [];
+    const slotsToUse: Slot[] = [];
     result.forEach(r => { for (let i = 0; i < r.count; i++) slotsToUse.push(r.slots[i]); });
     return { items: result, canFit, slotsToUse };
   }, [availableTimeGroups, groupSize, manualCounts, isManual]);
@@ -265,8 +271,8 @@ export default function EditSlotModal({
   const handleSubChange = (time: string, delta: number) => {
     setManualCounts(prev => {
       const newCounts = { ...prev };
-      if (!isManual) displayDistribution.items.forEach((item: any) => { newCounts[item.time] = item.count; });
-      const capacity = availableTimeGroups.find((g: any) => g.time === time)?.capacity || 0;
+      if (!isManual) displayDistribution.items.forEach(item => { newCounts[item.time] = item.count; });
+      const capacity = availableTimeGroups.find(g => g.time === time)?.capacity || 0;
       newCounts[time] = Math.max(0, Math.min(capacity, (newCounts[time] || 0) + delta));
       setGroupSize(Object.values(newCounts).reduce((a, b) => a + b, 0));
       setIsManual(true);
@@ -274,7 +280,7 @@ export default function EditSlotModal({
     });
   };
 
-  const applyAll = async (updatesToApply: any[]) => {
+  const applyAll = async (updatesToApply: SlotUpdate[]) => {
     setAppointments(prev => prev.map(slot => {
       const update = updatesToApply.find(u => u.id === slot.id);
       return update ? { ...slot, ...update.data } : slot;
@@ -290,7 +296,7 @@ export default function EditSlotModal({
     if (!selectedEvent) return;
     let slotsNeeded = 1;
     let targetMonitors: string[] = [];
-    let slotsToUpdate: any[] = [];
+    let slotsToUpdate: Slot[] = [];
 
     if (activeTab === 'note') {
       const isNonBlockingNote = formData.title !== 'NON DISPO';
@@ -300,9 +306,9 @@ export default function EditSlotModal({
       if (!isNonBlockingNote) {
         if (slotsToUpdate.some(slot => IS_CLIENT_SLOT(slot))) { toast.error('❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.'); return; }
       }
-      const updatesToApply: any[] = [];
+      const updatesToApply: SlotUpdate[] = [];
       slotsToUpdate.forEach(slot => {
-        let payload: any = { title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
+        let payload: Record<string, unknown> = { title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
         if (isNonBlockingNote) {
           if (IS_CLIENT_SLOT(slot)) {
             payload = { ...payload, title: slot.title, status: slot.status, flight_type_id: slot.flight_type_id, phone: slot.phone, email: slot.email, weightChecked: slot.weight_checked || slot.weightChecked, booking_options: slot.booking_options, client_message: slot.client_message, weight: slot.weight };
@@ -324,10 +330,10 @@ export default function EditSlotModal({
     const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
     slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
 
-    const updatesToApply: any[] = [];
+    const updatesToApply: SlotUpdate[] = [];
     if (groupSize > 1 || isManual) {
       if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) { toast.error('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.'); return; }
-      displayDistribution.slotsToUse.forEach((baseSlot: any, index: number) => {
+      displayDistribution.slotsToUse.forEach((baseSlot, index) => {
         const namesList = formData.title.split(',').map((n: string) => n.trim()).filter((n: string) => n);
         let passengerTitle = '';
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
@@ -365,7 +371,7 @@ export default function EditSlotModal({
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
     const startMs = new Date(selectedEvent.start as Date | string).getTime();
-    const updatesToApply: any[] = [];
+    const updatesToApply: SlotUpdate[] = [];
     for (let i = 0; i < slotsNeeded; i++) {
       const ms = startMs + i * slotDuration * 60000;
       const slotToFree = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
@@ -383,7 +389,7 @@ export default function EditSlotModal({
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-    const updatesToApply: any[] = [];
+    const updatesToApply: SlotUpdate[] = [];
     groupRootSlots.forEach(baseSlot => {
       const startMs = new Date(baseSlot.start_time).getTime();
       for (let i = 0; i < slotsNeeded; i++) {
@@ -403,7 +409,7 @@ export default function EditSlotModal({
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
     const startMs = new Date(selectedEvent.start as Date | string).getTime();
     const slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
-    const updatesToApply: any[] = [];
+    const updatesToApply: SlotUpdate[] = [];
     slotsToUpdate.forEach(slot => {
       if (IS_CLIENT_SLOT(slot)) {
         updatesToApply.push({ id: slot.id, data: { title: slot.title, status: slot.status, notes: '', flight_type_id: slot.flight_type_id, phone: slot.phone, email: slot.email, weightChecked: slot.weight_checked || slot.weightChecked, booking_options: slot.booking_options, client_message: slot.client_message, weight: slot.weight } });
@@ -419,10 +425,10 @@ export default function EditSlotModal({
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
     const slotsNeeded = (flight?.allow_multi_slots && slotDuration > 0 && flightDur > slotDuration) ? Math.ceil(flightDur / slotDuration) : 1;
-    const updatesToApply: any[] = [];
+    const updatesToApply: SlotUpdate[] = [];
 
     if (moveGroup && groupRootSlots.length > 1) {
-      const slotsToFree: any[] = [];
+      const slotsToFree: number[] = [];
       groupRootSlots.forEach(baseSlot => {
         slotsToFree.push(baseSlot.id);
         if (slotsNeeded > 1) {
@@ -443,7 +449,7 @@ export default function EditSlotModal({
         if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
         return true;
       });
-      const validStartSlots: any[] = [];
+      const validStartSlots: Slot[] = [];
       allDayAvailable.forEach(slot => {
         const sTime = new Date(slot.start_time).getTime();
         let canDoFlight = true;
@@ -454,7 +460,7 @@ export default function EditSlotModal({
       });
       validStartSlots.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
       let remaining = groupRootSlots.length;
-      const assignedSlots: any[] = [];
+      const assignedSlots: Slot[] = [];
       for (const slot of validStartSlots) {
         if (remaining === 0) break;
         const sTime = new Date(slot.start_time).getTime();
@@ -588,7 +594,7 @@ export default function EditSlotModal({
                               {isManual && (<button onClick={() => { setIsManual(false); setGroupSize(groupSize); }} className="text-[9px] uppercase font-bold text-indigo-500 hover:text-indigo-700 bg-white px-2 py-1 rounded-md border border-indigo-100 transition-all shadow-sm">↻ Remettre en auto</button>)}
                             </div>
                             <ul className="list-none space-y-2">
-                              {displayDistribution.items.map((d: any, i: number) => (
+                              {displayDistribution.items.map((d, i) => (
                                 <li key={i} className="flex items-center justify-between bg-white/60 p-2 rounded-lg">
                                   <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">

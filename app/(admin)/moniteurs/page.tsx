@@ -1,20 +1,17 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Pencil, Trash2, CalendarDays } from 'lucide-react';
 import type { CurrentUser, User } from '@/lib/types';
 import { useMoniteursData } from '@/hooks/useMoniteursData';
 import { MoniteurModal } from '@/components/moniteurs/MoniteurModal';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function MonitorsPage() {
   const { users, loading, loadUsers, handleDelete, copyIcalLink } = useMoniteursData();
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const currentUser = useCurrentUser();
   const [showModal, setShowModal] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
-  useEffect(() => {
-    const u = localStorage.getItem('user');
-    if (u) setCurrentUser(JSON.parse(u));
-  }, []);
 
   const openModal = (user?: User) => {
     setUserToEdit(user ?? null);

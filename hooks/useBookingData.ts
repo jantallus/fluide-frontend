@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getLocalYYYYMMDD } from '@/lib/booking-utils';
-import type { FlightType, GiftCardShopTemplate, Complement, Setting } from '@/lib/types';
+import type { FlightType, GiftCardShopTemplate, Complement } from '@/lib/types';
 
 export function useBookingData(
   onReady: (dateStr: string, daysCount: number) => void
@@ -9,7 +9,7 @@ export function useBookingData(
   const [flights, setFlights] = useState<FlightType[]>([]);
   const [giftTemplates, setGiftTemplates] = useState<GiftCardShopTemplate[]>([]);
   const [complementsList, setComplementsList] = useState<Complement[]>([]);
-  const [displayDaysCount, setDisplayDaysCount] = useState<number>(7);
+  const [displayDaysCount, setDisplayDaysCount] = useState<number>(3);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState<'Standard' | 'Hiver'>('Standard');
 
@@ -28,10 +28,10 @@ export function useBookingData(
       try {
         // Passe par le proxy Next.js (/api/proxy/...) pour ne pas exposer
         // l'URL du backend dans le bundle client et garder une architecture cohérente.
-        const [resFlights, resComplements, resSettings, resTemplates] = await Promise.all([
+        const [resFlights, resComplements, resPublicSettings, resTemplates] = await Promise.all([
           fetch(`/api/proxy/flight-types?t=${Date.now()}`, { cache: 'no-store' }),
           fetch(`/api/proxy/complements?t=${Date.now()}`, { cache: 'no-store' }),
-          fetch(`/api/proxy/settings?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/proxy/public/site-settings?t=${Date.now()}`, { cache: 'no-store' }),
           fetch(`/api/proxy/gift-card-templates?publicOnly=true&t=${Date.now()}`, { cache: 'no-store' }),
         ]);
 
@@ -39,11 +39,10 @@ export function useBookingData(
         if (resComplements.ok) setComplementsList(await resComplements.json());
         if (resTemplates.ok) setGiftTemplates(await resTemplates.json());
 
-        let count = 7;
-        if (resSettings.ok) {
-          const s = await resSettings.json();
-          const countSetting = s.find((x: Setting) => x.key === 'display_days_count');
-          if (countSetting) count = parseInt(countSetting.value);
+        let count = 3;
+        if (resPublicSettings.ok) {
+          const s = await resPublicSettings.json();
+          if (s.display_days_count) count = parseInt(s.display_days_count);
         }
         setDisplayDaysCount(count);
 

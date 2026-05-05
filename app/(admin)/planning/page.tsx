@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import scrollgridPlugin from '@fullcalendar/scrollgrid';
 import { usePlanningData } from '@/hooks/usePlanningData';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -27,7 +28,7 @@ export default function PlanningAdmin() {
     loadAppointments, toggleGoogleSync,
   } = usePlanningData(getDateRange);
 
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const currentUser = useCurrentUser();
   const [showGenModal, setShowGenModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<(Slot & { isOutOfSeason?: boolean }) | null>(null);
@@ -35,10 +36,6 @@ export default function PlanningAdmin() {
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  useEffect(() => {
-    const u = localStorage.getItem('user');
-    if (u) setCurrentUser(JSON.parse(u));
-  }, []);
 
   const handleEventClick = useCallback((info: EventClickArg) => {
     if (currentUser?.role === 'monitor') return;

@@ -21,6 +21,7 @@ interface BookingPassenger {
 import { useToast } from '@/components/ui/ToastProvider';
 import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
 
 export default function ReserverPage() {
@@ -39,7 +40,6 @@ export default function ReserverPage() {
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
   const [step, setStep] = useState<number>(1);
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
-  const savedScrollPos = useRef(0);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
@@ -71,35 +71,7 @@ export default function ReserverPage() {
     }
   }, [step]);
 
-// 🎯 NOUVEAU : Moteur de défilement intelligent + Blocage de l'arrière-plan
-  useEffect(() => {
-    if (infoFlight) {
-      // 1. On mémorise et on remonte tout en haut
-      savedScrollPos.current = window.scrollY;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      // 🔒 2. LE SECRET : On fige totalement la page en arrière-plan !
-      document.body.style.overflow = 'hidden';
-      
-    } else {
-      // 🔓 3. La popup se ferme : on débloque le défilement de la page
-      document.body.style.overflow = '';
-      
-      // 4. On retourne exactement là où on était (Micro-délai ajouté ici !)
-      if (savedScrollPos.current > 0) {
-        const targetPos = savedScrollPos.current;
-        setTimeout(() => {
-          window.scrollTo({ top: targetPos, behavior: 'smooth' });
-        }, 50); // On laisse 50ms au navigateur pour détruire la popup proprement
-        savedScrollPos.current = 0; 
-      }
-    }
-
-    // 🛡️ Sécurité : Si le client quitte la page brusquement, on s'assure de débloquer le scroll
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [infoFlight]);
+  useScrollLock(!!infoFlight);
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
