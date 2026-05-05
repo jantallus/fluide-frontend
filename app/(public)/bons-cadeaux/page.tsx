@@ -307,7 +307,7 @@ export default function CadeauPage() {
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
-                      <h3 className="text-3xl font-black text-slate-900">{tpl.title}</h3>
+                      <h3 className="text-3xl font-black" style={{ color: '#312783' }}>{tpl.title}</h3>
                       {tpl.show_popup && tpl.popup_content && (
                         <button
                           onClick={(e) => { 
