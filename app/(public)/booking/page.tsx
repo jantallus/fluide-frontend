@@ -771,7 +771,7 @@ export default function ReserverPage() {
                         <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{getMarketingInfo(flight.name)}</span>
                         <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
-                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
+                      <div className="text-[10px] font-bold text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
                         {displayedSeason}
                       </div>
                     </div>
