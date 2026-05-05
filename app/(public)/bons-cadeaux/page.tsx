@@ -193,7 +193,7 @@ export default function CadeauPage() {
 
       <section className="hero-cadeau" style={{
           position: 'relative', width: '100%', height: '64.75vh',
-          display: 'flex', alignItems: 'center', paddingLeft: '10vw',
+          display: 'flex', alignItems: 'center', paddingLeft: '13vw', paddingTop: '6vh',
           overflow: 'hidden',
         }}>
         {/* Couche 1 : dégradé CSS lisse (remplace bg-fond.png) */}
