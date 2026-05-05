@@ -656,7 +656,7 @@ export default function ReserverPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
-              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl inline-flex shadow-xl border border-slate-200">
+              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl inline-flex border border-slate-200">
                 <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-lg font-bold text-sm transition-all duration-300 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E' } : {}}>☀️ Vols Été</button>
                 <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-lg font-bold text-sm transition-all duration-300 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783' } : {}}>❄️ Vols Hiver</button>
               </div>
