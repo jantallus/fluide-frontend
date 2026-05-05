@@ -842,7 +842,7 @@ export default function ReserverPage() {
                   {displayDaysCount < 5 && (
                     <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">←</button>
                   )}
-                  <span className="text-xs font-black uppercase text-slate-400 ml-2 hidden md:inline">
+                  <span className="text-xs font-black text-slate-400 ml-2 hidden md:inline">
                     {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
                   </span>
                   <input 
