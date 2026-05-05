@@ -194,7 +194,7 @@ export default function CadeauPage() {
           position: 'relative', width: '100%', height: '68vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
-          backgroundColor: '#312783',
+          backgroundColor: '#E6007E',
           backgroundImage: 'linear-gradient(45deg, rgba(47, 82, 160, 1) 15%, rgba(47, 82, 160, 0) 80%)',
         }}>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
