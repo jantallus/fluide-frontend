@@ -196,10 +196,10 @@ export default function CadeauPage() {
           display: 'flex', alignItems: 'center', paddingLeft: '10vw',
           overflow: 'hidden',
         }}>
-        {/* Couche 1 : dégradé violet→fuchsia */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #312783 0%, #E6007E 100%)', zIndex: 1 }} />
-        {/* Couche 2 : bg-heatmap texture par-dessus */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.55 }} />
+        {/* Couche 1 : bg-fond */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-fond.png)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1 }} />
+        {/* Couche 2 : bg-heatmap */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25)' }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.6rem, 6.5vw, 4.2rem)', fontWeight: 700, margin: 0, lineHeight: 1.1, textTransform: 'none' }}>Cartes cadeaux</h1>
           <p style={{ color: 'white', fontSize: 'clamp(1.35rem, 2.5vw, 1.8rem)', fontWeight: 400, marginTop: '18px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir !</p>
