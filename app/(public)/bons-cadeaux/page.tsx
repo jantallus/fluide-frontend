@@ -174,7 +174,7 @@ export default function CadeauPage() {
     }, 100); 
   };
 
-  const inputStyle = { width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 700, outline: 'none' };
+  const inputStyle = { width: '100%', padding: '15px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 700, outline: 'none' };
   
   // Calcul du prix total affiché sur le bouton
   const optionsPrice = selectedComplements.reduce((sum, c) => sum + (c.price_cents / 100), 0);
@@ -189,7 +189,7 @@ export default function CadeauPage() {
         body, *:not(.font-georgia) { font-family: 'Aeonik', sans-serif !important; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-fill-mode: forwards; }
-        .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 18px 45px; border-radius: 10px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.125rem; cursor: pointer; }
+        .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 12px 17px; border-radius: 5px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.125rem; cursor: pointer; }
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
         .hero-cadeau { background: transparent !important; }
@@ -241,7 +241,7 @@ export default function CadeauPage() {
           </div>
 
           {/* 💡 BANDEAU DE RÉASSURANCE BONS CADEAUX */}
-          <div className="max-w-7xl mx-auto mb-12 rounded-[12px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
+          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
@@ -310,7 +310,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`card-template bg-white rounded-[14px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
+                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`card-template bg-white rounded-[10px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -339,7 +339,7 @@ export default function CadeauPage() {
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
-                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] text-white"
+                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[5px] text-white"
                       style={{ fontSize: '1.125rem', fontWeight: 700, ...(selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}) }}
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
@@ -351,7 +351,7 @@ export default function CadeauPage() {
           )}
 
           {selectedTemplate && (
-            <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '14px', padding: '40px', boxShadow: 'none', border: '1px solid #e2e8f0', scrollMarginTop: '100px' }}>
+            <div id="achat-form" style={{ marginTop: '60px', backgroundColor: 'white', borderRadius: '10px', padding: '40px', boxShadow: 'none', border: '1px solid #e2e8f0', scrollMarginTop: '100px' }}>
               <h3 style={{ fontSize: '2rem', fontWeight: 700, color: '#312783', marginBottom: '10px' }}>Personnalisez votre bon</h3>
               <p style={{ color: '#E6007E', fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px' }}>
                 {urlFlightName ? `Bon ${urlFlightName}` : selectedTemplate.title} - {selectedTemplate.price_cents / 100}€
@@ -373,13 +373,13 @@ export default function CadeauPage() {
               </div>
               {/* 🎯 NOUVEAU : Les Options additionnelles */}
               {complements.length > 0 && (
-                <div className="mb-8 p-6 bg-slate-50 border-2 border-slate-100 rounded-[10px] transition-all">
+                <div className="mb-8 p-6 bg-slate-50 border-2 border-slate-100 rounded-[10px] transition-all" style={{ borderRadius: '10px' }}>
                   <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#312783', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}><Sparkles size={16} strokeWidth={1.5} />Ajouter des options au bon cadeau</h4>
                   <div className="flex flex-col gap-3">
                     {complements.map(comp => {
                       const isSelected = selectedComplements.some(c => c.id === comp.id);
                       return (
-                        <label key={comp.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'shadow-md' : 'border-slate-200 bg-white'}`} style={isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}}>
+                        <label key={comp.id} className={`flex items-center gap-4 p-4 border-2 cursor-pointer transition-all ${isSelected ? 'shadow-md' : 'border-slate-200 bg-white'}`} style={{ borderRadius: '10px', ...(isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}) }}>
                           <input type="checkbox" className="w-5 h-5 accent-sky-500" checked={isSelected} onChange={(e) => {
                             if (e.target.checked) setSelectedComplements([...selectedComplements, comp]);
                             else setSelectedComplements(selectedComplements.filter(c => c.id !== comp.id));
@@ -437,7 +437,8 @@ export default function CadeauPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-template-dialog-title"
-            className="bg-white rounded-[14px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            className="bg-white shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            style={{ borderRadius: '10px' }}
             onClick={e => e.stopPropagation()}
           >
             
@@ -473,7 +474,8 @@ export default function CadeauPage() {
               
               <button
                 onClick={(e) => { e.stopPropagation(); setInfoTemplate(null); }}
-                className="mt-8 w-full text-white py-4 rounded-xl font-black transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                className="mt-8 w-full text-white py-4 transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                style={{ borderRadius: '5px', fontWeight: 700, fontSize: '1.125rem' }}
                 style={{ backgroundColor: '#312783' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
