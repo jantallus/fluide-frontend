@@ -37,9 +37,14 @@ export default function ReserverPage() {
     }
   }, []);
 
-  const [isDirect, setIsDirect] = useState(false);
+  // Initialisés dès le premier rendu depuis l'URL pour éviter le flash step 1 → step 2
+  const [isDirect, setIsDirect] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('vol')
+  );
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('vol') ? 2 : 1
+  );
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
@@ -133,7 +138,16 @@ export default function ReserverPage() {
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash;
-      
+      const isDirectMode = new URLSearchParams(window.location.search).has('vol');
+
+      // En mode direct on ne revient jamais au step 1 (catalogue)
+      if (isDirectMode) {
+        const itemsInCart = Object.values(cartRef.current).reduce((sum: number, qty: number) => sum + qty, 0);
+        if (hash === '#etape-3' && itemsInCart > 0) setStep(3);
+        else setStep(2);
+        return;
+      }
+
       // On lit les références "secrètes" pour ne pas déclencher de rechargement en boucle
       const itemsInCart = Object.values(cartRef.current).reduce((sum: number, qty: number) => sum + qty, 0);
       const needsReset = (hash === '#etape-2' && !selectedFlightRef.current) || (hash === '#etape-3' && itemsInCart === 0);
@@ -663,6 +677,14 @@ export default function ReserverPage() {
 
       <div className={`relative z-20 max-w-7xl mx-auto px-4 pb-48 ${isDirect ? 'pt-6' : 'pt-12'}`}>
         
+        {/* Chargement en mode direct — les vols n'ont pas encore été reçus de l'API */}
+        {isDirect && !selectedFlight && (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <div className="w-8 h-8 rounded-full border-4 border-slate-200 animate-spin" style={{ borderTopColor: '#E6007E' }} />
+            <p style={{ fontSize: '1rem', fontWeight: 700, color: '#94a3b8' }}>Chargement des disponibilités…</p>
+          </div>
+        )}
+
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
