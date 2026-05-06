@@ -650,7 +650,7 @@ export default function ReserverPage() {
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
-            <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
+            <div className="flex justify-center mb-12 sticky top-4 z-40 transition-all duration-300">
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
                 <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Sun size={18} strokeWidth={1.5} />été</button>
                 <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Snowflake size={18} strokeWidth={1.5} />hiver</button>
@@ -874,7 +874,7 @@ export default function ReserverPage() {
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div className={`sticky ${isEmbed ? 'top-0' : 'top-20'} z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
