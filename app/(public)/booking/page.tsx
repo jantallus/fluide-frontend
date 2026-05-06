@@ -23,6 +23,7 @@ import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
+import { Gift, Camera, Zap, Clock, Weight, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 export default function ReserverPage() {
   const { toast } = useToast();
@@ -621,7 +622,7 @@ export default function ReserverPage() {
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .hero-booking { background: transparent !important; }
-        .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; }
+        .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
         .flight-card:hover .btn-reserver { background-color: #312783 !important; }
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 8vw !important; } }
@@ -654,18 +655,18 @@ export default function ReserverPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
-              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-lg font-bold text-sm transition-all duration-300 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E' } : {}}>☀️ été</button>
-                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-lg font-bold text-sm transition-all duration-300 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783' } : {}}>❄️ hiver</button>
+              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}>☀️ été</button>
+                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}>❄️ hiver</button>
               </div>
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-12 rounded-[12px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
+          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Gift size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Bon Cadeau</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -675,7 +676,7 @@ export default function ReserverPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Camera size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Photos & Vidéos</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -685,7 +686,7 @@ export default function ReserverPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Zap size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Sensations Fortes</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -701,7 +702,7 @@ export default function ReserverPage() {
               /* ☠️ EFFET "SKELETON" POUR LES CARTES DE VOLS */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white rounded-[14px] p-8 border border-slate-100 flex flex-col justify-between animate-pulse">
+                  <div key={i} className="bg-white rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between animate-pulse">
                     {/* Fausse image */}
                     <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-2xl md:rounded-[20px] mb-6"></div>
                     
@@ -726,7 +727,7 @@ export default function ReserverPage() {
                 ))}
               </div>
             ) : filteredFlights.length === 0 ? (
-               <div className="text-center py-20 bg-white rounded-[14px] border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-bold" style={{ color: '#312783' }}>Aucun vol configuré pour cette saison</h3></div>
+               <div className="text-center py-20 bg-white rounded-[10px] border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-bold" style={{ color: '#312783' }}>Aucun vol configuré pour cette saison</h3></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredFlights.map((flight) => {
@@ -736,7 +737,7 @@ export default function ReserverPage() {
                   if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
 
                   return (
-                  <div key={flight.id} className="flight-card bg-white rounded-[14px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
@@ -748,7 +749,7 @@ export default function ReserverPage() {
 
                     <div>
                       <div className="flex justify-between items-start mb-3 gap-2">
-                        <h3 className="text-2xl font-black" style={{ color: '#312783' }}>{flight.name}</h3>
+                        <h3 className="flex-1" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#312783' }}>{flight.name}</h3>
                         
                         {/* On n'affiche le bouton 'i' que si vous l'avez activé et rempli dans le backoffice ! */}
                         {flight.show_popup && flight.popup_content && (
@@ -765,16 +766,16 @@ export default function ReserverPage() {
                           </button>
                         )}
                       </div>
-                      <div className="flex gap-3 text-sm font-bold text-slate-500 mb-6">
-                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">{getMarketingInfo(flight.name)}</span>
-                        <span className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">⚖️ {flight.weight_min !== undefined ? flight.weight_min : 20} - {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
+                      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-6">
+                        <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Clock size={18} strokeWidth={1.5} />{getMarketingInfo(flight.name)}</span>
+                        <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
                       <div className="text-[10px] font-bold text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
                         {displayedSeason}
                       </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="text-3xl md:text-4xl font-black shrink-0" style={{ color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
+                      <div className="shrink-0" style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                       <div className="flex flex-col gap-2 items-stretch">
                         {(() => {
                           const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
@@ -785,7 +786,7 @@ export default function ReserverPage() {
                               e.stopPropagation();
                               window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
                             }}
-                            className="cursor-pointer px-4 py-3 rounded-[10px] font-bold text-sm transition-all"
+                            className="cursor-pointer px-4 py-3 rounded-[5px] font-bold text-sm transition-all"
                             style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E' }}
                             onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
                             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
@@ -794,7 +795,7 @@ export default function ReserverPage() {
                           </button>
                           );
                         })()}
-                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-base" onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
+                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[5px] font-bold" style={{ fontSize: '1.125rem' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
@@ -809,19 +810,19 @@ export default function ReserverPage() {
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
           <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
-            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Retour au catalogue
             </button>
-            
-            <div className="bg-white rounded-[14px] p-6 md:p-10 border border-slate-200">
+
+            <div className="bg-white rounded-[10px] p-6 md:p-10 border border-slate-200">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: '#312783' }}>Réservation :</h2>
+                    <h2 className="font-bold leading-tight" style={{ color: '#312783', fontSize: '3rem', fontWeight: 700 }}>Réservation :</h2>
                     <div className="relative">
-                      <select 
-                        className="text-2xl md:text-3xl font-black bg-opacity-5 border-2 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#312783', backgroundColor: 'rgba(49,39,131,0.05)', borderColor: 'rgba(49,39,131,0.15)' }}
+                      <select
+                        className="text-2xl md:text-3xl font-bold bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#312783', backgroundColor: 'rgba(49,39,131,0.05)', borderColor: 'rgba(49,39,131,0.15)' }}
                         value={selectedFlight.id}
                         onChange={(e) => {
                           const newFlight = flights.find(f => f.id.toString() === e.target.value);
@@ -838,11 +839,11 @@ export default function ReserverPage() {
                   <p className="font-bold text-sm mt-3" style={{ color: '#009FE3' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 shrink-0">
+                <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[10px] border border-slate-200 shrink-0">
                   {displayDaysCount < 5 && (
-                    <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">←</button>
+                    <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-[5px] hover:bg-white shadow-sm font-bold text-slate-500 transition-colors">←</button>
                   )}
-                  <span className="text-xs font-black text-slate-400 ml-2 hidden md:inline">
+                  <span className="text-xs font-bold text-slate-400 ml-2 hidden md:inline">
                     {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
                   </span>
                   <input 
@@ -852,7 +853,7 @@ export default function ReserverPage() {
                     onChange={handleDatePick} 
                   />
                   {displayDaysCount < 5 && (
-                    <button onClick={() => shiftDays(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white shadow-sm font-black text-slate-500 transition-colors">→</button>
+                    <button onClick={() => shiftDays(1)} className="w-8 h-8 flex items-center justify-center rounded-[5px] hover:bg-white shadow-sm font-bold text-slate-500 transition-colors">→</button>
                   )}
                 </div>
               </div>
@@ -885,13 +886,13 @@ export default function ReserverPage() {
                           return (
                             <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                               {isFirstDesktop && (
-                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-lg items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-black">←</span></button>
+                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-bold">←</span></button>
                               )}
-                              <div className="flex-1 shadow-md rounded-lg p-4 flex flex-col items-center justify-center text-center" style={{ backgroundColor: '#312783' }}>
-                                <p className="font-black text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
+                              <div className="flex-1 shadow-md rounded-[5px] p-4 flex flex-col items-center justify-center text-center" style={{ backgroundColor: '#312783' }}>
+                                <p className="font-bold text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                               </div>
                               {isLastDesktop && (
-                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-lg items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-black">→</span></button>
+                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-bold">→</span></button>
                               )}
                             </div>
                           );
@@ -978,14 +979,14 @@ export default function ReserverPage() {
                                             aria-label={`Retirer un passager – ${getDayName(dateStr)} à ${timeStr}`}
                                             onClick={() => handleRemove(dateStr, timeStr)}
                                             disabled={qtyInCart === 0}
-                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}
+                                            className={`w-8 h-8 rounded-[5px] font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}
                                           >-</button>
                                           <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className="font-bold text-lg w-8 text-center" style={isSelected ? { color: '#312783' } : { color: '#1D1D1B' }}>{qtyInCart}</span>
                                           <button
                                             aria-label={`Ajouter un passager – ${getDayName(dateStr)} à ${timeStr}`}
                                             onClick={() => handleAdd(dateStr, timeStr)}
                                             disabled={capacity === 0}
-                                            className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-white shadow-sm'}`}
+                                            className={`w-8 h-8 rounded-[5px] font-bold text-lg flex items-center justify-center transition-colors ${capacity === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-white shadow-sm'}`}
                                             style={capacity > 0 ? { backgroundColor: '#009FE3' } : {}}
                                             onMouseEnter={e => { if (capacity > 0) e.currentTarget.style.backgroundColor = '#312783'; }}
                                             onMouseLeave={e => { if (capacity > 0) e.currentTarget.style.backgroundColor = '#009FE3'; }}
@@ -1016,34 +1017,34 @@ export default function ReserverPage() {
         {/* ÉTAPE 3 : FORMULAIRE PASSAGER */}
         {step === 3 && (
           <div id="etape-3-container" className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto mt-16 md:mt-24">
-            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-slate-600 font-black text-xs flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+            <button onClick={() => setStep(2)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
               ← Modifier le panier
             </button>
 
-            <div className="bg-white rounded-[14px] p-8 md:p-12 border border-slate-100">
+            <div className="bg-white rounded-[10px] p-8 md:p-12 border border-slate-100">
               
               <div className="text-center mb-10 pb-10 border-b border-slate-100">
-                <span className="text-6xl mb-6 block animate-bounce">📝</span>
-                <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: '#312783' }}>Détails des passagers</h2>
-                <p className="text-slate-500 font-medium mt-2">Dernière étape avant de voler !</p>
+                <FileText size={48} strokeWidth={1.5} style={{ color: '#312783', margin: '0 auto 24px', display: 'block' }} />
+                <h2 className="font-bold leading-tight" style={{ fontSize: '3rem', fontWeight: 700, color: '#312783' }}>Détails des passagers</h2>
+                <p style={{ fontSize: '1.125rem', fontWeight: 400, color: '#1D1D1B' }} className="mt-2">Dernière étape avant de voler !</p>
               </div>
 
               {/* 🎯 NOUVEAU : LA SECTION BON CADEAU EST MAINTENANT TOUT EN HAUT ! */}
               {/* 🎯 SECTION BON CADEAU (Douce et Rassurante) */}
-              <div className="mb-12 border-2 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' }}>
+              <div className="mb-12 border-2 rounded-[10px] p-6 md:p-8 relative overflow-hidden shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' }}>
                 <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
                 
-                <h3 className="font-bold text-xl mb-2 flex items-center gap-3 relative z-10" style={{ color: '#312783' }}>
+                <h3 className="mb-2 flex items-center gap-3 relative z-10" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#312783' }}>
                   Vous avez un bon cadeau ou un code promo ?
                 </h3>
-                <p className="font-bold mb-6 text-sm relative z-10" style={{ color: '#312783', opacity: 0.8 }}>
+                <p className="mb-6 relative z-10" style={{ fontSize: '1rem', fontWeight: 700, color: '#312783', opacity: 0.8 }}>
                   Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
                 </p>
 
                 {appliedVoucher ? (
-                  <div className="bg-white border-2 border-emerald-500 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
+                  <div className="bg-white border-2 border-emerald-500 rounded-[10px] p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
                     <div>
-                      <p className="font-black text-emerald-900 uppercase tracking-widest text-sm">
+                      <p className="font-bold text-emerald-900 uppercase tracking-widest text-sm">
                         ✅ {appliedVoucher.type === 'promo' ? 'Code Promo appliqué' : 'Bon cadeau activé !'}
                       </p>
                       <p className="text-emerald-700 font-bold mt-1">
@@ -1051,10 +1052,10 @@ export default function ReserverPage() {
                       </p>
                     </div>
                     <div className="text-left md:text-right w-full md:w-auto">
-                      <p className="text-3xl font-black text-emerald-600">
+                      <p className="text-3xl font-bold text-emerald-600">
                         - {discountAmount.toFixed(2)} €
                       </p>
-                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-black uppercase text-rose-500 mt-2 hover:underline">
+                      <button onClick={() => setAppliedVoucher(null)} className="text-[10px] font-bold uppercase text-rose-500 mt-2 hover:underline">
                         Retirer le code
                       </button>
                     </div>
@@ -1065,14 +1066,14 @@ export default function ReserverPage() {
                       <input
                         type="text"
                         placeholder="Ex: FLUIDE-1234 ou NOEL2024"
-                        className="flex-1 bg-white border-2 rounded-2xl p-4 font-black uppercase text-slate-800 outline-none transition-colors shadow-sm" style={{ borderColor: 'rgba(49,39,131,0.15)' }}
+                        className="flex-1 bg-white border-2 rounded-[10px] p-4 font-bold uppercase text-slate-800 outline-none transition-colors shadow-sm" style={{ borderColor: 'rgba(49,39,131,0.15)' }}
                         value={voucherInput}
                         onChange={e => setVoucherInput(e.target.value.toUpperCase())}
                       />
                       <button 
                         onClick={handleApplyVoucher}
                         disabled={isApplyingVoucher || !voucherInput.trim()}
-                        className={`px-8 py-4 md:py-0 rounded-2xl font-black uppercase tracking-widest text-sm transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'text-slate-400' : 'text-white shadow-md hover:-translate-y-0.5'}`} style={!voucherInput.trim() || isApplyingVoucher ? { backgroundColor: 'rgba(49,39,131,0.1)' } : { backgroundColor: '#312783' }}
+                        className={`px-8 py-4 md:py-0 rounded-[5px] uppercase tracking-widest transition-all ${!voucherInput.trim() || isApplyingVoucher ? 'text-slate-400' : 'text-white shadow-md hover:-translate-y-0.5'}`} style={!voucherInput.trim() || isApplyingVoucher ? { backgroundColor: 'rgba(49,39,131,0.1)', fontSize: '1.125rem', fontWeight: 700 } : { backgroundColor: '#312783', fontSize: '1.125rem', fontWeight: 700 }}
                       >
                         {isApplyingVoucher ? '...' : 'Appliquer'}
                       </button>
@@ -1085,17 +1086,17 @@ export default function ReserverPage() {
 
               {/* SECTION 1 : CONTACT */}
               <div className="mb-12">
-                <h3 className="font-bold text-xl mb-6 flex items-center gap-3" style={{ color: '#312783' }}>
+                <h3 className="mb-6 flex items-center gap-3" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#312783' }}>
                   <span className="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: '#312783' }}>1</span>
                   Personne à contacter
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom</label>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Prénom</label>
                     <input
                       type="text"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="Jean"
                       value={contact.firstName}
                       onChange={e => { setContact({...contact, firstName: e.target.value}); if (contactErrors.firstName) validateField('firstName', e.target.value); }}
@@ -1103,10 +1104,10 @@ export default function ReserverPage() {
                     {contactErrors.firstName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.firstName}</p>}
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom</label>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Nom</label>
                     <input
                       type="text"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="Dupont"
                       value={contact.lastName}
                       onChange={e => { setContact({...contact, lastName: e.target.value}); if (contactErrors.lastName) validateField('lastName', e.target.value); }}
@@ -1114,10 +1115,10 @@ export default function ReserverPage() {
                     {contactErrors.lastName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.lastName}</p>}
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Téléphone (le jour du vol)</label>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Téléphone (le jour du vol)</label>
                     <input
                       type="tel"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="06 12 34 56 78"
                       value={contact.phone}
                       onChange={e => { setContact({...contact, phone: e.target.value}); if (contactErrors.phone) validateField('phone', e.target.value); }}
@@ -1126,10 +1127,10 @@ export default function ReserverPage() {
                     {contactErrors.phone && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.phone}</p>}
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email</label>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Email</label>
                     <input
                       type="email"
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
+                      className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
                       placeholder="jean@email.com"
                       value={contact.email}
                       onChange={e => { setContact({...contact, email: e.target.value}); if (contactErrors.email) validateField('email', e.target.value); }}
@@ -1140,45 +1141,45 @@ export default function ReserverPage() {
                 </div>
 
                 <div className="mb-6">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Message / Remarque (Facultatif)</label>
-                  <textarea 
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-[#312783] h-24 text-slate-800"
+                  <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Message / Remarque (Facultatif)</label>
+                  <textarea
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold outline-none focus:border-[#312783] h-24 text-slate-800"
                     placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème auditif...)"
                     value={contact.notes}
                     onChange={e => setContact({...contact, notes: e.target.value})}
                   />
                 </div>
 
-                <label className="flex items-center gap-3 cursor-pointer p-4 rounded-2xl border transition-colors" style={{ backgroundColor: 'rgba(0,159,227,0.06)', borderColor: 'rgba(0,159,227,0.2)' }}>
+                <label className="flex items-center gap-3 cursor-pointer p-4 rounded-[10px] border transition-colors" style={{ backgroundColor: 'rgba(0,159,227,0.06)', borderColor: 'rgba(0,159,227,0.2)' }}>
                   <input type="checkbox" className="w-5 h-5" style={{ accentColor: '#009FE3' }} checked={contact.isPassenger} onChange={e => setContact({...contact, isPassenger: e.target.checked})} />
-                  <span className="font-bold text-sm" style={{ color: '#312783' }}>Je suis aussi l'un des passagers (m'ajouter au vol)</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: '#312783' }}>Je suis aussi l'un des passagers (m'ajouter au vol)</span>
                 </label>
               </div>
 
               {/* SECTION 2 : PASSAGERS */}
               <div>
-                <h3 className="font-bold text-xl mb-6 flex items-center gap-3" style={{ color: '#312783' }}>
+                <h3 className="mb-6 flex items-center gap-3" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#312783' }}>
                   <span className="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: '#009FE3' }}>2</span>
                   Les passagers
                 </h3>
 
                 <div className="space-y-6">
                   {passengers.map((p, index) => (
-                    <div key={p.id} className="bg-white border-2 border-slate-100 rounded-3xl p-6 relative overflow-hidden group">
+                    <div key={p.id} className="bg-white border-2 border-slate-100 rounded-[10px] p-6 relative overflow-hidden group">
                       <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: '#009FE3' }}></div>
                       
                       <div className="flex flex-wrap items-center gap-3 mb-5">
-                        <h4 className="font-black text-lg text-slate-900">Passager {index + 1}</h4>
+                        <h4 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1D1D1B' }}>Passager {index + 1}</h4>
                         <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
                           {p.flightName} • {getDayName(p.date)} à {p.time}
                         </span>
                       </div>
 
                       <div className="mb-4">
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Prénom de la personne qui vole</label>
-                        <input 
-                          type="text" 
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold focus:border-[#312783] outline-none text-slate-800" 
+                        <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Prénom de la personne qui vole</label>
+                        <input
+                          type="text"
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800" 
                           placeholder="Prénom du passager" 
                           value={p.firstName}
                           onChange={e => {
@@ -1189,7 +1190,7 @@ export default function ReserverPage() {
                         />
                       </div>
 
-                      <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                      <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-[10px] border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
                         <input 
                           type="checkbox" 
                           className={`w-6 h-6 mt-0.5 ${p.weightChecked ? 'accent-emerald-500' : 'accent-rose-500'}`} 
@@ -1212,7 +1213,7 @@ export default function ReserverPage() {
 
                       {complementsList.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-slate-100">
-                          <p className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-3">Options disponibles (paiement sur place possible)</p>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '12px' }} className="ml-2">Options disponibles (paiement sur place possible)</p>
                           <div className="grid gap-3">
                             {complementsList.map((comp) => {
                               const isSelected = p.selectedComplements?.includes(comp.id) || false;
@@ -1238,7 +1239,7 @@ export default function ReserverPage() {
                                 <label 
                                   key={comp.id} 
                                   // On grise légèrement et on met un curseur "interdit" si c'est verrouillé
-                                  className={`flex items-start gap-3 p-4 rounded-2xl border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-slate-50' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100' : '')}`}
+                                  className={`flex items-start gap-3 p-4 rounded-[10px] border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-slate-50' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100' : '')}`}
                                   style={
                                     isLockedByVoucher ? { backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' } :
                                     isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}
@@ -1265,7 +1266,7 @@ export default function ReserverPage() {
                                   />
                                   <div className="flex-1 flex items-center gap-4">
                                     {comp.image_url && (
-                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-lg p-1 border flex items-center justify-center shadow-sm ${isLockedByVoucher ? 'border-sky-200' : 'border-slate-200'}`}>
+                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-[5px] p-1 border flex items-center justify-center shadow-sm ${isLockedByVoucher ? 'border-sky-200' : 'border-slate-200'}`}>
                                         <img src={comp.image_url} alt={comp.name} className="w-full h-full object-contain" />
                                       </div>
                                     )}
@@ -1316,11 +1317,11 @@ export default function ReserverPage() {
                   const [fId, dStr, tStr] = key.split('|');
                   const f = flights.find(fl => fl.id.toString() === fId);
                   return (
-                    <div key={key} className="bg-slate-50 rounded-xl pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
+                    <div key={key} className="bg-slate-50 rounded-[10px] pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
                       <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sky-500 text-sm">{qty}</span></span>
                       <div className="flex items-center gap-1 ml-2">
-                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-lg flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
-                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
+                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
+                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
                       </div>
                     </div>
                   )
@@ -1335,14 +1336,14 @@ export default function ReserverPage() {
                 {discountAmount > 0 && (
                   <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
                 )}
-                <p className="text-2xl font-black" style={{ color: '#009FE3' }}>{finalPrice.toFixed(2)} €</p>
+                <p className="text-2xl font-bold" style={{ color: '#009FE3' }}>{finalPrice.toFixed(2)} €</p>
               </div>
               
               {step === 3 ? (
                  <button 
                   onClick={handleSubmit}
                   disabled={!isFormValid || isCheckingOut}
-                  className={`flex-1 md:flex-none px-8 md:px-10 py-4 rounded-2xl font-black uppercase text-[11px] md:text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                  className={`flex-1 md:flex-none px-8 md:px-10 py-4 rounded-[5px] font-bold uppercase text-[11px] md:text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                 >
                   {isCheckingOut 
                     ? 'Validation...' 
@@ -1373,7 +1374,7 @@ export default function ReserverPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="info-flight-dialog-title"
-            className="bg-white rounded-[30px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
+            className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-in zoom-in-95"
             onClick={e => e.stopPropagation()}
           >
             
@@ -1397,7 +1398,7 @@ export default function ReserverPage() {
             {/* 🎯 3. Le contenu (Avec défilement interne activé via overflow-y-auto) */}
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar relative">
               
-              <div className="relative prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-100 overflow-hidden shadow-inner">
+              <div className="relative prose prose-sm max-w-none text-slate-600 whitespace-pre-wrap font-medium leading-relaxed bg-slate-50 p-6 md:p-8 rounded-[10px] border border-slate-100 overflow-hidden shadow-inner">
                 
                 {/* 🎯 4. Le filigrane ultra-léger (10% d'opacité) placé en arrière-plan du texte */}
                 {infoFlight.image_url && (
@@ -1419,7 +1420,7 @@ export default function ReserverPage() {
               
               <button
                 onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }}
-                className="mt-8 w-full text-white py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                className="mt-8 w-full text-white py-4 rounded-[5px] uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]" style={{ fontSize: '1.125rem', fontWeight: 700 }}
                 style={{ backgroundColor: '#312783' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
