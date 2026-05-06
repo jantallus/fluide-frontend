@@ -1354,8 +1354,7 @@ export default function ReserverPage() {
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 md:flex-none text-white px-10 py-4 rounded-[5px] transition-all"
-                  style={{ fontSize: '1.125rem', fontWeight: 700 }}
-                  style={{ backgroundColor: '#E6007E' }}
+                  style={{ fontSize: '1.125rem', fontWeight: 700, backgroundColor: '#E6007E' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
                 >
