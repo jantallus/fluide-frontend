@@ -10,6 +10,7 @@ export interface User {
   role: 'admin' | 'monitor' | 'permanent' | 'user';
   status?: string;
   is_active_monitor?: boolean;
+  google_sync_enabled?: boolean;
   phone?: string;
   color?: string;
   google_calendar_id?: string;

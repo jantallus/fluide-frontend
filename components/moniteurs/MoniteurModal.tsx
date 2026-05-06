@@ -6,6 +6,7 @@ import type { User, CurrentUser, Availability } from '@/lib/types';
 
 const EMPTY_USER = {
   first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true,
+  google_sync_enabled: false,
   available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '',
 };
 
@@ -29,6 +30,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
         password: '',
         role: userToEdit.role,
         is_active_monitor: userToEdit.is_active_monitor ?? true,
+        google_sync_enabled: userToEdit.google_sync_enabled ?? false,
         available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '',
       });
       apiFetch(`/api/users/${userToEdit.id}/availabilities`)
@@ -135,6 +137,21 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
 
             {availabilities.length === 0 && <p className="text-[10px] text-sky-400 italic text-center py-2">Aucune restriction (dispo 24h/24)</p>}
           </div>
+
+          {currentUser?.role === 'admin' && (
+            <label className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-indigo-200 transition-colors">
+              <input
+                type="checkbox"
+                className="w-5 h-5 accent-indigo-500"
+                checked={newUser.google_sync_enabled}
+                onChange={e => setNewUser({ ...newUser, google_sync_enabled: e.target.checked })}
+              />
+              <div>
+                <p className="text-xs font-black uppercase text-slate-700">Synchronisation Google Agenda</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Importe les créneaux depuis Google Calendar via le Apps Script</p>
+              </div>
+            </label>
+          )}
 
           <div>
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Accès & Rôle</label>
