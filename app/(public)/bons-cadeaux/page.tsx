@@ -329,9 +329,9 @@ export default function CadeauPage() {
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm font-bold mb-6">
-                      <span className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100" style={{ color: '#E6007E' }}>⏳ Valable {tpl.validity_months} mois</span>
-                      {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: '#E8F5FC', color: '#E6007E', border: '1px solid #B8DFF0' }}>💶 Avoir libre</span>}
+                    <div className="flex flex-wrap gap-x-5 gap-y-1 mb-6">
+                      <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>⏳ Valable {tpl.validity_months} mois</span>
+                      {tpl.flight_name ? <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>🎯 {tpl.flight_name}</span> : <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>💶 Avoir libre</span>}
                     </div>
                     <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1.5rem' }}>{tpl.description}</p>
                   </div>
