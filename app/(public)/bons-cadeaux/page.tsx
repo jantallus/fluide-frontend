@@ -338,8 +338,8 @@ export default function CadeauPage() {
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
-                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] text-white" style={{ fontSize: '1.125rem', fontWeight: 700 }}
-                      style={selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}}
+                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] text-white"
+                      style={{ fontSize: '1.125rem', fontWeight: 700, ...(selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}) }}
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
                     </button>
