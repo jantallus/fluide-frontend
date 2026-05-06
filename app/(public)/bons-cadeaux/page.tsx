@@ -247,7 +247,7 @@ export default function CadeauPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>💌</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Code & PDF immédiats</h4>
-                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Dès le paiement validé, vous recevrez par email un joli bon cadeau au format PDF contenant un code unique à offrir.
                   </p>
                 </div>
@@ -257,7 +257,7 @@ export default function CadeauPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📅</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Réservation facile</h4>
-                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Le bénéficiaire pourra utiliser son code cadeau directement sur notre site web ou par téléphone pour réserver la date de son vol.
                   </p>
                 </div>
@@ -267,7 +267,7 @@ export default function CadeauPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📮</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Envoi postal optionnel</h4>
-                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Envie de marquer le coup ? Vous pourrez choisir de faire envoyer une belle carte glacée par courrier lors de l'étape de paiement.
                   </p>
                 </div>
@@ -333,7 +333,7 @@ export default function CadeauPage() {
                       <span className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100" style={{ color: '#E6007E' }}>⏳ Valable {tpl.validity_months} mois</span>
                       {tpl.flight_name ? <span className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100">🎯 {tpl.flight_name}</span> : <span className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: '#E8F5FC', color: '#E6007E', border: '1px solid #B8DFF0' }}>💶 Avoir libre</span>}
                     </div>
-                    <p className="text-base leading-relaxed mb-6" style={{ color: '#1D1D1B' }}>{tpl.description}</p>
+                    <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1.5rem' }}>{tpl.description}</p>
                   </div>
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
