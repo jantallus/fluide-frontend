@@ -4,7 +4,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import type { GiftCardShopTemplate, Complement } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
-import { Clock, Wallet, MapPin } from 'lucide-react';
+import { Clock, Wallet, MapPin, Mail, CalendarDays, Package } from 'lucide-react';
 
 export default function CadeauPage() {
   const { toast } = useToast();
@@ -245,7 +245,7 @@ export default function CadeauPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>💌</div>
+                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><Mail size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Code & PDF immédiats</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -255,7 +255,7 @@ export default function CadeauPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📅</div>
+                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><CalendarDays size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Réservation facile</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -265,7 +265,7 @@ export default function CadeauPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📮</div>
+                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><Package size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Envoi postal optionnel</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -401,7 +401,7 @@ export default function CadeauPage() {
                 <div className="mb-8 p-6 rounded-[10px] transition-all" style={{ backgroundColor: '#E8F5FC', border: '2px solid #B8DFF0' }}>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" className="w-5 h-5 accent-[#009FE3]" checked={wantsShipping} onChange={e => setWantsShipping(e.target.checked)} />
-                    <span className="font-black md:text-lg" style={{ color: '#009FE3' }}>📮 Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
+                    <span className="font-black md:text-lg flex items-center gap-2" style={{ color: '#009FE3' }}><Package size={20} strokeWidth={1.5} />Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
                   </label>
                   
                   {wantsShipping && (
