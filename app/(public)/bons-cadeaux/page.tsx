@@ -245,7 +245,7 @@ export default function CadeauPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
-                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><Mail size={28} strokeWidth={1.5} /></div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Mail size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Code & PDF immédiats</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -255,7 +255,7 @@ export default function CadeauPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><CalendarDays size={28} strokeWidth={1.5} /></div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><CalendarDays size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Réservation facile</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
@@ -265,7 +265,7 @@ export default function CadeauPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-white p-3 rounded-lg shadow-sm flex items-center justify-center" style={{ border: '1px solid rgba(49,39,131,0.08)', color: '#312783' }}><Package size={28} strokeWidth={1.5} /></div>
+                <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Package size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Envoi postal optionnel</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
