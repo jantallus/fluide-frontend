@@ -101,7 +101,8 @@ export default function ReserverPage() {
     const params = new URLSearchParams(window.location.search);
     const volParam = params.get('vol');
     if (!volParam) return;
-    const match = flights.find(f => f.name.toLowerCase().includes(volParam.toLowerCase()));
+    const regex = new RegExp('\\b' + volParam + '\\b', 'i');
+    const match = flights.find(f => regex.test(f.name));
     if (!match) return;
     const s = String(match.season || 'ALL').toUpperCase().trim();
     if (s === 'WINTER' || s === 'HIVER') setActiveSeason('Hiver');
