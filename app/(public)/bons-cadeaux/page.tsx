@@ -475,8 +475,7 @@ export default function CadeauPage() {
               <button
                 onClick={(e) => { e.stopPropagation(); setInfoTemplate(null); }}
                 className="mt-8 w-full text-white py-4 transition-colors shadow-md shrink-0 active:scale-[0.98]"
-                style={{ borderRadius: '5px', fontWeight: 700, fontSize: '1.125rem' }}
-                style={{ backgroundColor: '#312783' }}
+                style={{ borderRadius: '5px', fontWeight: 700, fontSize: '1.125rem', backgroundColor: '#312783' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
               >
