@@ -23,7 +23,7 @@ import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
-import { Gift, Camera, Zap, Clock, Weight, ChevronLeft, ChevronRight, FileText, Mountain, Wind } from 'lucide-react';
+import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
 
 export default function ReserverPage() {
   const { toast } = useToast();
@@ -656,8 +656,8 @@ export default function ReserverPage() {
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className={`flex justify-center mb-12 sticky z-40 transition-all duration-300 ${isEmbed ? 'top-4' : 'top-20'}`}>
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}>☀️ été</button>
-                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}>❄️ hiver</button>
+                <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}><Sun size={16} strokeWidth={1.5} />été</button>
+                <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1rem', fontWeight: 700 } : { fontSize: '1rem', fontWeight: 700 }}><Snowflake size={16} strokeWidth={1.5} />hiver</button>
               </div>
             </div>
 
@@ -727,14 +727,15 @@ export default function ReserverPage() {
                 ))}
               </div>
             ) : filteredFlights.length === 0 ? (
-               <div className="text-center py-20 bg-white rounded-[10px] border border-slate-100"><span className="text-5xl block mb-4">🌬️</span><h3 className="text-xl font-bold" style={{ color: '#312783' }}>Aucun vol configuré pour cette saison</h3></div>
+               <div className="text-center py-20 bg-white rounded-[10px] border border-slate-100"><Wind size={48} strokeWidth={1} style={{ color: '#312783', margin: '0 auto 16px', display: 'block' }} /><h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#312783' }}>Aucun vol configuré pour cette saison</h3></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredFlights.map((flight) => {
-                  let displayedSeason = "🌍 Inclus dans toutes les saisons";
+                  let displayedSeason = "Inclus dans toutes les saisons";
+                  let SeasonIcon: React.ElementType = Globe;
                   const s = String(flight.season || 'ALL').toUpperCase().trim();
-                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') displayedSeason = "☀️ Uniquement sur la saison Été";
-                  if (s === 'WINTER' || s === 'HIVER') displayedSeason = "❄️ Uniquement sur la saison Hiver";
+                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') { displayedSeason = "Uniquement sur la saison Été"; SeasonIcon = Sun; }
+                  if (s === 'WINTER' || s === 'HIVER') { displayedSeason = "Uniquement sur la saison Hiver"; SeasonIcon = Snowflake; }
 
                   return (
                   <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
@@ -770,8 +771,8 @@ export default function ReserverPage() {
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
-                      <div className="text-[10px] font-bold text-slate-400 mb-4 bg-slate-50 border border-slate-100 inline-block px-3 py-1 rounded-lg">
-                        {displayedSeason}
+                      <div className="mb-4 bg-slate-50 border border-slate-100 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
+                        <SeasonIcon size={12} strokeWidth={1.5} />{displayedSeason}
                       </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -786,12 +787,12 @@ export default function ReserverPage() {
                               e.stopPropagation();
                               window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
                             }}
-                            className="cursor-pointer px-4 py-3 rounded-[5px] font-bold text-sm transition-all"
-                            style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E' }}
+                            className="cursor-pointer px-4 py-3 rounded-[5px] transition-all flex items-center gap-2"
+                            style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E', fontSize: '1rem', fontWeight: 700 }}
                             onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
                             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
                           >
-                            🎁 Offrir
+                            <Gift size={16} strokeWidth={1.5} />Offrir
                           </button>
                           );
                         })()}
@@ -836,14 +837,14 @@ export default function ReserverPage() {
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#312783' }}>▼</div>
                     </div>
                   </div>
-                  <p className="font-bold text-sm mt-3" style={{ color: '#009FE3' }}>{getMarketingInfo(selectedFlight.name)}</p>
+                  <p style={{ fontSize: '1rem', fontWeight: 700, color: '#009FE3', marginTop: '12px' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
                 <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[10px] border border-slate-200 shrink-0">
                   {displayDaysCount < 5 && (
                     <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-[5px] hover:bg-white shadow-sm font-bold text-slate-500 transition-colors">←</button>
                   )}
-                  <span className="text-xs font-bold text-slate-400 ml-2 hidden md:inline">
+                  <span className="ml-2 hidden md:inline" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
                     {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
                   </span>
                   <input 
@@ -1079,7 +1080,7 @@ export default function ReserverPage() {
                       </button>
                     </div>
                     {/* 🎯 On remplace le rouge par du violet et la croix par un "i" */}
-                    {voucherError && <p className="text-violet-600 font-bold text-sm mt-3 flex items-center gap-2"><span>ℹ️</span> {voucherError}</p>}
+                    {voucherError && <p className="flex items-center gap-2 mt-3" style={{ fontSize: '1rem', fontWeight: 700, color: '#7c3aed' }}>ℹ {voucherError}</p>}
                   </div>
                 )}
               </div>
@@ -1307,7 +1308,7 @@ export default function ReserverPage() {
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
-              <span className="font-bold text-lg block mb-2" style={{ color: '#312783' }}>
+              <span className="block mb-2" style={{ fontSize: '1.125rem', fontWeight: 700, color: '#312783' }}>
                 {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
               </span>
               
@@ -1331,7 +1332,7 @@ export default function ReserverPage() {
             
             <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
               <div className="text-right">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</p>
                 {/* 🎯 NOUVEAU : Si un bon est appliqué, on affiche l'ancien prix barré ! */}
                 {discountAmount > 0 && (
                   <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
@@ -1352,7 +1353,8 @@ export default function ReserverPage() {
               ) : (
                 <button
                   onClick={() => setStep(3)}
-                  className="flex-1 md:flex-none text-white px-10 py-4 rounded-[10px] font-bold text-sm transition-all"
+                  className="flex-1 md:flex-none text-white px-10 py-4 rounded-[5px] transition-all"
+                  style={{ fontSize: '1.125rem', fontWeight: 700 }}
                   style={{ backgroundColor: '#E6007E' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
