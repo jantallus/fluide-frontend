@@ -81,12 +81,12 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex items-center justify-center p-4">
-      <div className="max-w-xl w-full bg-white rounded-[40px] shadow-2xl p-10 text-center border border-slate-100">
-        
+      <div className="max-w-xl w-full bg-white rounded-[20px] p-10 text-center border border-slate-100" style={{ boxShadow: '0 4px 24px rgba(49,39,131,0.08)' }}>
+
         {/* ÉCRAN 1 : CHARGEMENT */}
         {status === 'loading' && (
           <div className="animate-in fade-in duration-500">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-violet-600 mx-auto mb-6"></div>
+            <div className="w-16 h-16 rounded-full border-4 border-slate-200 animate-spin mx-auto mb-6" style={{ borderTopColor: '#E6007E' }}></div>
             <h2 className="text-2xl font-black uppercase italic text-slate-900">Validation en cours...</h2>
             <p className="text-slate-500 mt-2 font-medium">Ne fermez pas cette page, nous accrochons vos suspentes !</p>
           </div>
@@ -96,13 +96,13 @@ function SuccessContent() {
         {status === 'success' && !isGiftCard && (
           <div className="animate-in zoom-in-95 duration-500">
             <span className="text-7xl mb-6 block animate-bounce">🪂</span>
-            <h1 className="text-4xl md:text-5xl font-black uppercase italic text-emerald-500 mb-4 tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-black uppercase italic mb-4 tracking-tight" style={{ color: '#E6007E' }}>
               Réservation Confirmée !
             </h1>
             <p className="text-lg text-slate-600 font-medium mb-8">
               Merci pour votre paiement. Vos créneaux sont officiellement réservés dans le planning de nos moniteurs. Vous allez recevoir un email de confirmation de Stripe très bientôt.
             </p>
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 inline-block text-left mb-8">
+            <div className="p-6 rounded-[10px] text-left mb-8" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
               <p className="font-bold text-slate-900 mb-2">📌 Prochaines étapes :</p>
               <ul className="text-sm text-slate-600 space-y-2">
                 <li>• Habillez-vous chaudement (même en été).</li>
@@ -110,10 +110,12 @@ function SuccessContent() {
                 <li>• Soyez sur place 15 min avant l'heure du vol.</li>
               </ul>
             </div>
-            <br/>
-            <button 
+            <button
               onClick={() => window.location.href = 'https://fluide-parapente.fr'}
-              className="bg-slate-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-violet-600 transition-colors shadow-lg shadow-slate-900/20"
+              className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors"
+              style={{ backgroundColor: '#E6007E' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
             >
               Retour à l'accueil
             </button>
@@ -124,31 +126,35 @@ function SuccessContent() {
         {status === 'success' && isGiftCard && (
           <div className="animate-in zoom-in-95 duration-500">
             <span className="text-7xl mb-6 block animate-bounce">🎁</span>
-            <h1 className="text-4xl md:text-5xl font-black uppercase italic text-amber-500 mb-4 tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-black uppercase italic mb-4 tracking-tight" style={{ color: '#E6007E' }}>
               Achat Réussi !
             </h1>
             <p className="text-lg text-slate-600 font-medium mb-8">
               Votre bon cadeau est prêt ! Vous pouvez noter ce code ou le transmettre directement à son heureux bénéficiaire.
             </p>
-            
-            <div className="bg-amber-50 p-8 rounded-3xl border-2 border-dashed border-amber-300 inline-block text-center mb-8 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 to-orange-500"></div>
-              <p className="font-bold text-amber-700 uppercase text-xs tracking-widest mb-2">Code d'activation unique</p>
+
+            <div className="p-8 rounded-[10px] text-center mb-8 relative overflow-hidden" style={{ backgroundColor: 'rgba(230,0,126,0.04)', border: '2px dashed rgba(230,0,126,0.3)' }}>
+              <div className="absolute top-0 left-0 w-full h-1.5" style={{ background: 'linear-gradient(to right, #E6007E, #312783)' }}></div>
+              <p className="font-black uppercase text-xs tracking-widest mb-3" style={{ color: '#E6007E' }}>Code d'activation unique</p>
               <p className="text-4xl font-black text-slate-900 tracking-wider font-mono">{giftCode}</p>
             </div>
-            
-            <br/>
-            {/* Bouton pour télécharger le PDF avec la méthode silencieuse */}
-            <button 
+
+            <button
               onClick={handleDownloadPDF}
-              className="bg-blue-600 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-colors shadow-lg mb-4 w-full"
+              className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors mb-4 w-full"
+              style={{ backgroundColor: '#312783' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
             >
               📥 Télécharger le Bon (PDF)
             </button>
             <br/>
-            <button 
+            <button
               onClick={() => window.location.href = 'https://fluide-parapente.fr'}
-              className="text-slate-400 font-bold uppercase text-xs hover:text-slate-900 transition-colors"
+              className="font-bold uppercase text-xs transition-colors"
+              style={{ color: '#94a3b8' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#312783')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
             >
               Retour à l'accueil
             </button>
@@ -159,20 +165,26 @@ function SuccessContent() {
         {status === 'error' && (
           <div className="animate-in zoom-in-95 duration-500">
             <span className="text-7xl mb-6 block">❌</span>
-            <h1 className="text-4xl font-black uppercase italic text-rose-500 mb-4">Oops !</h1>
+            <h1 className="text-4xl font-black uppercase italic mb-4" style={{ color: '#E6007E' }}>Oops !</h1>
             <p className="text-slate-600 font-medium mb-8">
               Le paiement semble avoir été annulé ou une erreur est survenue lors de l'enregistrement. Veuillez réessayer ou nous contacter par téléphone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => window.location.href = 'https://fluide-parapente.fr'}
-                className="bg-rose-500 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-900 transition-colors"
+                className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors"
+                style={{ backgroundColor: '#E6007E' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
               >
                 Réessayer une réservation
               </button>
               <button
                 onClick={() => window.location.href = '/bons-cadeaux'}
-                className="bg-slate-100 text-slate-700 px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+                className="px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors"
+                style={{ backgroundColor: 'rgba(49,39,131,0.06)', color: '#312783' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.12)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)')}
               >
                 Retour à la boutique
               </button>
