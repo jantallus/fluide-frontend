@@ -649,7 +649,7 @@ export default function ReserverPage() {
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
         .flight-card:hover .btn-reserver { background-color: #312783 !important; }
-        @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 0 !important; justify-content: center; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 200% !important; background-position: 60% 25% !important; } }
+        @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 0 !important; justify-content: center; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 200% !important; background-position: 60% 10% !important; } }
       `}} />
 
       {!isDirect && <section className="hero-booking" style={{
