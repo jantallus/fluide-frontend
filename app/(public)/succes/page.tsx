@@ -2,6 +2,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
+import { CheckCircle2, Gift, XCircle, Download } from 'lucide-react';
 
 function SuccessContent() {
   const { toast } = useToast();
@@ -95,7 +96,9 @@ function SuccessContent() {
         {/* ÉCRAN 2A : SUCCÈS VOL CLASSIQUE */}
         {status === 'success' && !isGiftCard && (
           <div className="animate-in zoom-in-95 duration-500">
-            <span className="text-7xl mb-6 block animate-bounce">🪂</span>
+            <div className="flex justify-center mb-6">
+              <CheckCircle2 size={72} strokeWidth={1.5} style={{ color: '#E6007E' }} />
+            </div>
             <h1 className="text-4xl md:text-5xl font-black uppercase italic mb-4 tracking-tight" style={{ color: '#E6007E' }}>
               Réservation Confirmée !
             </h1>
@@ -125,7 +128,9 @@ function SuccessContent() {
         {/* ÉCRAN 2B : SUCCÈS BON CADEAU */}
         {status === 'success' && isGiftCard && (
           <div className="animate-in zoom-in-95 duration-500">
-            <span className="text-7xl mb-6 block animate-bounce">🎁</span>
+            <div className="flex justify-center mb-6">
+              <Gift size={72} strokeWidth={1.5} style={{ color: '#E6007E' }} />
+            </div>
             <h1 className="text-4xl md:text-5xl font-black uppercase italic mb-4 tracking-tight" style={{ color: '#E6007E' }}>
               Achat Réussi !
             </h1>
@@ -141,12 +146,12 @@ function SuccessContent() {
 
             <button
               onClick={handleDownloadPDF}
-              className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors mb-4 w-full"
+              className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors mb-4 w-full inline-flex items-center justify-center gap-2"
               style={{ backgroundColor: '#312783' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
             >
-              📥 Télécharger le Bon (PDF)
+              <Download size={16} strokeWidth={2} /> Télécharger le Bon (PDF)
             </button>
             <br/>
             <button
@@ -164,7 +169,9 @@ function SuccessContent() {
         {/* ÉCRAN 3 : ERREUR */}
         {status === 'error' && (
           <div className="animate-in zoom-in-95 duration-500">
-            <span className="text-7xl mb-6 block">❌</span>
+            <div className="flex justify-center mb-6">
+              <XCircle size={72} strokeWidth={1.5} style={{ color: '#E6007E' }} />
+            </div>
             <h1 className="text-4xl font-black uppercase italic mb-4" style={{ color: '#E6007E' }}>Oops !</h1>
             <p className="text-slate-600 font-medium mb-8">
               Le paiement semble avoir été annulé ou une erreur est survenue lors de l'enregistrement. Veuillez réessayer ou nous contacter par téléphone.
