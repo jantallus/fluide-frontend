@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { FlightType, GiftCard, PublicSlot } from '@/lib/types';
 import { useBookingData } from '@/hooks/useBookingData';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
@@ -27,9 +28,13 @@ import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowfl
 
 export default function ReserverPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const volParam = searchParams.get('vol');
+  const isDirect = !!volParam;
+
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
-  const hasAnimatedIntro = useRef(false); // 🎯 NOUVEAU : Mémoire pour l'intro
+  const hasAnimatedIntro = useRef(false);
   const [isEmbed, setIsEmbed] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) {
@@ -37,14 +42,8 @@ export default function ReserverPage() {
     }
   }, []);
 
-  // Initialisés dès le premier rendu depuis l'URL pour éviter le flash step 1 → step 2
-  const [isDirect, setIsDirect] = useState(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('vol')
-  );
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
-  const [step, setStep] = useState<number>(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('vol') ? 2 : 1
-  );
+  const [step, setStep] = useState<number>(isDirect ? 2 : 1);
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
@@ -100,12 +99,9 @@ export default function ReserverPage() {
   // Disponibilités : se recharge automatiquement quand gridStartDate ou selectedFlight change
   const { rawSlots, isSearchingTimes } = useAvailabilities(gridStartDate, selectedFlight, displayDaysCount);
 
-  // Mode direct : ?vol=beauregard pré-sélectionne le vol et saute à l'étape 2
+  // Mode direct : sélectionne le vol correspondant à ?vol= dès que l'API répond
   useEffect(() => {
-    if (flights.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const volParam = params.get('vol');
-    if (!volParam) return;
+    if (!volParam || flights.length === 0) return;
     const regex = new RegExp('\\b' + volParam + '\\b', 'i');
     const match = flights.find(f => regex.test(f.name));
     if (!match) return;
@@ -114,7 +110,6 @@ export default function ReserverPage() {
     else setActiveSeason('Standard');
     setSelectedFlight(match);
     setStep(2);
-    setIsDirect(true);
   }, [flights]);
 
   const [cart, setCart] = useState<Record<string, number>>({});
