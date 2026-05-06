@@ -980,7 +980,7 @@ export default function ReserverPage() {
                                             disabled={qtyInCart === 0}
                                             className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center transition-colors ${qtyInCart === 0 ? 'text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm'}`}
                                           >-</button>
-                                          <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className="font-bold text-lg w-8 text-center" style={isSelected ? { color: '#312783' } : { color: '#334155' }}>{qtyInCart}</span>
+                                          <span aria-live="polite" aria-label={`${qtyInCart} passager${qtyInCart > 1 ? 's' : ''} sélectionné${qtyInCart > 1 ? 's' : ''}`} className="font-bold text-lg w-8 text-center" style={isSelected ? { color: '#312783' } : { color: '#1D1D1B' }}>{qtyInCart}</span>
                                           <button
                                             aria-label={`Ajouter un passager – ${getDayName(dateStr)} à ${timeStr}`}
                                             onClick={() => handleAdd(dateStr, timeStr)}

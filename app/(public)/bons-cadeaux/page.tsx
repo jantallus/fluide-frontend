@@ -301,7 +301,7 @@ export default function CadeauPage() {
               ))}
             </div>
           ) : templates.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 0', backgroundColor: 'white', borderRadius: '20px' }}><p style={{ color: '#64748b', fontWeight: 900 }}>Aucune offre n'est disponible.</p></div>
+            <div style={{ textAlign: 'center', padding: '50px 0', backgroundColor: 'white', borderRadius: '20px' }}><p style={{ color: '#1D1D1B', fontWeight: 900 }}>Aucune offre n'est disponible.</p></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
@@ -354,15 +354,15 @@ export default function CadeauPage() {
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                 <div>
-                  <label htmlFor="gc-buyer-name" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', marginBottom: '8px' }}>Qui offre ? (acheteur)</label>
+                  <label htmlFor="gc-buyer-name" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Qui offre ? (acheteur)</label>
                   <input id="gc-buyer-name" type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={inputStyle} />
                 </div>
                 <div>
-                  <label htmlFor="gc-buyer-email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', marginBottom: '8px' }}>Votre email (réception du bon)</label>
+                  <label htmlFor="gc-buyer-email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Votre email (réception du bon)</label>
                   <input id="gc-buyer-email" type="email" placeholder="jean@email.com" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} style={inputStyle} />
                 </div>
                 <div>
-                  <label htmlFor="gc-buyer-phone" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#64748b', marginBottom: '8px' }}>Votre téléphone</label>
+                  <label htmlFor="gc-buyer-phone" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Votre téléphone</label>
                   <input id="gc-buyer-phone" type="tel" placeholder="06 12 34 56 78" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} style={inputStyle} />
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function CadeauPage() {
                 <div className="mb-8 p-6 rounded-[10px] transition-all" style={{ backgroundColor: '#E8F5FC', border: '2px solid #B8DFF0' }}>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" className="w-5 h-5 accent-[#009FE3]" checked={wantsShipping} onChange={e => setWantsShipping(e.target.checked)} />
-                    <span className="font-black md:text-lg" style={{ color: '#006A99' }}>📮 Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
+                    <span className="font-black md:text-lg" style={{ color: '#009FE3' }}>📮 Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
                   </label>
                   
                   {wantsShipping && (
