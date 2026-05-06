@@ -667,7 +667,7 @@ export default function ReserverPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Bon Cadeau</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
                   </p>
@@ -677,7 +677,7 @@ export default function ReserverPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Photos & Vidéos</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Option accessible plus tard dans le processus de réservation ! Pas complètement décidé ? Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
@@ -687,7 +687,7 @@ export default function ReserverPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Sensations Fortes</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
                   </p>

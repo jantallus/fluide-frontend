@@ -246,7 +246,7 @@ export default function CadeauPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>💌</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Code & PDF immédiats</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Code & PDF immédiats</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Dès le paiement validé, vous recevrez par email un joli bon cadeau au format PDF contenant un code unique à offrir.
                   </p>
@@ -256,7 +256,7 @@ export default function CadeauPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📅</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Réservation facile</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Réservation facile</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Le bénéficiaire pourra utiliser son code cadeau directement sur notre site web ou par téléphone pour réserver la date de son vol.
                   </p>
@@ -266,7 +266,7 @@ export default function CadeauPage() {
               <div className="flex items-start gap-4">
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📮</div>
                 <div>
-                  <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Envoi postal optionnel</h4>
+                  <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Envoi postal optionnel</h4>
                   <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
                     Envie de marquer le coup ? Vous pourrez choisir de faire envoyer une belle carte glacée par courrier lors de l'étape de paiement.
                   </p>
