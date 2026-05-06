@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://www.fluide-parapente.fr",
+            value: "frame-ancestors 'self' https://www.fluide-parapente.fr http://localhost:* http://127.0.0.1:*",
           },
         ],
       },
