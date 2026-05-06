@@ -638,11 +638,13 @@ export default function ReserverPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-clip" style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
+    <div className={`min-h-screen overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes pageReveal { 0% { opacity: 0; } 100% { opacity: 1; } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .direct-mode-reveal { animation: pageReveal 0.25s ease 0.15s both; }
         .hero-booking { background: transparent !important; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
