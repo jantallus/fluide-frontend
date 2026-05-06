@@ -188,7 +188,7 @@ export default function CadeauPage() {
         body, *:not(.font-georgia) { font-family: 'Aeonik', sans-serif !important; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-fill-mode: forwards; }
-        .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 18px 45px; border-radius: 10px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.1rem; cursor: pointer; }
+        .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 18px 45px; border-radius: 10px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.125rem; cursor: pointer; }
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; }
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
         .hero-cadeau { background: transparent !important; }
@@ -338,7 +338,7 @@ export default function CadeauPage() {
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
-                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] font-bold text-base text-white"
+                      className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] text-white" style={{ fontSize: '1.125rem', fontWeight: 700 }}
                       style={selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}}
                     >
                       {selectedTemplate?.id === tpl.id ? '✓ Choisi' : 'Choisir ce bon'}
