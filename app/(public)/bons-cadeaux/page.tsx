@@ -183,10 +183,6 @@ export default function CadeauPage() {
   return (
     <main style={{ width: '100%', overflowX: 'hidden', position: 'relative' }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Light.woff2') format('woff2'), url('/fonts/Aeonik-Light.woff') format('woff'); font-weight: 300; font-style: normal; font-display: block; }
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Regular.woff2') format('woff2'), url('/fonts/Aeonik-Regular.woff') format('woff'); font-weight: 400; font-style: normal; font-display: block; }
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Bold.woff2') format('woff2'), url('/fonts/Aeonik-Bold.woff') format('woff'); font-weight: 700; font-style: normal; font-display: block; }
-        body, *:not(.font-georgia) { font-family: 'Aeonik', sans-serif !important; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-fill-mode: forwards; }
         .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 12px 17px; border-radius: 5px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.125rem; cursor: pointer; }

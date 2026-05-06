@@ -58,8 +58,8 @@
   --fluide-gris:      #F3F3F3;
 }
 
-body {
-  font-family: 'Aeonik', sans-serif;
+body, *:not(.font-georgia) {
+  font-family: 'Aeonik', sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

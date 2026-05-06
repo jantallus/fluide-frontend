@@ -615,10 +615,6 @@ export default function ReserverPage() {
     <div className="min-h-screen overflow-clip" style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Light.woff2') format('woff2'), url('/fonts/Aeonik-Light.woff') format('woff'); font-weight: 300; font-style: normal; font-display: block; }
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Regular.woff2') format('woff2'), url('/fonts/Aeonik-Regular.woff') format('woff'); font-weight: 400; font-style: normal; font-display: block; }
-        @font-face { font-family: 'Aeonik'; src: url('/fonts/Aeonik-Bold.woff2') format('woff2'), url('/fonts/Aeonik-Bold.woff') format('woff'); font-weight: 700; font-style: normal; font-display: block; }
-        body, *:not(.font-georgia) { font-family: 'Aeonik', sans-serif !important; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .hero-booking { background: transparent !important; }
