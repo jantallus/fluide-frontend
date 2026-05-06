@@ -641,7 +641,7 @@ export default function ReserverPage() {
         {/* Couche 4 : assombrissement bas */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 40%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
-          <h1 style={{ color: 'white', fontSize: 'clamp(2.72rem, 6.72vw, 4.35rem)', fontWeight: 700, margin: 0, lineHeight: 1.0, textTransform: 'none' }}>
+          <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 7vw, 4.375rem)', fontWeight: 700, margin: 0, lineHeight: 1.0, textTransform: 'none' }}>
             Réserver votre vol et<br />baptême de parapente<br />à La Clusaz
           </h1>
         </div>
@@ -668,7 +668,7 @@ export default function ReserverPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎁</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Bon Cadeau</h4>
-                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
                     Vous avez un code cadeau, un code promo ? Inutile de le chercher maintenant, vous pourrez le saisir à la dernière étape, juste avant le paiement.
                   </p>
                 </div>
@@ -678,7 +678,7 @@ export default function ReserverPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>📸</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Photos & Vidéos</h4>
-                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
                     Option accessible plus tard dans le processus de réservation ! Pas complètement décidé ? Vous pourrez demander l'option directement à votre moniteur le jour J.
                   </p>
                 </div>
@@ -688,7 +688,7 @@ export default function ReserverPage() {
                 <div className="text-3xl bg-white p-3 rounded-lg shadow-sm" style={{ border: '1px solid rgba(49,39,131,0.08)' }}>🎢</div>
                 <div>
                   <h4 className="font-bold text-base mb-1" style={{ color: '#312783' }}>Sensations Fortes</h4>
-                  <p className="text-sm leading-relaxed" style={{ color: '#1D1D1B' }}>
+                  <p className="text-base leading-relaxed" style={{ color: '#1D1D1B' }}>
                     Envie d'acrobaties et de piloter un peu ? C'est inclus et 100% gratuit. Il suffira de le demander une fois en l'air !
                   </p>
                 </div>
@@ -794,7 +794,7 @@ export default function ReserverPage() {
                           </button>
                           );
                         })()}
-                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-sm">
+                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[10px] font-bold text-base" onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
                           Réserver <span className="hidden md:inline">ce vol</span>
                         </button>
                       </div>
@@ -818,7 +818,7 @@ export default function ReserverPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-3xl font-bold leading-tight" style={{ color: '#312783' }}>Réservation :</h2>
+                    <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: '#312783' }}>Réservation :</h2>
                     <div className="relative">
                       <select 
                         className="text-2xl md:text-3xl font-black bg-opacity-5 border-2 rounded-2xl py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#312783', backgroundColor: 'rgba(49,39,131,0.05)', borderColor: 'rgba(49,39,131,0.15)' }}
@@ -1024,7 +1024,7 @@ export default function ReserverPage() {
               
               <div className="text-center mb-10 pb-10 border-b border-slate-100">
                 <span className="text-6xl mb-6 block animate-bounce">📝</span>
-                <h2 className="text-3xl font-bold leading-tight" style={{ color: '#312783' }}>Détails des passagers</h2>
+                <h2 className="text-4xl md:text-5xl font-bold leading-tight" style={{ color: '#312783' }}>Détails des passagers</h2>
                 <p className="text-slate-500 font-medium mt-2">Dernière étape avant de voler !</p>
               </div>
 
