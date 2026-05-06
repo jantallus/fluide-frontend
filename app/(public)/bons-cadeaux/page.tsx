@@ -191,7 +191,7 @@ export default function CadeauPage() {
         .hero-cadeau { background: transparent !important; }
         .card-template .btn-choisir { background-color: #E6007E; transition: background-color 0.3s ease; }
         .card-template:hover .btn-choisir { background-color: #312783; }
-        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.9rem !important; } }
+        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.9rem !important; } .cadeau-grad-bg { display: none !important; } .cadeau-heatmap { mix-blend-mode: normal !important; opacity: 1 !important; } }
       `}} />
 
       <section className="hero-cadeau" style={{
@@ -200,9 +200,9 @@ export default function CadeauPage() {
           overflow: 'hidden',
         }}>
         {/* Couche 1 : dégradé CSS lisse (remplace bg-fond.png) */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #4D5EBE 0%, #B8C2EE 100%)', zIndex: 1 }} />
+        <div className="cadeau-grad-bg" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #4D5EBE 0%, #B8C2EE 100%)', zIndex: 1 }} />
         {/* Couche 2 : bg-heatmap */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25)' }} />
+        <div className="cadeau-heatmap" style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/bg-heatmap.svg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 2, mixBlendMode: 'multiply', opacity: 0.82, filter: 'saturate(1.25)' }} />
         {/* Couche 3 : très léger voile fuchsia + assombrissement en bas */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(230, 0, 126, 0.13) 0%, transparent 45%)', zIndex: 3 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, transparent 40%)', zIndex: 4 }} />
