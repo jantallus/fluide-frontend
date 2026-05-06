@@ -30,7 +30,6 @@ export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
   const hasAnimatedIntro = useRef(false); // 🎯 NOUVEAU : Mémoire pour l'intro
-  // 🎯 NOUVEAU : On mémorise si on est sur un autre site
   const [isEmbed, setIsEmbed] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) {
@@ -38,6 +37,7 @@ export default function ReserverPage() {
     }
   }, []);
 
+  const [isDirect, setIsDirect] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
   const [step, setStep] = useState<number>(1);
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
@@ -94,6 +94,22 @@ export default function ReserverPage() {
 
   // Disponibilités : se recharge automatiquement quand gridStartDate ou selectedFlight change
   const { rawSlots, isSearchingTimes } = useAvailabilities(gridStartDate, selectedFlight, displayDaysCount);
+
+  // Mode direct : ?vol=beauregard pré-sélectionne le vol et saute à l'étape 2
+  useEffect(() => {
+    if (flights.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const volParam = params.get('vol');
+    if (!volParam) return;
+    const match = flights.find(f => f.name.toLowerCase().includes(volParam.toLowerCase()));
+    if (!match) return;
+    const s = String(match.season || 'ALL').toUpperCase().trim();
+    if (s === 'WINTER' || s === 'HIVER') setActiveSeason('Hiver');
+    else setActiveSeason('Standard');
+    setSelectedFlight(match);
+    setStep(2);
+    setIsDirect(true);
+  }, [flights]);
 
   const [cart, setCart] = useState<Record<string, number>>({});
   
@@ -624,7 +640,7 @@ export default function ReserverPage() {
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 8vw !important; } }
       `}} />
 
-      <section className="hero-booking" style={{
+      {!isDirect && <section className="hero-booking" style={{
           position: 'relative', width: '100%', height: '64.75vh',
           display: 'flex', alignItems: 'center', paddingLeft: '10.6vw', paddingTop: '10.2vh',
           overflow: 'hidden',
@@ -642,9 +658,9 @@ export default function ReserverPage() {
             Réserver votre vol et<br />baptême de parapente<br />à La Clusaz
           </h1>
         </div>
-      </section>
+      </section>}
 
-      <div className="relative z-20 max-w-7xl mx-auto px-4 pt-12 pb-48">
+      <div className={`relative z-20 max-w-7xl mx-auto px-4 pb-48 ${isDirect ? 'pt-6' : 'pt-12'}`}>
         
         {/* ÉTAPE 1 : CHOIX DU VOL */}
         {step === 1 && (
@@ -806,10 +822,12 @@ export default function ReserverPage() {
 
         {/* ÉTAPE 2 : LA GRILLE DES JOURS */}
         {step === 2 && selectedFlight && (
-          <div id="etape-2-container" className="animate-in fade-in slide-in-from-right-8 duration-500 mt-16 md:mt-24">
-            <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
-              ← Retour au catalogue
-            </button>
+          <div id="etape-2-container" className={`animate-in fade-in slide-in-from-right-8 duration-500 ${isDirect ? 'mt-0' : 'mt-16 md:mt-24'}`}>
+            {!isDirect && (
+              <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+                ← Retour au catalogue
+              </button>
+            )}
 
             <div className="bg-white rounded-[10px] p-6 md:p-10 border border-slate-200">
               
