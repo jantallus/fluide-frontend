@@ -4,7 +4,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import type { GiftCardShopTemplate, Complement } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
-import { Clock, Wallet, MapPin, Mail, CalendarDays, Package } from 'lucide-react';
+import { Clock, Wallet, MapPin, Mail, CalendarDays, Package, Sparkles } from 'lucide-react';
 
 export default function CadeauPage() {
   const { toast } = useToast();
@@ -359,22 +359,22 @@ export default function CadeauPage() {
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                 <div>
-                  <label htmlFor="gc-buyer-name" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Qui offre ? (acheteur)</label>
+                  <label htmlFor="gc-buyer-name" style={{ display: 'block', fontSize: '1rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '8px' }}>Qui offre ? (acheteur)</label>
                   <input id="gc-buyer-name" type="text" placeholder="Ex: Jean Dupont" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} style={inputStyle} />
                 </div>
                 <div>
-                  <label htmlFor="gc-buyer-email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Votre email (réception du bon)</label>
+                  <label htmlFor="gc-buyer-email" style={{ display: 'block', fontSize: '1rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '8px' }}>Votre email (réception du bon)</label>
                   <input id="gc-buyer-email" type="email" placeholder="jean@email.com" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} style={inputStyle} />
                 </div>
                 <div>
-                  <label htmlFor="gc-buyer-phone" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 900, color: '#1D1D1B', marginBottom: '8px' }}>Votre téléphone</label>
+                  <label htmlFor="gc-buyer-phone" style={{ display: 'block', fontSize: '1rem', fontWeight: 700, color: '#1D1D1B', marginBottom: '8px' }}>Votre téléphone</label>
                   <input id="gc-buyer-phone" type="tel" placeholder="06 12 34 56 78" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} style={inputStyle} />
                 </div>
               </div>
               {/* 🎯 NOUVEAU : Les Options additionnelles */}
               {complements.length > 0 && (
                 <div className="mb-8 p-6 bg-slate-50 border-2 border-slate-100 rounded-[10px] transition-all">
-                  <h4 className="font-black text-slate-700 mb-4 text-sm">✨ Ajouter des options au bon cadeau</h4>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#312783', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}><Sparkles size={16} strokeWidth={1.5} />Ajouter des options au bon cadeau</h4>
                   <div className="flex flex-col gap-3">
                     {complements.map(comp => {
                       const isSelected = selectedComplements.some(c => c.id === comp.id);
@@ -385,10 +385,10 @@ export default function CadeauPage() {
                             else setSelectedComplements(selectedComplements.filter(c => c.id !== comp.id));
                           }} />
                           <div className="flex-1">
-                            <span className="font-bold text-slate-800 text-sm md:text-base block mb-0.5">{comp.name}</span>
-                            {comp.description && <span className="text-xs font-medium text-slate-500">{comp.description}</span>}
+                            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '2px' }}>{comp.name}</span>
+                            {comp.description && <span style={{ fontSize: '0.875rem', fontWeight: 400, color: '#64748b' }}>{comp.description}</span>}
                           </div>
-                          <span className="font-black text-lg" style={{ color: '#312783' }}>+{comp.price_cents / 100}€</span>
+                          <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#312783' }}>+{comp.price_cents / 100}€</span>
                         </label>
                       )
                     })}
@@ -401,7 +401,7 @@ export default function CadeauPage() {
                 <div className="mb-8 p-6 rounded-[10px] transition-all" style={{ backgroundColor: '#E8F5FC', border: '2px solid #B8DFF0' }}>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" className="w-5 h-5 accent-[#009FE3]" checked={wantsShipping} onChange={e => setWantsShipping(e.target.checked)} />
-                    <span className="font-black md:text-lg flex items-center gap-2" style={{ color: '#009FE3' }}><Package size={20} strokeWidth={1.5} />Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
+                    <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#009FE3', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><Package size={20} strokeWidth={1.5} />Recevoir une carte imprimée par courrier (+{shippingSettings.price}€)</span>
                   </label>
                   
                   {wantsShipping && (
