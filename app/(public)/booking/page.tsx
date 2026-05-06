@@ -1420,8 +1420,8 @@ export default function ReserverPage() {
               
               <button
                 onClick={(e) => { e.stopPropagation(); setInfoFlight(null); }}
-                className="mt-8 w-full text-white py-4 rounded-[5px] uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]" style={{ fontSize: '1.125rem', fontWeight: 700 }}
-                style={{ backgroundColor: '#312783' }}
+                className="mt-8 w-full text-white py-4 rounded-[5px] uppercase tracking-widest transition-colors shadow-md shrink-0 active:scale-[0.98]"
+                style={{ fontSize: '1.125rem', fontWeight: 700, backgroundColor: '#312783' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#009FE3')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
               >
