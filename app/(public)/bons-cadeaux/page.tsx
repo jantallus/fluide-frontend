@@ -314,7 +314,7 @@ export default function CadeauPage() {
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
-                      <h3 className="text-3xl font-black" style={{ color: '#312783' }}>{tpl.title}</h3>
+                      <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#312783' }}>{tpl.title}</h3>
                       {tpl.show_popup && tpl.popup_content && (
                         <button
                           onClick={(e) => { 
@@ -337,7 +337,7 @@ export default function CadeauPage() {
                     <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1.5rem' }}>{tpl.description}</p>
                   </div>
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
-                    <div className="text-4xl font-black" style={{ color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
                       className="btn-choisir cursor-pointer px-6 py-4 rounded-[10px] text-white"
                       style={{ fontSize: '1.125rem', fontWeight: 700, ...(selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}) }}
