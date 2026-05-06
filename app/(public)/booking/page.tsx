@@ -819,7 +819,7 @@ export default function ReserverPage() {
                     <h2 className="font-bold leading-tight" style={{ color: '#312783', fontSize: '3rem', fontWeight: 700 }}>Réservation :</h2>
                     <div className="relative">
                       <select
-                        className="bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none shadow-sm" style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: 'rgba(230,0,126,0.2)', fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700 }}
+                        className="bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none" style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: 'rgba(230,0,126,0.2)', fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700 }}
                         value={selectedFlight.id}
                         onChange={(e) => {
                           const newFlight = flights.find(f => f.id.toString() === e.target.value);
@@ -967,7 +967,7 @@ export default function ReserverPage() {
                                       <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`} style={isSelected ? { backgroundColor: 'rgba(230,0,126,0.06)', borderColor: '#E6007E' } : {}}>
                                         <div className="flex justify-between items-center mb-4">
                                           <span className={`font-bold text-lg ${isSelected ? '' : 'text-slate-700'}`} style={isSelected ? { color: '#312783' } : {}}>{timeStr}</span>
-                                          <span className={`text-[10px] font-bold px-2 py-1 rounded shadow-sm border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
+                                          <span className={`text-[10px] font-bold px-2 py-1 rounded border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
                                         </div>
