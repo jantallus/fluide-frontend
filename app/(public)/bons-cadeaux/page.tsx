@@ -4,6 +4,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import type { GiftCardShopTemplate, Complement } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Clock, Wallet, MapPin } from 'lucide-react';
 
 export default function CadeauPage() {
   const { toast } = useToast();
@@ -330,8 +331,8 @@ export default function CadeauPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-1 mb-6">
-                      <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>⏳ Valable {tpl.validity_months} mois</span>
-                      {tpl.flight_name ? <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>🎯 {tpl.flight_name}</span> : <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700 }}>💶 Avoir libre</span>}
+                      <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Clock size={18} strokeWidth={1.5} />Valable {tpl.validity_months} mois</span>
+                      {tpl.flight_name ? <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><MapPin size={18} strokeWidth={1.5} />{tpl.flight_name}</span> : <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Wallet size={18} strokeWidth={1.5} />Avoir libre</span>}
                     </div>
                     <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1.5rem' }}>{tpl.description}</p>
                   </div>
