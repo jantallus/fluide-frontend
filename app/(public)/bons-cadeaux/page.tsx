@@ -191,7 +191,7 @@ export default function CadeauPage() {
         .hero-cadeau { background: transparent !important; }
         .card-template .btn-choisir { background-color: #E6007E; transition: background-color 0.3s ease; }
         .card-template:hover .btn-choisir { background-color: #312783; }
-        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } }
+        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.5rem !important; } }
       `}} />
 
       <section className="hero-cadeau" style={{
