@@ -649,7 +649,6 @@ export default function ReserverPage() {
         .hero-booking { background: transparent !important; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
-        .flight-card:hover .btn-reserver { background-color: #312783 !important; }
         @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 0 !important; justify-content: center; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 200% !important; background-position: 60% 7% !important; } .hero-grad-1 { background: radial-gradient(ellipse at 95% 90%, rgba(20,22,140,0.22) 0%, rgba(20,22,140,0.78) 38%) !important; opacity: 0.4 !important; } .hero-grad-2 { background: linear-gradient(to right, rgba(15,15,110,0.65) 0%, transparent 60%) !important; opacity: 1 !important; } .hero-grad-3 { background: linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 22%) !important; opacity: 0.45 !important; } }
       `}} />
 
@@ -793,7 +792,7 @@ export default function ReserverPage() {
                               setInfoFlight(flight); 
                             }}
                             // 🎯 Bouton rendu transparent (bg-transparent) avec un contour subtil qui s'allume au survol
-                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200 cursor-pointer" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
                             title="Plus d'informations sur ce vol"
                           >
                             <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
