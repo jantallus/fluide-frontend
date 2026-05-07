@@ -306,7 +306,7 @@ export default function CadeauPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }} className={`card-template bg-white rounded-[10px] p-8 border cursor-pointer flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
+                <div key={tpl.id} className={`card-template bg-white rounded-[10px] p-8 border flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
@@ -335,6 +335,7 @@ export default function CadeauPage() {
                   <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between">
                     <div style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{tpl.price_cents / 100}€</div>
                     <button
+                      onClick={() => { setSelectedTemplate(tpl); setSelectedComplements([]); setUrlFlightName(null); scrollToForm(); }}
                       className="btn-choisir cursor-pointer px-6 py-4 rounded-[5px] text-white"
                       style={{ fontSize: '1.125rem', fontWeight: 700, ...(selectedTemplate?.id === tpl.id ? { backgroundColor: '#312783' } : {}) }}
                     >

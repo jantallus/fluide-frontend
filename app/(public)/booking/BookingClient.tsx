@@ -771,7 +771,7 @@ export default function ReserverPage() {
                   if (s === 'WINTER' || s === 'HIVER') { displayedSeason = "Uniquement sur la saison Hiver"; SeasonIcon = Snowflake; }
 
                   return (
-                  <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 cursor-pointer flex flex-col justify-between" onClick={() => { setSelectedFlight(flight); setStep(2); }}>
+                  <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
@@ -840,7 +840,7 @@ export default function ReserverPage() {
                           );
                         })()}
                       </div>
-                      <button className="btn-reserver cursor-pointer text-white w-full py-3 md:py-4 rounded-[5px] font-bold flex items-center justify-center" style={{ fontSize: '1.125rem' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
+                      <button onClick={() => { setSelectedFlight(flight); setStep(2); }} className="btn-reserver cursor-pointer text-white w-full py-3 md:py-4 rounded-[5px] font-bold flex items-center justify-center" style={{ fontSize: '1.125rem' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
                         Réserver ce vol
                       </button>
                     </div>
