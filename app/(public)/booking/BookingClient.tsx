@@ -818,31 +818,31 @@ export default function ReserverPage() {
                         <SeasonIcon size={12} strokeWidth={1.5} />{displayedSeason}
                       </div>
                     </div>
-                    <div className="mt-4 pt-6 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="shrink-0" style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
-                      <div className="flex flex-col gap-2 items-stretch">
+                    <div className="mt-4 pt-6 border-t border-slate-100">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="shrink-0" style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                         {(() => {
                           const matchedTpl = giftTemplates.find(t => t.price_cents === flight.price_cents);
                           if (!matchedTpl) return null;
                           return (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
-                            }}
-                            className="cursor-pointer px-4 py-3 rounded-[5px] transition-all flex items-center gap-2"
-                            style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E', fontSize: '1rem', fontWeight: 700 }}
-                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
-                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
-                          >
-                            <Gift size={16} strokeWidth={1.5} />Offrir
-                          </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/bons-cadeaux?templateId=${matchedTpl.id}&flightName=${encodeURIComponent(flight.name)}`;
+                              }}
+                              className="cursor-pointer px-4 py-3 rounded-[5px] transition-all flex items-center justify-center gap-2"
+                              style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E', fontSize: '1rem', fontWeight: 700 }}
+                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
+                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
+                            >
+                              <Gift size={16} strokeWidth={1.5} />Offrir
+                            </button>
                           );
                         })()}
-                        <button className="btn-reserver cursor-pointer text-white px-4 py-3 md:px-6 md:py-4 rounded-[5px] font-bold" style={{ fontSize: '1.125rem' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
-                          Réserver <span className="hidden md:inline">ce vol</span>
-                        </button>
                       </div>
+                      <button className="btn-reserver cursor-pointer text-white w-full py-3 md:py-4 rounded-[5px] font-bold flex items-center justify-center" style={{ fontSize: '1.125rem' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}>
+                        Réserver ce vol
+                      </button>
                     </div>
                   </div>
                 )})}
