@@ -786,17 +786,18 @@ export default function ReserverPage() {
                         
                         {/* On n'affiche le bouton 'i' que si vous l'avez activé et rempli dans le backoffice ! */}
                         {flight.show_popup && flight.popup_content && (
-                          <button
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setInfoFlight(flight); 
-                            }}
-                            // 🎯 Bouton rendu transparent (bg-transparent) avec un contour subtil qui s'allume au survol
-                            className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200 cursor-pointer" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
-                            title="Plus d'informations sur ce vol"
-                          >
-                            <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
-                          </button>
+                          <span className="relative group">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInfoFlight(flight);
+                              }}
+                              className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200 cursor-pointer" onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                            >
+                              <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
+                            </button>
+                            <span className="pointer-events-none absolute bottom-full right-0 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Plus d'informations sur ce vol</span>
+                          </span>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-x-5 gap-y-1 mb-6">
