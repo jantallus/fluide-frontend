@@ -102,6 +102,9 @@ export interface FlightType {
   allow_multi_slots?: boolean;
   restricted_start_time?: string;
   restricted_end_time?: string;
+  activity_ski?: boolean;
+  activity_snowboard?: boolean;
+  activity_pedestrian?: boolean;
 }
 
 export interface Complement {
