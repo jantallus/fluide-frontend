@@ -223,7 +223,7 @@ export default function ReserverPage() {
         if (appliedVoucher && appliedVoucher.type === 'gift_card' && photoOption && flight) {
            // On vérifie que le bon est soit générique, soit lié à ce vol précis
            const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === nP.flightId;
-           
+
            if (isSameFlight) {
              const vVal = Number(appliedVoucher.price_paid_cents) / 100;
              const fPri = flight.price_cents / 100;
@@ -234,6 +234,11 @@ export default function ReserverPage() {
                currentComplements.push(photoOption.id);
              }
            }
+        }
+
+        // GoPro incluse dans le vol : auto-sélection
+        if (flight?.activity_gopro && photoOption && !currentComplements.includes(photoOption.id)) {
+          currentComplements.push(photoOption.id);
         }
 
         return { 
@@ -1294,7 +1299,7 @@ export default function ReserverPage() {
                               // 🎯 NOUVEAU : On vérifie si cette option est couverte par le bon cadeau
                               let isLockedByVoucher = false;
                               const currentFlight = flights.find(f => f.id.toString() === p.flightId);
-                              
+
                               if (appliedVoucher && appliedVoucher.type === 'gift_card' && currentFlight) {
                                 const isSameFlight = !appliedVoucher.flight_type_id || appliedVoucher.flight_type_id.toString() === p.flightId;
                                 if (isSameFlight) {
@@ -1308,27 +1313,35 @@ export default function ReserverPage() {
                                 }
                               }
 
+                              // GoPro incluse dans le vol : verrouillage
+                              const isLockedByActivity = !!(currentFlight?.activity_gopro && (
+                                comp.name.toLowerCase().includes('photo') ||
+                                comp.name.toLowerCase().includes('vidéo') ||
+                                comp.name.toLowerCase().includes('video') ||
+                                comp.name.toLowerCase().includes('gopro')
+                              ));
+                              const isLocked = isLockedByVoucher || isLockedByActivity;
+
                               return (
-                                <label 
-                                  key={comp.id} 
-                                  // On grise légèrement et on met un curseur "interdit" si c'est verrouillé
-                                  className={`flex items-start gap-3 p-4 rounded-[10px] border transition-colors ${isLockedByVoucher ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'} ${isSelected && !isLockedByVoucher ? 'bg-slate-50' : (!isLockedByVoucher ? 'bg-slate-50 border-slate-100' : '')}`}
+                                <label
+                                  key={comp.id}
+                                  className={`flex items-start gap-3 p-4 rounded-[10px] border transition-colors ${isLocked ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'} ${isSelected && !isLocked ? 'bg-slate-50' : (!isLocked ? 'bg-slate-50 border-slate-100' : '')}`}
                                   style={
-                                    isLockedByVoucher ? { backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' } :
+                                    isLocked ? { backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' } :
                                     isSelected ? { borderColor: '#312783', backgroundColor: 'rgba(49,39,131,0.05)' } : {}
                                   }
                                 >
-                                  <input 
-                                    type="checkbox" 
-                                    className={`w-6 h-6 mt-0.5 accent-sky-500 ${isLockedByVoucher ? 'cursor-not-allowed' : 'cursor-pointer'}`} 
+                                  <input
+                                    type="checkbox"
+                                    className={`w-6 h-6 mt-0.5 accent-sky-500 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                     checked={isSelected}
-                                    disabled={isLockedByVoucher} // 🔒 Blocage physique du clic
+                                    disabled={isLocked}
                                     onChange={(e) => {
-                                      if (isLockedByVoucher) return; // 🔒 Double sécurité
+                                      if (isLocked) return;
                                       const newP = [...passengers];
                                       newP[index] = { ...newP[index] };
                                       const selected = newP[index].selectedComplements || [];
-                                      
+
                                       if (e.target.checked) {
                                         newP[index].selectedComplements = [...selected, comp.id];
                                       } else {
@@ -1339,16 +1352,15 @@ export default function ReserverPage() {
                                   />
                                   <div className="flex-1 flex items-center gap-4">
                                     {comp.image_url && (
-                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-[5px] p-1 border flex items-center justify-center shadow-sm ${isLockedByVoucher ? 'border-sky-200' : 'border-slate-200'}`}>
+                                      <div className={`w-10 h-10 shrink-0 bg-white rounded-[5px] p-1 border flex items-center justify-center shadow-sm ${isLocked ? 'border-sky-200' : 'border-slate-200'}`}>
                                         <img src={comp.image_url} alt={comp.name} className="w-full h-full object-contain" />
                                       </div>
                                     )}
-                                    
+
                                     <div>
                                       <span className={`font-bold block ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
-                                        {/* 🎯 NOUVEAU : On remplace le prix par un texte rassurant ! */}
-                                        {comp.name} <span className={isLockedByVoucher ? 'text-emerald-600' : ''}>
-                                          {isLockedByVoucher ? '(Inclus dans le Bon)' : `(+${comp.price_cents / 100}€)`}
+                                        {comp.name} <span className={isLocked ? 'text-emerald-600' : ''}>
+                                          {isLockedByActivity ? '(Inclus dans le vol)' : isLockedByVoucher ? '(Inclus dans le Bon)' : `(+${comp.price_cents / 100}€)`}
                                         </span>
                                       </span>
                                       {comp.description && (
