@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { SkiIcon, SnowboardIcon, PedestrianIcon } from '@/components/icons/ActivityIcons';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 import type { FlightType, SlotDefinition } from '@/lib/types';
@@ -197,16 +198,17 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
             <p className="text-[10px] font-black text-slate-400 uppercase mb-3">Activités compatibles (pictos sur la carte)</p>
             <div className="flex flex-col gap-2">
               {([
-                { key: 'activity_ski',        label: 'Ski',        emoji: '🎿' },
-                { key: 'activity_snowboard',  label: 'Snowboard',  emoji: '🏂' },
-                { key: 'activity_pedestrian', label: 'Piéton',     emoji: '🚶' },
-              ] as const).map(({ key, label, emoji }) => (
+                { key: 'activity_ski',        label: 'Ski',        Icon: SkiIcon },
+                { key: 'activity_snowboard',  label: 'Snowboard',  Icon: SnowboardIcon },
+                { key: 'activity_pedestrian', label: 'Piéton',     Icon: PedestrianIcon },
+              ] as const).map(({ key, label, Icon }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded"
                     checked={formData[key]}
                     onChange={e => set({ [key]: e.target.checked })}
                   />
-                  <span className="font-bold text-slate-700 text-sm">{emoji} {label}</span>
+                  <Icon size={20} className="text-slate-600" />
+                  <span className="font-bold text-slate-700 text-sm">{label}</span>
                 </label>
               ))}
             </div>
