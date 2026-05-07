@@ -803,6 +803,9 @@ export default function ReserverPage() {
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
+                      {flight.description && (
+                        <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1rem' }}>{flight.description}</p>
+                      )}
                       <div className="mb-4 bg-slate-50 border border-slate-100 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
                         <SeasonIcon size={12} strokeWidth={1.5} />{displayedSeason}
                       </div>

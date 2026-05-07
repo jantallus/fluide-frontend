@@ -6,6 +6,7 @@ import type { FlightType, SlotDefinition } from '@/lib/types';
 
 const EMPTY_FORM = {
   name: '',
+  description: '',
   duration_minutes: 60,
   price_cents: 10000,
   restricted_start_time: '',
@@ -39,6 +40,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
     if (flightToEdit) {
       setFormData({
         name: flightToEdit.name,
+        description: flightToEdit.description || '',
         duration_minutes: flightToEdit.duration_minutes ?? 60,
         price_cents: flightToEdit.price_cents,
         restricted_start_time: flightToEdit.restricted_start_time || '',
@@ -114,6 +116,11 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
 
         <div className="space-y-4">
           <input type="text" placeholder="Nom du vol (ex: Grand Vol)" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-sky-300 text-slate-800" value={formData.name} onChange={e => set({ name: e.target.value })} />
+
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Description (texte affiché sur la carte client)</label>
+            <textarea placeholder="Ex: Un vol de 20 minutes au-dessus de La Clusaz avec vue sur les Aravis..." className="w-full border-2 border-slate-100 rounded-2xl p-4 font-medium text-sm h-24 outline-none focus:border-sky-300 text-slate-700 mt-1 resize-none" value={formData.description} onChange={e => set({ description: e.target.value })} />
+          </div>
 
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Image du vol (Catalogue Client)</label>
