@@ -792,7 +792,7 @@ export default function ReserverPage() {
                                 e.stopPropagation();
                                 setInfoFlight(flight);
                               }}
-                              className="w-8 h-8 shrink-0 rounded-full bg-transparent flex items-center justify-center transition-all border cursor-pointer" style={{ color: '#312783', borderColor: '#312783' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; }}
+                              className="w-8 h-8 shrink-0 rounded-full bg-transparent flex items-center justify-center transition-all border cursor-pointer" style={{ color: '#009FE3', borderColor: '#009FE3' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,159,227,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; }}
                             >
                               <span className="font-georgia font-serif italic font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                             </button>
