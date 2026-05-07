@@ -190,7 +190,7 @@ export default function CadeauPage() {
         .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
         .hero-cadeau { background: transparent !important; }
         .card-template .btn-choisir { background-color: #E6007E; transition: background-color 0.3s ease; }
-        .card-template:hover .btn-choisir { background-color: #312783; }
+        .card-template .btn-choisir:hover { background-color: #312783; }
         @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.9rem !important; } .cadeau-grad-bg { display: none !important; } .cadeau-heatmap { mix-blend-mode: normal !important; opacity: 1 !important; } }
       `}} />
 
@@ -317,7 +317,7 @@ export default function CadeauPage() {
                             e.stopPropagation(); 
                             setInfoTemplate(tpl); 
                           }}
-                          className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200"
+                          className="w-8 h-8 shrink-0 rounded-full bg-transparent text-slate-400 flex items-center justify-center transition-all border border-slate-200 cursor-pointer"
                           title="Plus d'informations sur ce bon"
                           onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; e.currentTarget.style.color = '#312783'; }}
                           onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
