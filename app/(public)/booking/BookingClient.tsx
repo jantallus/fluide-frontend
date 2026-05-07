@@ -800,38 +800,38 @@ export default function ReserverPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-6">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3">
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
-                        {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children) && (
-                          <span style={{ color: '#E6007E', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                            {flight.activity_ski && (
-                              <span className="relative group cursor-default">
-                                <SkiIcon size={22} />
-                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux skieurs</span>
-                              </span>
-                            )}
-                            {flight.activity_snowboard && (
-                              <span className="relative group cursor-default">
-                                <SnowboardIcon size={22} />
-                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux snowboardeurs</span>
-                              </span>
-                            )}
-                            {flight.activity_pedestrian && (
-                              <span className="relative group cursor-default">
-                                <PedestrianIcon size={22} />
-                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux piétons</span>
-                              </span>
-                            )}
-                            {flight.activity_children && (
-                              <span className="relative group cursor-default">
-                                <ChildrenIcon size={22} />
-                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Pour les enfants et les poids légers</span>
-                              </span>
-                            )}
-                          </span>
-                        )}
                       </div>
+                      {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children) && (
+                        <div className="flex items-center gap-3 mb-6" style={{ color: '#E6007E' }}>
+                          {flight.activity_ski && (
+                            <span className="relative group cursor-default">
+                              <SkiIcon size={22} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux skieurs</span>
+                            </span>
+                          )}
+                          {flight.activity_snowboard && (
+                            <span className="relative group cursor-default">
+                              <SnowboardIcon size={22} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux snowboardeurs</span>
+                            </span>
+                          )}
+                          {flight.activity_pedestrian && (
+                            <span className="relative group cursor-default">
+                              <PedestrianIcon size={22} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Accessible aux piétons</span>
+                            </span>
+                          )}
+                          {flight.activity_children && (
+                            <span className="relative group cursor-default">
+                              <ChildrenIcon size={22} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Pour les enfants et les poids légers</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {flight.description && (
                         <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1rem' }}>{flight.description}</p>
                       )}
