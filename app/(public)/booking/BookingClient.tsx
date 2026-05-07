@@ -831,7 +831,7 @@ export default function ReserverPage() {
                               }}
                               className="cursor-pointer px-4 py-3 rounded-[5px] transition-all flex items-center justify-center gap-2"
                               style={{ backgroundColor: 'rgba(230,0,126,0.1)', color: '#E6007E', fontSize: '1rem', fontWeight: 700 }}
-                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E6007E'; e.currentTarget.style.color = 'white'; }}
+                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#312783'; e.currentTarget.style.color = 'white'; }}
                               onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(230,0,126,0.1)'; e.currentTarget.style.color = '#E6007E'; }}
                             >
                               <Gift size={16} strokeWidth={1.5} />Offrir
