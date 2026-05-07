@@ -106,6 +106,7 @@ export interface FlightType {
   activity_snowboard?: boolean;
   activity_pedestrian?: boolean;
   activity_children?: boolean;
+  activity_gopro?: boolean;
 }
 
 export interface Complement {

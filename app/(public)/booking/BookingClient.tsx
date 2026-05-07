@@ -25,7 +25,7 @@ import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } fr
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
-import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon } from '@/components/icons/ActivityIcons';
+import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
 export default function ReserverPage() {
   const { toast } = useToast();
@@ -804,7 +804,7 @@ export default function ReserverPage() {
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
-                      {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children) && (
+                      {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children || flight.activity_gopro) && (
                         <div className="flex items-center gap-3 mb-6" style={{ color: '#E6007E' }}>
                           {flight.activity_ski && (
                             <span className="relative group cursor-default">
@@ -828,6 +828,12 @@ export default function ReserverPage() {
                             <span className="relative group cursor-default">
                               <ChildrenIcon size={22} />
                               <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Pour les enfants et les poids légers</span>
+                            </span>
+                          )}
+                          {flight.activity_gopro && (
+                            <span className="relative group cursor-default">
+                              <GoproIcon size={22} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Photos-vidéos comprises</span>
                             </span>
                           )}
                         </div>

@@ -1,3 +1,14 @@
+// GoPro camera icon — fill silhouette (32×32 source)
+export function GoproIcon({ size = 22, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" className={className}>
+      <path d="M29,23V16.22A2.9817,2.9817,0,0,0,30,14V7a3.0033,3.0033,0,0,0-3-3H20a2.9817,2.9817,0,0,0-2.22,1H6A3.0033,3.0033,0,0,0,3,8V23a3.0033,3.0033,0,0,0,3,3H26A3.0033,3.0033,0,0,0,29,23ZM19,7a1.0006,1.0006,0,0,1,1-1h7a1.0006,1.0006,0,0,1,1,1v7a1.0006,1.0006,0,0,1-1,1H20a1.0006,1.0006,0,0,1-1-1ZM5,23V8A1.0006,1.0006,0,0,1,6,7H17v7a3.0033,3.0033,0,0,0,3,3h7v6a1.0006,1.0006,0,0,1-1,1H6A1.0006,1.0006,0,0,1,5,23Z"/>
+      <path d="M23.5,14A3.5,3.5,0,1,0,20,10.5,3.5042,3.5042,0,0,0,23.5,14Zm0-5A1.5,1.5,0,1,1,22,10.5,1.5017,1.5017,0,0,1,23.5,9Z"/>
+      <path d="M14,8H7A1,1,0,0,0,6,9v6a1,1,0,0,0,1,1h7a1,1,0,0,0,1-1V9A1,1,0,0,0,14,8Zm-1,6H8V10h5Z"/>
+    </svg>
+  );
+}
+
 // Children icon — fill silhouette (512×512 source)
 export function ChildrenIcon({ size = 22, className = "" }: { size?: number; className?: string }) {
   return (

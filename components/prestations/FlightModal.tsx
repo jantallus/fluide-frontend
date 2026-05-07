@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon } from '@/components/icons/ActivityIcons';
+import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 import type { FlightType, SlotDefinition } from '@/lib/types';
@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   activity_snowboard: false,
   activity_pedestrian: false,
   activity_children: false,
+  activity_gopro: false,
 };
 
 interface Props {
@@ -64,6 +65,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
         activity_snowboard: flightToEdit.activity_snowboard || false,
         activity_pedestrian: flightToEdit.activity_pedestrian || false,
         activity_children: flightToEdit.activity_children || false,
+        activity_gopro: flightToEdit.activity_gopro || false,
       });
     } else {
       setFormData({ ...EMPTY_FORM });
@@ -204,6 +206,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
                 { key: 'activity_snowboard',  label: 'Snowboard',  Icon: SnowboardIcon },
                 { key: 'activity_pedestrian', label: 'Piéton',     Icon: PedestrianIcon },
                 { key: 'activity_children',   label: 'Enfants',    Icon: ChildrenIcon },
+                { key: 'activity_gopro',      label: 'GoPro',      Icon: GoproIcon },
               ] as const).map(({ key, label, Icon }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded"
