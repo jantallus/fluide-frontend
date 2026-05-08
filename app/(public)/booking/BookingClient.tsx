@@ -811,6 +811,14 @@ export default function ReserverPage() {
                       </div>
                       {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children || flight.activity_gopro || seasonLabel) && (
                         <div className="flex flex-wrap items-center gap-3 mb-6" style={{ color: '#E6007E' }}>
+                          {SeasonPictoIcon && (
+                            <span className="relative group cursor-default">
+                              <SeasonPictoIcon size={22} strokeWidth={1.5} />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-24 text-center rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>
+                                {isWinter ? 'Hiver uniquement' : 'Printemps, été, automne'}
+                              </span>
+                            </span>
+                          )}
                           {flight.activity_ski && (
                             <span className="relative group cursor-default">
                               <SkiIcon size={22} />
@@ -839,12 +847,6 @@ export default function ReserverPage() {
                             <span className="relative group cursor-default">
                               <GoproIcon size={22} />
                               <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-24 text-center rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Photos-vidéos comprises</span>
-                            </span>
-                          )}
-                          {seasonLabel && SeasonPictoIcon && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.875rem', fontWeight: 700 }}>
-                              <SeasonPictoIcon size={18} strokeWidth={1.5} />
-                              {seasonLabel}
                             </span>
                           )}
                         </div>
