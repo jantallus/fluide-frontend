@@ -768,11 +768,11 @@ export default function ReserverPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredFlights.map((flight) => {
-                  let displayedSeason = "Inclus dans toutes les saisons";
-                  let SeasonIcon: React.ElementType = Globe;
                   const s = String(flight.season || 'ALL').toUpperCase().trim();
-                  if (s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ' || s === 'STANDARD') { displayedSeason = "Uniquement sur la saison Été"; SeasonIcon = Sun; }
-                  if (s === 'WINTER' || s === 'HIVER') { displayedSeason = "Uniquement sur la saison Hiver"; SeasonIcon = Snowflake; }
+                  const isWinter = s === 'WINTER' || s === 'HIVER';
+                  const isSummer = s === 'SUMMER' || s === 'ETE' || s === 'ÉTÉ';
+                  const seasonLabel = isWinter ? 'Hiver uniquement' : isSummer ? 'Été uniquement' : null;
+                  const SeasonPictoIcon: React.ElementType | null = isWinter ? Snowflake : isSummer ? Sun : null;
 
                   return (
                   <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
@@ -809,8 +809,8 @@ export default function ReserverPage() {
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
-                      {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children || flight.activity_gopro) && (
-                        <div className="flex items-center gap-3 mb-6" style={{ color: '#E6007E' }}>
+                      {(flight.activity_ski || flight.activity_snowboard || flight.activity_pedestrian || flight.activity_children || flight.activity_gopro || seasonLabel) && (
+                        <div className="flex flex-wrap items-center gap-3 mb-6" style={{ color: '#E6007E' }}>
                           {flight.activity_ski && (
                             <span className="relative group cursor-default">
                               <SkiIcon size={22} />
@@ -841,14 +841,17 @@ export default function ReserverPage() {
                               <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-24 text-center rounded px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100" style={{ backgroundColor: '#312783' }}>Photos-vidéos comprises</span>
                             </span>
                           )}
+                          {seasonLabel && SeasonPictoIcon && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.875rem', fontWeight: 700 }}>
+                              <SeasonPictoIcon size={18} strokeWidth={1.5} />
+                              {seasonLabel}
+                            </span>
+                          )}
                         </div>
                       )}
                       {flight.description && (
                         <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1rem' }}>{flight.description}</p>
                       )}
-                      <div className="mb-4 bg-slate-50 border border-slate-100 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
-                        <SeasonIcon size={12} strokeWidth={1.5} />{displayedSeason}
-                      </div>
                     </div>
                     <div className="mt-4 pt-6 border-t border-slate-100">
                       <div className="flex items-center justify-between gap-2 mb-3">
