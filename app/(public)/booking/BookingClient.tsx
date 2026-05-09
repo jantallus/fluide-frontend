@@ -852,10 +852,10 @@ export default function ReserverPage() {
                         </div>
                       )}
                       {flight.description && (
-                        <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '1rem' }}>{flight.description}</p>
+                        <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625, marginBottom: '0.25rem' }}>{flight.description}</p>
                       )}
                     </div>
-                    <div className="mt-4 pt-6 border-t border-slate-100">
+                    <div className="mt-2 pt-3 border-t border-slate-100">
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="shrink-0" style={{ fontSize: '2rem', fontWeight: 700, color: '#E6007E' }}>{flight.price_cents ? flight.price_cents / 100 : 0}€</div>
                         {(() => {
