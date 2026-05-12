@@ -1,10 +1,10 @@
-'use server';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Mountain, Clock, Weight, MapPin, Award, Wind } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
+import OtherFlightsSection from './OtherFlightsSection';
 import { VOL_PAGES, type VolHighlight } from '../config';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -142,6 +142,9 @@ export default async function VolPage({ params }: Props) {
           <BookingClient volOverride={config.volParam} />
         </Suspense>
       </div>
+
+      {/* ── Autres vols ── */}
+      <OtherFlightsSection currentVolParam={config.volParam} />
 
     </div>
   );
