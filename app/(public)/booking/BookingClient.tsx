@@ -27,10 +27,10 @@ import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
-export default function ReserverPage() {
+export default function ReserverPage({ volOverride }: { volOverride?: string } = {}) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const volParam = searchParams.get('vol');
+  const volParam = volOverride ?? searchParams.get('vol');
   const isDirect = !!volParam;
 
   const headerScrollRef = useRef<HTMLDivElement>(null);
