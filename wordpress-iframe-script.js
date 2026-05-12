@@ -11,7 +11,10 @@
   var HEADER_HEIGHT = 90; // hauteur du bandeau WordPress sticky (px)
 
   function findIframe() {
-    return document.querySelector('iframe[src*="reservation.fluide-parapente.fr"]');
+    return (
+      document.querySelector('iframe[src*="reservation.fluide-parapente.fr"]') ||
+      document.querySelector('iframe[data-lazy-src*="reservation.fluide-parapente.fr"]')
+    );
   }
 
   // 1. Écoute les messages de l'iframe

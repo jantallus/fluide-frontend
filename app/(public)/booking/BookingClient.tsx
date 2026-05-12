@@ -58,13 +58,15 @@ export default function ReserverPage() {
   // Fake sticky dates + panier flottant : repositionnement JS via scroll WordPress
   useEffect(() => {
     if (!isEmbed) return;
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type !== 'fluide-scroll') return;
-      const { scrollY, iframeTop, headerHeight, viewportHeight } = e.data as {
-        scrollY: number; iframeTop: number; headerHeight: number; viewportHeight: number;
-      };
+    let rafId: number | null = null;
+    let latest: { scrollY: number; iframeTop: number; headerHeight: number; viewportHeight: number } | null = null;
 
-      // Dates bar : fake sticky
+    const applyPositions = () => {
+      rafId = null;
+      if (!latest) return;
+      const { scrollY, iframeTop, headerHeight, viewportHeight } = latest;
+
+      // Dates bar : fake sticky via transform (composited — pas de reflow)
       if (datesBarRef.current) {
         if (datesBarNaturalTopRef.current === null) {
           let top = 0;
@@ -73,24 +75,33 @@ export default function ReserverPage() {
           datesBarNaturalTopRef.current = top;
         }
         const targetPos = scrollY - iframeTop + headerHeight;
-        if (targetPos > datesBarNaturalTopRef.current) {
-          datesBarRef.current.style.transform = `translateY(${targetPos - datesBarNaturalTopRef.current}px)`;
-        } else {
-          datesBarRef.current.style.transform = '';
-        }
+        const offset = targetPos - datesBarNaturalTopRef.current;
+        datesBarRef.current.style.transform = offset > 0
+          ? `translate3d(0,${offset}px,0)`
+          : '';
       }
 
-      // Panier flottant : ancré au bas du viewport visible
+      // Panier flottant : translate3d depuis top:0 (composited — pas de reflow)
       if (cartBarRef.current) {
         const visibleBottom = scrollY + viewportHeight - iframeTop;
         const cartHeight = cartBarRef.current.offsetHeight;
-        const maxTop = document.documentElement.scrollHeight - cartHeight;
-        const targetTop = Math.min(Math.max(0, visibleBottom - cartHeight), maxTop);
-        cartBarRef.current.style.top = targetTop + 'px';
+        const maxY = document.documentElement.scrollHeight - cartHeight;
+        const y = Math.min(Math.max(0, visibleBottom - cartHeight), maxY);
+        cartBarRef.current.style.transform = `translate3d(0,${y}px,0)`;
       }
     };
+
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'fluide-scroll') return;
+      latest = e.data as typeof latest;
+      if (rafId === null) rafId = requestAnimationFrame(applyPositions);
+    };
+
     window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    return () => {
+      window.removeEventListener('message', handler);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [isEmbed]);
 
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
@@ -1015,7 +1026,7 @@ export default function ReserverPage() {
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
+                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
@@ -1448,7 +1459,7 @@ export default function ReserverPage() {
 
       {/* --- LE PANIER FLOTTANT --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
-        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full`}>
+        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full`} style={isEmbed ? { top: 0, willChange: 'transform' } : undefined}>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
