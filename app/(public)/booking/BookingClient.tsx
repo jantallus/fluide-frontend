@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { FlightType, GiftCard, PublicSlot } from '@/lib/types';
 import { useBookingData } from '@/hooks/useBookingData';
@@ -55,16 +55,19 @@ export default function ReserverPage() {
     return () => ro.disconnect();
   }, [isEmbed]);
 
+  // Dernier scroll reçu — partagé entre le handler et le useEffect panier
+  const lastScrollData = useRef<{ scrollY: number; iframeTop: number; headerHeight: number; viewportHeight: number } | null>(null);
+
   // Fake sticky dates + panier flottant : repositionnement JS via scroll WordPress
   useEffect(() => {
     if (!isEmbed) return;
     let rafId: number | null = null;
-    let latest: { scrollY: number; iframeTop: number; headerHeight: number; viewportHeight: number } | null = null;
 
     const applyPositions = () => {
       rafId = null;
-      if (!latest) return;
-      const { scrollY, iframeTop, headerHeight, viewportHeight } = latest;
+      const data = lastScrollData.current;
+      if (!data) return;
+      const { scrollY, iframeTop, headerHeight, viewportHeight } = data;
 
       // Dates bar : fake sticky via transform (composited — pas de reflow)
       if (datesBarRef.current) {
@@ -93,7 +96,7 @@ export default function ReserverPage() {
 
     const handler = (e: MessageEvent) => {
       if (e.data?.type !== 'fluide-scroll') return;
-      latest = e.data as typeof latest;
+      lastScrollData.current = e.data;
       if (rafId === null) rafId = requestAnimationFrame(applyPositions);
     };
 
@@ -581,6 +584,21 @@ export default function ReserverPage() {
   useEffect(() => {
     if (step === 3 && totalItems === 0) setStep(1);
   }, [totalItems, step]);
+
+  // Repositionne le panier avant le paint quand il apparaît (useLayoutEffect = avant le paint)
+  useLayoutEffect(() => {
+    if (!isEmbed || totalItems === 0 || !cartBarRef.current) return;
+    if (!lastScrollData.current) {
+      // Pas encore de données scroll : demande au parent WordPress
+      window.parent.postMessage({ type: 'fluide-request-scroll' }, '*');
+      return;
+    }
+    const { scrollY, iframeTop, viewportHeight } = lastScrollData.current;
+    const cartHeight = cartBarRef.current.offsetHeight;
+    const maxY = document.documentElement.scrollHeight - cartHeight;
+    const y = Math.min(Math.max(0, scrollY + viewportHeight - iframeTop - cartHeight), maxY);
+    cartBarRef.current.style.transform = `translate3d(0,${y}px,0)`;
+  }, [isEmbed, totalItems]);
 
   // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (21 JOURS)
   const weekDays = Array.from({ length: 21 }).map((_, i) => {

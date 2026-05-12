@@ -22,9 +22,15 @@
     var iframe = findIframe();
     if (!iframe || !iframe.contentWindow) return;
 
-    // Auto-resize
+    // Auto-resize + envoi immédiat du scroll pour que l'iframe ait les données dès le chargement
     if (e.data && e.data.type === 'fluide-resize' && typeof e.data.height === 'number') {
       iframe.style.height = e.data.height + 'px';
+      sendScroll();
+    }
+
+    // L'iframe demande les données scroll (ex: panier qui vient d'apparaître)
+    if (e.data && e.data.type === 'fluide-request-scroll') {
+      sendScroll();
     }
 
     // Scroll WordPress vers une étape
