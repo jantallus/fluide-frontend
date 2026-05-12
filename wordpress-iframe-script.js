@@ -43,6 +43,7 @@
         scrollY: window.scrollY,
         iframeTop: iframeTop,
         headerHeight: HEADER_HEIGHT,
+        viewportHeight: window.innerHeight,
       },
       'https://reservation.fluide-parapente.fr'
     );

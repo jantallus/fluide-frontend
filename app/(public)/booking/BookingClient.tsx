@@ -39,6 +39,7 @@ export default function ReserverPage() {
   const bookingRootRef = useRef<HTMLDivElement>(null);
   const datesBarRef = useRef<HTMLDivElement>(null);
   const datesBarNaturalTopRef = useRef<number | null>(null);
+  const cartBarRef = useRef<HTMLDivElement>(null);
   const [isEmbed, setIsEmbed] = useState(false);
   useEffect(() => {
     try { setIsEmbed(window.self !== window.top); } catch { setIsEmbed(true); }
@@ -54,24 +55,38 @@ export default function ReserverPage() {
     return () => ro.disconnect();
   }, [isEmbed]);
 
-  // Fake sticky dates : repositionne la barre via transform quand WordPress scroll
+  // Fake sticky dates + panier flottant : repositionnement JS via scroll WordPress
   useEffect(() => {
     if (!isEmbed) return;
     const handler = (e: MessageEvent) => {
       if (e.data?.type !== 'fluide-scroll') return;
-      const { scrollY, iframeTop, headerHeight } = e.data as { scrollY: number; iframeTop: number; headerHeight: number };
-      if (!datesBarRef.current) return;
-      if (datesBarNaturalTopRef.current === null) {
-        let top = 0;
-        let el: HTMLElement | null = datesBarRef.current;
-        while (el) { top += el.offsetTop; el = el.offsetParent as HTMLElement | null; }
-        datesBarNaturalTopRef.current = top;
+      const { scrollY, iframeTop, headerHeight, viewportHeight } = e.data as {
+        scrollY: number; iframeTop: number; headerHeight: number; viewportHeight: number;
+      };
+
+      // Dates bar : fake sticky
+      if (datesBarRef.current) {
+        if (datesBarNaturalTopRef.current === null) {
+          let top = 0;
+          let el: HTMLElement | null = datesBarRef.current;
+          while (el) { top += el.offsetTop; el = el.offsetParent as HTMLElement | null; }
+          datesBarNaturalTopRef.current = top;
+        }
+        const targetPos = scrollY - iframeTop + headerHeight;
+        if (targetPos > datesBarNaturalTopRef.current) {
+          datesBarRef.current.style.transform = `translateY(${targetPos - datesBarNaturalTopRef.current}px)`;
+        } else {
+          datesBarRef.current.style.transform = '';
+        }
       }
-      const targetPos = scrollY - iframeTop + headerHeight;
-      if (targetPos > datesBarNaturalTopRef.current) {
-        datesBarRef.current.style.transform = `translateY(${targetPos - datesBarNaturalTopRef.current}px)`;
-      } else {
-        datesBarRef.current.style.transform = '';
+
+      // Panier flottant : ancré au bas du viewport visible
+      if (cartBarRef.current) {
+        const visibleBottom = scrollY + viewportHeight - iframeTop;
+        const cartHeight = cartBarRef.current.offsetHeight;
+        const maxTop = document.documentElement.scrollHeight - cartHeight;
+        const targetTop = Math.min(Math.max(0, visibleBottom - cartHeight), maxTop);
+        cartBarRef.current.style.top = targetTop + 'px';
       }
     };
     window.addEventListener('message', handler);
@@ -684,7 +699,7 @@ export default function ReserverPage() {
   };
 
   return (
-    <div ref={bookingRootRef} className={`${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
+    <div ref={bookingRootRef} className={`relative ${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -1000,7 +1015,7 @@ export default function ReserverPage() {
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div ref={datesBarRef} className={`${isEmbed ? '' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
+                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
@@ -1433,7 +1448,7 @@ export default function ReserverPage() {
 
       {/* --- LE PANIER FLOTTANT --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full">
+        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full`}>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
