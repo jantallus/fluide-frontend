@@ -36,12 +36,47 @@ export default function ReserverPage() {
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
   const hasAnimatedIntro = useRef(false);
+  const bookingRootRef = useRef<HTMLDivElement>(null);
+  const datesBarRef = useRef<HTMLDivElement>(null);
+  const datesBarNaturalTopRef = useRef<number | null>(null);
   const [isEmbed, setIsEmbed] = useState(false);
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('embed=true')) {
-      setIsEmbed(true);
-    }
+    try { setIsEmbed(window.self !== window.top); } catch { setIsEmbed(true); }
   }, []);
+
+  // Auto-resize : envoie la hauteur réelle au parent WordPress
+  useEffect(() => {
+    if (!isEmbed) return;
+    const ro = new ResizeObserver(() => {
+      window.parent.postMessage({ type: 'fluide-resize', height: document.documentElement.scrollHeight }, '*');
+    });
+    ro.observe(document.body);
+    return () => ro.disconnect();
+  }, [isEmbed]);
+
+  // Fake sticky dates : repositionne la barre via transform quand WordPress scroll
+  useEffect(() => {
+    if (!isEmbed) return;
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'fluide-scroll') return;
+      const { scrollY, iframeTop, headerHeight } = e.data as { scrollY: number; iframeTop: number; headerHeight: number };
+      if (!datesBarRef.current) return;
+      if (datesBarNaturalTopRef.current === null) {
+        let top = 0;
+        let el: HTMLElement | null = datesBarRef.current;
+        while (el) { top += el.offsetTop; el = el.offsetParent as HTMLElement | null; }
+        datesBarNaturalTopRef.current = top;
+      }
+      const targetPos = scrollY - iframeTop + headerHeight;
+      if (targetPos > datesBarNaturalTopRef.current) {
+        datesBarRef.current.style.transform = `translateY(${targetPos - datesBarNaturalTopRef.current}px)`;
+      } else {
+        datesBarRef.current.style.transform = '';
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isEmbed]);
 
   const [selectedFlight, setSelectedFlight] = useState<FlightType | null>(null);
   const [step, setStep] = useState<number>(isDirect ? 2 : 1);
@@ -54,28 +89,33 @@ export default function ReserverPage() {
   useEffect(() => {
     if (step !== 2) {
       hasAnimatedIntro.current = false;
-      setIsGridExpanded(false); 
+      setIsGridExpanded(false);
+      datesBarNaturalTopRef.current = null; // recalculer quand la barre réapparaît
     }
-    
+
     // 🎯 On glisse PILE sur la zone de l'étape correspondante
     if (step === 2) {
       setTimeout(() => {
         const el = document.getElementById('etape-2-container');
-        if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 100; // -100px pour éviter le bandeau
-          window.scrollTo({ top: y, behavior: 'smooth' });
+        if (!el) return;
+        if (isEmbed) {
+          window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop }, '*');
+        } else {
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
         }
       }, 50);
     } else if (step === 3) {
       setTimeout(() => {
         const el = document.getElementById('etape-3-container');
-        if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 100;
-          window.scrollTo({ top: y, behavior: 'smooth' });
+        if (!el) return;
+        if (isEmbed) {
+          window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop }, '*');
+        } else {
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
         }
       }, 50);
     }
-  }, [step]);
+  }, [step, isEmbed]);
 
   useScrollLock(!!infoFlight);
 
@@ -644,7 +684,7 @@ export default function ReserverPage() {
   };
 
   return (
-    <div className={`min-h-screen overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
+    <div ref={bookingRootRef} className={`${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -960,7 +1000,7 @@ export default function ReserverPage() {
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200">
+                    <div ref={datesBarRef} className={`${isEmbed ? '' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
