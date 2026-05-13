@@ -156,7 +156,11 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
     if (defaultDate.getHours() >= 12) defaultDate.setDate(defaultDate.getDate() + 1);
     return getLocalYYYYMMDD(defaultDate);
   });
-  const [gridStartDate, setGridStartDate] = useState<string>('');
+  const [gridStartDate, setGridStartDate] = useState<string>(() => {
+    const d = new Date();
+    if (d.getHours() >= 12) d.setDate(d.getDate() + 1);
+    return getLocalYYYYMMDD(d);
+  });
 
   // Données de base : vols, compléments, templates, saison, displayDaysCount
   const { flights, giftTemplates, complementsList, displayDaysCount, isLoading, activeSeason, setActiveSeason } = useBookingData(
@@ -728,7 +732,7 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
   };
 
   return (
-    <div ref={bookingRootRef} className={`relative ${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
+    <div ref={bookingRootRef} className={`relative ${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -783,7 +787,7 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', border: '1px solid rgba(49,39,131,0.1)' }}>
+          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
@@ -981,7 +985,7 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
               </button>
             )}
 
-            <div className="bg-white rounded-[10px] p-6 md:p-10 border border-slate-200">
+            <div className="bg-white rounded-[10px] p-6 md:p-10">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>

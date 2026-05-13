@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Mountain, Clock, Weight, MapPin, Award, Wind } from 'lucide-react';
-import { SkiIcon, SnowboardIcon, PedestrianIcon } from '@/components/icons/ActivityIcons';
+import { SkiIcon, SnowboardIcon, PedestrianIcon, InfoIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
 import OtherFlightsSection from './OtherFlightsSection';
 import { VOL_PAGES, type VolHighlight } from '../config';
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!config) return {};
   return {
     title: `${config.name} · La Clusaz`,
-    description: config.description[0] ?? '',
+    description: config.description[0]?.type === 'paragraph' ? config.description[0].text : '',
     openGraph: { images: [config.heroImage] },
   };
 }
@@ -41,7 +41,7 @@ export default async function VolPage({ params }: Props) {
   if (!config) notFound();
 
   return (
-    <div style={{ backgroundColor: '#F3F3F3', color: '#1D1D1B' }}>
+    <div style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
 
       {/* ── Présentation : photo gauche / texte droite ── */}
       <section className="max-w-7xl mx-auto px-4 pt-10 pb-2">
@@ -59,14 +59,8 @@ export default async function VolPage({ params }: Props) {
           {/* Contenu */}
           <div className="flex flex-col gap-6">
 
-            {/* Label + titre */}
+            {/* Titre */}
             <div>
-              <p style={{
-                color: '#009FE3', fontWeight: 800, fontSize: '0.75rem',
-                letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8,
-              }}>
-                Parapente · La Clusaz
-              </p>
               <h1 style={{
                 color: '#312783', fontWeight: 700,
                 fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
@@ -76,31 +70,54 @@ export default async function VolPage({ params }: Props) {
               </h1>
             </div>
 
-            {/* Durée + prix */}
-            <div className="flex flex-wrap gap-3">
-              <span className="inline-flex items-center gap-2 rounded-[5px] px-4 py-2" style={{
-                backgroundColor: 'rgba(230,0,126,0.08)',
-                color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
-              }}>
-                <Clock size={18} strokeWidth={1.5} />
-                {config.duration}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-[5px] px-4 py-2" style={{
-                backgroundColor: 'rgba(230,0,126,0.08)',
-                color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
-              }}>
-                {config.priceFrom}
-              </span>
+            {/* Dénivelé + prix + bouton */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap gap-3">
+                <span className="inline-flex items-center gap-2" style={{
+                  color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
+                }}>
+                  <Mountain size={18} strokeWidth={1.5} />
+                  {config.denivele}
+                </span>
+                <span className="inline-flex items-center gap-2" style={{
+                  color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
+                }}>
+                  <InfoIcon size={18} />
+                  {config.priceFrom}
+                </span>
+              </div>
+              <a
+                href="#etape-2"
+                className="inline-flex items-center justify-center rounded-[5px] transition-colors"
+                style={{
+                  backgroundColor: '#E6007E', color: 'white',
+                  fontWeight: 700, fontSize: '1.125rem',
+                  padding: '14px 28px', textDecoration: 'none',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                Réserver votre vol →
+              </a>
             </div>
 
             {/* Description */}
-            {config.description.map((para, i) => (
-              <p key={i} style={{
-                fontSize: '1.0625rem', lineHeight: 1.75,
-                color: '#374151', margin: 0,
-              }}>
-                {para}
-              </p>
+            {config.description.map((block, i) => (
+              block.type === 'paragraph' ? (
+                <p key={i} style={{ fontSize: '1.0625rem', lineHeight: 1.75, color: '#374151', margin: 0 }}>
+                  {block.text}
+                </p>
+              ) : (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <h2 style={{ color: '#312783', fontWeight: 700, fontSize: '1.25rem', margin: 0 }}>
+                    {block.title}
+                  </h2>
+                  {block.paragraphs.map((p, j) => (
+                    <p key={j} style={{ fontSize: '1.0625rem', lineHeight: 1.75, color: '#374151', margin: 0 }}>
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              )
             ))}
 
             {/* Highlights */}
@@ -117,27 +134,18 @@ export default async function VolPage({ params }: Props) {
               </ul>
             )}
 
-            {/* CTA */}
-            <a
-              href="#reserver"
-              className="inline-flex items-center justify-center rounded-[5px] transition-colors"
-              style={{
-                backgroundColor: '#E6007E', color: 'white',
-                fontWeight: 700, fontSize: '1.125rem',
-                padding: '14px 28px', textDecoration: 'none',
-                alignSelf: 'flex-start',
-              }}
-              onMouseEnter={undefined}
-            >
-              Voir les disponibilités →
-            </a>
 
           </div>
         </div>
       </section>
 
       {/* ── Grille de créneaux ── */}
-      <div id="reserver">
+      <div id="etape-2">
+        <div className="max-w-7xl mx-auto px-4 pt-10 pb-2">
+          <h2 style={{ color: '#E6007E', fontWeight: 700, fontSize: 'clamp(1.5rem, 3vw, 2rem)', margin: 0 }}>
+            Choisissez un créneau et réservez votre vol
+          </h2>
+        </div>
         <Suspense fallback={null}>
           <BookingClient volOverride={config.volParam} />
         </Suspense>
