@@ -4,10 +4,9 @@ import { getLocalYYYYMMDD } from '@/lib/booking-utils';
 import type { FlightType, GiftCardShopTemplate, Complement } from '@/lib/types';
 
 export function useBookingData(
-  onReady: (dateStr: string, daysCount: number) => void,
-  initialFlights?: FlightType[]
+  onReady: (dateStr: string, daysCount: number) => void
 ) {
-  const [flights, setFlights] = useState<FlightType[]>(initialFlights ?? []);
+  const [flights, setFlights] = useState<FlightType[]>([]);
   const [giftTemplates, setGiftTemplates] = useState<GiftCardShopTemplate[]>([]);
   const [complementsList, setComplementsList] = useState<Complement[]>([]);
   const [displayDaysCount, setDisplayDaysCount] = useState<number>(3);
