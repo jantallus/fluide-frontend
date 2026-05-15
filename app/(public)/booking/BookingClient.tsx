@@ -27,7 +27,7 @@ import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
-export default function ReserverPage({ volOverride }: { volOverride?: string } = {}) {
+export default function ReserverPage({ volOverride, seasonOverride }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver' } = {}) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const volParam = volOverride ?? searchParams.get('vol');
@@ -177,7 +177,14 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
   useEffect(() => {
     if (!volParam || flights.length === 0) return;
     const regex = new RegExp('\\b' + volParam + '\\b', 'i');
-    const match = flights.find(f => regex.test(f.name));
+    const pool = seasonOverride
+      ? flights.filter(f => {
+          const s = String(f.season || 'ALL').toUpperCase().trim();
+          if (seasonOverride === 'Hiver') return s === 'WINTER' || s === 'HIVER';
+          return s === 'STANDARD' || s === 'ALL' || s === 'ETE' || s === 'ÉTÉ' || s === 'SUMMER';
+        })
+      : flights;
+    const match = pool.find(f => regex.test(f.name)) ?? flights.find(f => regex.test(f.name));
     if (!match) return;
     const s = String(match.season || 'ALL').toUpperCase().trim();
     if (s === 'WINTER' || s === 'HIVER') setActiveSeason('Hiver');
@@ -776,7 +783,7 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
         )}
 
         {/* ÉTAPE 1 : CHOIX DU VOL */}
-        {step === 1 && (
+        {step === 1 && !isDirect && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className="flex justify-center mb-12 sticky top-4 z-40 transition-all duration-300">
@@ -863,7 +870,7 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
                   const SeasonPictoIcon: React.ElementType | null = isWinter ? Snowflake : isSummer ? Sun : null;
 
                   return (
-                  <div key={flight.id} className="flight-card bg-white rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
+                  <div key={flight.id} className="flight-card bg-slate-50 rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
                     
                     {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
@@ -990,22 +997,28 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="font-bold leading-tight" style={{ color: '#312783', fontSize: '3rem', fontWeight: 700 }}>Réservation :</h2>
-                    <div className="relative">
-                      <select
-                        className="bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none" style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: 'rgba(230,0,126,0.2)', fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700 }}
-                        value={selectedFlight.id}
-                        onChange={(e) => {
-                          const newFlight = flights.find(f => f.id.toString() === e.target.value);
-                          if (newFlight) setSelectedFlight(newFlight);
-                        }}
-                      >
-                        {filteredFlights.map(f => (
-                          <option key={f.id} value={f.id}>{f.name}</option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#E6007E' }}>▼</div>
-                    </div>
+                    <h2 className="font-bold leading-tight" style={{ color: '#312783', fontSize: '2rem', fontWeight: 700 }}>Réservation :</h2>
+                    {isDirect ? (
+                      <span style={{ color: '#E6007E', fontSize: '2rem', fontWeight: 700, lineHeight: 1.1 }}>
+                        {selectedFlight.name}
+                      </span>
+                    ) : (
+                      <div className="relative">
+                        <select
+                          className="bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none" style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: 'rgba(230,0,126,0.2)', fontSize: '2rem', fontWeight: 700 }}
+                          value={selectedFlight.id}
+                          onChange={(e) => {
+                            const newFlight = flights.find(f => f.id.toString() === e.target.value);
+                            if (newFlight) setSelectedFlight(newFlight);
+                          }}
+                        >
+                          {filteredFlights.map(f => (
+                            <option key={f.id} value={f.id}>{f.name}</option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#E6007E' }}>▼</div>
+                      </div>
+                    )}
                   </div>
                   <p style={{ fontSize: '1rem', fontWeight: 700, color: '#009FE3', marginTop: '12px' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
@@ -1028,6 +1041,10 @@ export default function ReserverPage({ volOverride }: { volOverride?: string } =
                   )}
                 </div>
               </div>
+
+              <p style={{ color: '#E6007E', fontWeight: 700, fontSize: 'clamp(1.25rem, 2.5vw, 1.5rem)', margin: '0 0 1.25rem' }}>
+                Choisissez un créneau
+              </p>
 
               <div className={`transition-opacity duration-75 ${isSearchingTimes && rawSlots.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                 

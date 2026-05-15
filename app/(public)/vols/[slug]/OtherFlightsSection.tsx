@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { Mountain } from 'lucide-react';
+import { Mountain, Clock } from 'lucide-react';
 import { InfoIcon } from '@/components/icons/ActivityIcons';
 import { VOL_PAGES } from '../config';
 
-export default function OtherFlightsSection({ currentVolParam }: { currentVolParam: string }) {
-  const others = Object.values(VOL_PAGES).filter(cfg => cfg.volParam !== currentVolParam);
+export default function OtherFlightsSection({ currentVolParam, season }: { currentVolParam: string; season: 'Standard' | 'Hiver' }) {
+  const others = Object.values(VOL_PAGES).filter(cfg => cfg.volParam !== currentVolParam && cfg.season === season);
 
   if (others.length === 0) return null;
 
@@ -38,7 +38,10 @@ export default function OtherFlightsSection({ currentVolParam }: { currentVolPar
 
                 <div className="flex flex-wrap gap-x-5 gap-y-1">
                   <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Mountain size={18} strokeWidth={1.5} />{cfg.denivele}
+                    {cfg.statIcon === 'Clock'
+                      ? <Clock size={18} strokeWidth={1.5} />
+                      : <Mountain size={18} strokeWidth={1.5} />
+                    }{cfg.denivele}
                   </span>
                   <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <InfoIcon size={18} />{cfg.priceFrom}

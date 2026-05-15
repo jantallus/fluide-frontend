@@ -5,6 +5,8 @@ import { Mountain, Clock, Weight, MapPin, Award, Wind } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, InfoIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
 import OtherFlightsSection from './OtherFlightsSection';
+import BackNavigationGuard from './BackNavigationGuard';
+import ScrollToBookingButton from './ScrollToBookingButton';
 import { VOL_PAGES, type VolHighlight } from '../config';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -42,6 +44,10 @@ export default async function VolPage({ params }: Props) {
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
+      {config.backUrl && <BackNavigationGuard to={config.backUrl} />}
+
+      {/* ── Contenu blanc avec SVG décoratif ── */}
+      <div style={{ position: 'relative', overflow: 'clip' }}>
 
       {/* ── Présentation : photo gauche / texte droite ── */}
       <section className="max-w-7xl mx-auto px-4 pt-10 pb-2">
@@ -76,7 +82,10 @@ export default async function VolPage({ params }: Props) {
                 <span className="inline-flex items-center gap-2" style={{
                   color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
                 }}>
-                  <Mountain size={18} strokeWidth={1.5} />
+                  {config.statIcon === 'Clock'
+                    ? <Clock size={18} strokeWidth={1.5} />
+                    : <Mountain size={18} strokeWidth={1.5} />
+                  }
                   {config.denivele}
                 </span>
                 <span className="inline-flex items-center gap-2" style={{
@@ -86,18 +95,7 @@ export default async function VolPage({ params }: Props) {
                   {config.priceFrom}
                 </span>
               </div>
-              <a
-                href="#etape-2"
-                className="inline-flex items-center justify-center rounded-[5px] transition-colors"
-                style={{
-                  backgroundColor: '#E6007E', color: 'white',
-                  fontWeight: 700, fontSize: '1.125rem',
-                  padding: '14px 28px', textDecoration: 'none',
-                  alignSelf: 'flex-start',
-                }}
-              >
-                Réserver votre vol →
-              </a>
+              <ScrollToBookingButton />
             </div>
 
             {/* Description */}
@@ -106,18 +104,22 @@ export default async function VolPage({ params }: Props) {
                 <p key={i} style={{ fontSize: '1.0625rem', lineHeight: 1.75, color: '#374151', margin: 0 }}>
                   {block.text}
                 </p>
-              ) : (
+              ) : block.type === 'note' ? (
+                <p key={i} style={{ fontSize: '1.0625rem', lineHeight: 1.75, color: '#374151', margin: 0 }}>
+                  <strong>{block.label}</strong> {block.text}
+                </p>
+              ) : block.type === 'section' ? (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <h2 style={{ color: '#312783', fontWeight: 700, fontSize: '1.25rem', margin: 0 }}>
                     {block.title}
                   </h2>
-                  {block.paragraphs.map((p, j) => (
+                  {block.paragraphs.map((p: string, j: number) => (
                     <p key={j} style={{ fontSize: '1.0625rem', lineHeight: 1.75, color: '#374151', margin: 0 }}>
                       {p}
                     </p>
                   ))}
                 </div>
-              )
+              ) : null
             ))}
 
             {/* Highlights */}
@@ -141,18 +143,27 @@ export default async function VolPage({ params }: Props) {
 
       {/* ── Grille de créneaux ── */}
       <div id="etape-2">
-        <div className="max-w-7xl mx-auto px-4 pt-10 pb-2">
-          <h2 style={{ color: '#E6007E', fontWeight: 700, fontSize: 'clamp(1.5rem, 3vw, 2rem)', margin: 0 }}>
-            Choisissez un créneau et réservez votre vol
-          </h2>
-        </div>
         <Suspense fallback={null}>
-          <BookingClient volOverride={config.volParam} />
+          <BookingClient volOverride={config.volParam} seasonOverride={config.season} />
         </Suspense>
       </div>
 
+      {/* ── SVG décoratif bas-droite ── */}
+      <img
+        src="/bg-single-rose2.svg"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: 'absolute', right: 0, bottom: 0,
+          width: 'clamp(300px, 40vw, 560px)',
+          pointerEvents: 'none', userSelect: 'none', display: 'block',
+        }}
+      />
+
+      </div>{/* fin contenu blanc */}
+
       {/* ── Autres vols ── */}
-      <OtherFlightsSection currentVolParam={config.volParam} />
+      <OtherFlightsSection currentVolParam={config.volParam} season={config.season} />
 
     </div>
   );
