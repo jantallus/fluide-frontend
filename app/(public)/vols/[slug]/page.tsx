@@ -78,7 +78,7 @@ export default async function VolPage({ params }: Props) {
 
             {/* Dénivelé + prix + bouton */}
             <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-2">
                 <span className="inline-flex items-center gap-2" style={{
                   color: '#E6007E', fontWeight: 700, fontSize: '1.125rem',
                 }}>

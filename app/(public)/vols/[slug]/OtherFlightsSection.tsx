@@ -36,7 +36,7 @@ export default function OtherFlightsSection({ currentVolParam, season }: { curre
                   {cfg.name}
                 </h3>
 
-                <div className="flex flex-wrap gap-x-5 gap-y-1">
+                <div className="flex flex-col gap-2">
                   <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     {cfg.statIcon === 'Clock'
                       ? <Clock size={18} strokeWidth={1.5} />
@@ -55,7 +55,7 @@ export default function OtherFlightsSection({ currentVolParam, season }: { curre
                   className="rounded-[5px] px-5 py-3 font-bold text-base transition-colors"
                   style={{ backgroundColor: '#E6007E', color: 'white' }}
                 >
-                  Réserver
+                  Infos et réservation
                 </Link>
               </div>
 

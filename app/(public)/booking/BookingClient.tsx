@@ -900,7 +900,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3">
+                      <div className="flex flex-col gap-2 mb-3">
                         {(() => { const info = getMarketingInfo(flight.name); const Icon = info.includes('dénivelé') ? Mountain : info.includes('min') || info.includes('h de vol') ? Clock : Wind; return <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Icon size={18} strokeWidth={1.5} />{info}</span>; })()}
                         <span style={{ color: '#E6007E', fontSize: '1.125rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Weight size={18} strokeWidth={1.5} />{flight.weight_min !== undefined ? flight.weight_min : 20} – {flight.weight_max !== undefined ? flight.weight_max : 110} kg</span>
                       </div>
