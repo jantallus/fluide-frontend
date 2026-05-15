@@ -776,7 +776,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         
         {/* Chargement en mode direct — les vols n'ont pas encore été reçus de l'API */}
         {isDirect && !selectedFlight && (
-          <div className="flex flex-col items-center justify-center py-32 gap-4">
+          <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: '700px' }}>
             <div className="w-8 h-8 rounded-full border-4 border-slate-200 animate-spin" style={{ borderTopColor: '#E6007E' }} />
             <p style={{ fontSize: '1rem', fontWeight: 700, color: '#94a3b8' }}>Chargement des disponibilités…</p>
           </div>
