@@ -143,7 +143,7 @@ export default async function VolPage({ params }: Props) {
 
       {/* ── Grille de créneaux ── */}
       <div id="etape-2">
-        <Suspense fallback={null}>
+        <Suspense fallback={<div style={{ minHeight: '700px' }} />}>
           <BookingClient volOverride={config.volParam} seasonOverride={config.season} />
         </Suspense>
       </div>
