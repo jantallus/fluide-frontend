@@ -26,9 +26,12 @@ export default function OtherFlightsSection({ currentVolParam, season }: { curre
             <div key={cfg.slug} className="bg-white rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
 
               {/* Photo */}
-              <div
-                className="w-full h-40 bg-cover bg-center rounded-[10px] mb-6"
-                style={{ backgroundImage: `url(${cfg.heroImage})` }}
+              <img
+                src={cfg.heroImage}
+                alt={cfg.name}
+                className="w-full h-40 object-cover rounded-[10px] mb-6"
+                loading="eager"
+                decoding="async"
               />
 
               <div className="flex flex-col gap-3 flex-1">

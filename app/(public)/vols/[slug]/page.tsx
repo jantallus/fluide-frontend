@@ -8,6 +8,19 @@ import OtherFlightsSection from './OtherFlightsSection';
 import BackNavigationGuard from './BackNavigationGuard';
 import ScrollToBookingButton from './ScrollToBookingButton';
 import { VOL_PAGES, type VolHighlight } from '../config';
+import type { FlightType } from '@/lib/types';
+
+const BACKEND_URL = process.env.API_URL ?? 'http://localhost:3001';
+
+async function fetchFlights(): Promise<FlightType[]> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/flight-types`, { next: { revalidate: 30 } });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -41,6 +54,8 @@ export default async function VolPage({ params }: Props) {
   const { slug } = await params;
   const config = VOL_PAGES[slug];
   if (!config) notFound();
+
+  const initialFlights = await fetchFlights();
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
@@ -144,7 +159,7 @@ export default async function VolPage({ params }: Props) {
       {/* ── Grille de créneaux ── */}
       <div id="etape-2">
         <Suspense fallback={null}>
-          <BookingClient volOverride={config.volParam} seasonOverride={config.season} />
+          <BookingClient volOverride={config.volParam} seasonOverride={config.season} initialFlights={initialFlights} />
         </Suspense>
       </div>
 

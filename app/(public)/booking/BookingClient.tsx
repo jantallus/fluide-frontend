@@ -27,7 +27,7 @@ import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
-export default function ReserverPage({ volOverride, seasonOverride }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver' } = {}) {
+export default function ReserverPage({ volOverride, seasonOverride, initialFlights }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver'; initialFlights?: FlightType[] } = {}) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const volParam = volOverride ?? searchParams.get('vol');
@@ -167,7 +167,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     (dateStr, count) => {
       setPickedDate(dateStr);
       setGridStartDate(calculateGridStart(dateStr, count));
-    }
+    },
+    initialFlights
   );
 
   // Disponibilités : se recharge automatiquement quand gridStartDate ou selectedFlight change

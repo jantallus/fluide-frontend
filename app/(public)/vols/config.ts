@@ -231,11 +231,11 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
       {
         type: 'note',
         label: 'À noter :',
-        text: 'les conditions aérologiques peuvent être un peu plus dynamiques et agitées que sur un vol Évasion. C\'est le prix à payer pour l\'altitude et la durée !',
+        text: 'les conditions aérologiques peuvent être un peu plus dynamiques et agitées que sur un vol Découverte. C\'est le prix à payer pour l\'altitude et la durée !',
       },
       {
         type: 'paragraph',
-        text: 'Si vous êtes particulièrement sensibles au mal des transports, nous vous conseillons plutôt un vol découverte, pour lequel les conditions de vol seront calmes et ne vous rendront pas malade.',
+        text: 'Si vous êtes particulièrement sensibles au mal des transports, nous vous conseillons plutôt un vol Découverte, pour lequel les conditions de vol seront calmes et ne vous rendront pas malade.',
       },
     ],
     highlights: [
