@@ -875,7 +875,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     {flight.image_url && (
                       <div 
                         className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 border border-slate-100"
-                        style={{ backgroundImage: `url(${flight.image_url})` }}
+                        style={{ backgroundImage: `url(${flight.image_url})`, backgroundColor: '#e2e8f0' }}
                       />
                     )}
 
