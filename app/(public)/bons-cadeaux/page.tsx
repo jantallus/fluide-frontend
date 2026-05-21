@@ -181,22 +181,26 @@ export default function CadeauPage() {
   const totalPrice = selectedTemplate ? ((selectedTemplate.price_cents / 100) + (wantsShipping ? shippingSettings.price : 0) + optionsPrice) : 0;
 
   return (
-    <main style={{ width: '100%', overflowX: 'hidden', position: 'relative' }}>
+    <main className="main-bons-cadeaux" style={{ width: '100%', overflowX: 'hidden', position: 'relative' }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-fill-mode: forwards; }
         .btn-page-action { background-color: #E6007E !important; color: white !important; border: 2px solid #E6007E !important; transition: background-color 0.3s ease, border-color 0.3s ease !important; padding: 12px 17px; border-radius: 5px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 1.125rem; cursor: pointer; }
         .btn-page-action:hover { background-color: #312783 !important; border-color: #312783 !important; }
-        .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 100px 4vw; }
+        .content-section { display: flex; align-items: center; gap: 60px; max-width: 1400px; margin: 0 auto; padding: 70px 4vw; }
+        .main-bons-cadeaux { margin-top: -90px; }
+        @media (max-width: 1024px) { .main-bons-cadeaux { margin-top: 0; } }
         .hero-cadeau { background: transparent !important; }
         .card-template .btn-choisir { background-color: #E6007E; transition: background-color 0.3s ease; }
         .card-template .btn-choisir:hover { background-color: #312783; }
-        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; height: 60vh !important; justify-content: center; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.9rem !important; } .cadeau-grad-bg { display: none !important; } .cadeau-heatmap { mix-blend-mode: normal !important; opacity: 1 !important; } }
+        @media (max-width: 1024px) { .content-section { flex-direction: column; text-align: center; } .hero-cadeau { padding-left: 0 !important; padding-top: 0 !important; height: calc(60vh + 100px) !important; justify-content: center; align-items: center !important; } .hero-cadeau .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-cadeau .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-cadeau .hero-animation-block p { font-size: 1.9rem !important; } .cadeau-grad-bg { display: none !important; } .cadeau-heatmap { mix-blend-mode: normal !important; opacity: 1 !important; } .hero-cadeau::before { content: ''; position: absolute; inset: 0; background: rgba(20, 10, 80, 0.28); z-index: 5; pointer-events: none; } }
       `}} />
 
       <section className="hero-cadeau" style={{
-          position: 'relative', width: '100%', height: '64.75vh',
-          display: 'flex', alignItems: 'center', paddingLeft: '10.6vw', paddingTop: '10.2vh',
+          position: 'relative', width: '100%', height: '450px',
+          display: 'flex', alignItems: 'flex-start',
+          paddingLeft: 'max(calc(4vw + 20px), calc((100vw - 1240px) / 2 + 20px))',
+          paddingTop: '200px',
           overflow: 'hidden',
         }}>
         {/* Couche 1 : dégradé CSS lisse (remplace bg-fond.png) */}
@@ -208,28 +212,36 @@ export default function CadeauPage() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.18) 0%, transparent 40%)', zIndex: 4 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 7vw, 4.375rem)', fontWeight: 700, margin: 0, lineHeight: 1.0, textTransform: 'none' }}>Cartes cadeaux</h1>
-          <p style={{ color: 'white', fontSize: 'clamp(1.44rem, 2.62vw, 1.88rem)', fontWeight: 400, marginTop: '8px', opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir&nbsp;!</p>
+          <p style={{ color: 'white', fontSize: 'clamp(1.44rem, 2.62vw, 1.88rem)', fontWeight: 400, marginTop: '15px', lineHeight: 1.2, opacity: 0.9, textTransform: 'none' }}>Faites plaisir ou faites-vous plaisir&nbsp;!</p>
         </div>
       </section>
 
-      <section style={{ backgroundColor: 'white' }}>
-        <div className="content-section">
-          <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: '400px', borderRadius: '12px', overflow: 'hidden' }}>
-            <Image src="/cadeau-body.png" alt="Expérience parapente" fill style={{ objectFit: 'cover' }} />
+      <section className="py-[70px]" style={{ backgroundColor: 'white' }}>
+        <div className="flex flex-wrap" style={{ width: '92%', maxWidth: '1240px', margin: '0 auto', alignItems: 'center' }}>
+
+          {/* Photo — col50 */}
+          <div className="w-full md:w-1/2" style={{ padding: '15px 20px' }}>
+            <img src="/cadeau-body.webp" alt="Cartes cadeaux vol parapente La Clusaz" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '3rem', fontWeight: 700, color: '#312783', marginBottom: '25px' }}>Offrez une carte cadeau !</h2>
-            <p style={{ color: '#1D1D1B', fontSize: '1.125rem', lineHeight: '1.8', marginBottom: '35px' }}>
-              Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz !
-              <br /><br />
-              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l'été ou l'hiver.
+
+          {/* Contenu — col50 + col-padding-left */}
+          <div className="w-full md:w-1/2" style={{ padding: '15px 20px', paddingLeft: '60px', marginTop: '-80px' }}>
+            <h2 style={{ fontSize: '1.875rem', fontWeight: 700, color: '#312783', lineHeight: '1.1', marginTop: 0, marginBottom: '15px' }}>Offrez une carte cadeau !</h2>
+            <p style={{ color: '#1D1D1B', fontSize: '1.125rem', lineHeight: '26px', margin: '15px 0' }}>
+              Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz ! Un cadeau unique qui allie sensations de liberté, panoramas alpins spectaculaires et immersion en pleine nature. Encadré par des moniteurs expérimentés, ce vol biplace est accessible à tous, des débutants aux plus audacieux.
             </p>
-            <button onClick={() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' })} className="btn-page-action">Voir les offres</button>
+            <p style={{ color: '#1D1D1B', fontSize: '1.125rem', lineHeight: '26px', margin: '15px 0' }}>
+              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l'été ou l'hiver sans contrainte.
+            </p>
+            <p style={{ marginTop: '15px' }}>
+              <button onClick={() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' })} className="btn-page-action">Voir les offres</button>
+            </p>
           </div>
+
         </div>
       </section>
 
-      <section id="boutique" style={{ backgroundColor: '#F3F3F3', padding: '100px 4vw' }}>
+      <section id="boutique" style={{ backgroundColor: '#FFFFFF', padding: '100px 4vw' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
             <h2 style={{ fontSize: '3rem', fontWeight: 700, color: '#312783', marginBottom: '15px' }}>Choisissez votre bon cadeau</h2>
@@ -244,7 +256,7 @@ export default function CadeauPage() {
                 <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Mail size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Code & PDF immédiats</h4>
-                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: '26px' }}>
                     Dès le paiement validé, vous recevrez par email un joli bon cadeau au format PDF contenant un code unique à offrir.
                   </p>
                 </div>
@@ -254,7 +266,7 @@ export default function CadeauPage() {
                 <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><CalendarDays size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Réservation facile</h4>
-                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: '26px' }}>
                     Le bénéficiaire pourra utiliser son code cadeau directement sur notre site web ou par téléphone pour réserver la date de son vol.
                   </p>
                 </div>
@@ -264,7 +276,7 @@ export default function CadeauPage() {
                 <div className="flex items-center justify-center shrink-0" style={{ color: '#312783' }}><Package size={28} strokeWidth={1.5} /></div>
                 <div>
                   <h4 style={{ color: '#312783', fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px' }}>Envoi postal optionnel</h4>
-                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: 1.625 }}>
+                  <p style={{ color: '#1D1D1B', fontSize: '1.125rem', fontWeight: 400, lineHeight: '26px' }}>
                     Envie de marquer le coup ? Vous pourrez choisir de faire envoyer une belle carte glacée par courrier lors de l'étape de paiement.
                   </p>
                 </div>
@@ -277,7 +289,7 @@ export default function CadeauPage() {
             /* ☠️ SKELETON — même structure que les vraies cartes */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-[16px] p-8 shadow-xl border border-slate-100 flex flex-col justify-between animate-pulse">
+                <div key={i} className="bg-[#F3F3F3] rounded-[16px] p-8 flex flex-col justify-between animate-pulse">
                   {/* Fausse image */}
                   <div className="w-full h-40 md:h-52 bg-slate-200/60 rounded-[10px] mb-6"></div>
                   <div>
@@ -302,11 +314,11 @@ export default function CadeauPage() {
               ))}
             </div>
           ) : templates.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 0', backgroundColor: 'white', borderRadius: '20px' }}><p style={{ color: '#1D1D1B', fontWeight: 900 }}>Aucune offre n'est disponible.</p></div>
+            <div style={{ textAlign: 'center', padding: '50px 0', backgroundColor: '#F3F3F3', borderRadius: '20px' }}><p style={{ color: '#1D1D1B', fontWeight: 900 }}>Aucune offre n'est disponible.</p></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {templates.map((tpl) => (
-                <div key={tpl.id} className={`card-template bg-white rounded-[10px] p-8 border flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-slate-100'}`}>
+                <div key={tpl.id} className={`card-template bg-[#F3F3F3] rounded-[10px] p-8 border flex flex-col justify-between ${selectedTemplate?.id === tpl.id ? 'border-[#E6007E]' : 'border-transparent'}`}>
                   {tpl.image_url && <div className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 shadow-sm border border-slate-100" style={{ backgroundImage: `url(${tpl.image_url})` }} />}
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">

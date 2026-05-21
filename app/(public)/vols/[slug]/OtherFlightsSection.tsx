@@ -30,7 +30,7 @@ export default function OtherFlightsSection({ currentVolParam, season }: { curre
                 src={cfg.heroImage}
                 alt={cfg.name}
                 className="w-full h-40 object-cover rounded-[10px] mb-6"
-                loading="eager"
+                loading="lazy"
                 decoding="async"
               />
 

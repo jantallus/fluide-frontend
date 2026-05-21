@@ -739,35 +739,34 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   };
 
   return (
-    <div ref={bookingRootRef} className={`relative ${isEmbed ? '' : 'min-h-screen '}overflow-clip${isDirect ? ' direct-mode-reveal' : ''}`} style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
+    <div ref={bookingRootRef} className={`relative ${!isEmbed && !isDirect ? 'min-h-screen ' : ''}${isDirect && isEmbed ? 'overflow-clip direct-mode-reveal' : ''}`} style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes pageReveal { 0% { opacity: 0; } 100% { opacity: 1; } }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .direct-mode-reveal { animation: pageReveal 0.25s ease 0.15s both; }
-        .hero-booking { background: transparent !important; }
+        .hero-booking { background: transparent !important; margin-top: -90px; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
-        @media (max-width: 1024px) { .hero-booking { height: 60vh !important; padding-left: 0 !important; justify-content: center; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 200% !important; background-position: 60% 7% !important; } .hero-grad-1 { background: radial-gradient(ellipse at 95% 90%, rgba(20,22,140,0.22) 0%, rgba(20,22,140,0.78) 38%) !important; opacity: 0.4 !important; } .hero-grad-2 { background: linear-gradient(to right, rgba(15,15,110,0.65) 0%, transparent 60%) !important; opacity: 1 !important; } .hero-grad-3 { background: linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 22%) !important; opacity: 0.45 !important; } }
+@media (max-width: 1024px) { .hero-booking { min-height: 532px !important; margin-top: -80px; padding-left: 0 !important; padding-top: 0 !important; justify-content: center; align-items: center !important; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: cover !important; background-position: center calc(30% + 180px) !important; } .hero-grad-1 { background: linear-gradient(22deg, rgba(47,82,160,0.90) 5%, rgba(47,82,160,0.65) 28%, rgba(47,82,160,0.45) 47%, rgba(47,82,160,0.28) 62%, rgba(47,82,160,0.15) 75%, rgba(47,82,160,0.06) 88%, rgba(47,82,160,0) 100%) !important; } .hero-grad-2 { background: linear-gradient(to right, rgba(79,69,161,1) 0%, rgba(79,69,161,0.7) 20%, rgba(79,69,161,0) 50%) !important; height: 100% !important; } }
       `}} />
 
       {!isDirect && <section className="hero-booking" style={{
-          position: 'relative', width: '100%', height: '64.75vh',
-          display: 'flex', alignItems: 'center', paddingLeft: '10.6vw', paddingTop: '10.2vh',
+          position: 'relative', width: '100%', minHeight: '520px',
+          display: 'flex', alignItems: 'flex-start', paddingLeft: 'calc(6vw - 4px)', paddingTop: '154px',
+          backgroundColor: '#2F52A0',
           overflow: 'hidden',
         }}>
-        {/* Couche 1 : photo en fond */}
-        <div className="hero-booking-bg" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.jpg)', backgroundSize: 'cover', backgroundPosition: 'center 25%', zIndex: 1 }} />
-        {/* Couche 2 : dégradé radial — clair en bas à droite, bleu se diffusant vers la gauche */}
-        <div className="hero-grad-1" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse at 85% 85%, rgba(20, 22, 140, 0.22) 0%, rgba(20, 22, 140, 0.78) 62%)', zIndex: 2 }} />
-        {/* Couche 3 : renfort bleu à gauche pour la lisibilité du texte */}
-        <div className="hero-grad-2" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(15, 15, 110, 0.18) 0%, transparent 45%)', zIndex: 3 }} />
-        {/* Couche 4 : assombrissement bas */}
-        <div className="hero-grad-3" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 40%)', zIndex: 4 }} />
+        {/* Couche 1 : photo dézoomée, haut tronqué */}
+        <div className="hero-booking-bg" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.jpg)', backgroundSize: '88%', backgroundPosition: 'right 12%', backgroundRepeat: 'no-repeat', zIndex: 1 }} />
+        {/* Couche 2 : dégradé diagonal + couvercle gauche pour supprimer la ligne de démarcation */}
+        <div className="hero-grad-1" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(47,82,160,1) 0%, rgba(47,82,160,1) 18%, rgba(47,82,160,0) 30%), linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.55) 50%, rgba(47,82,160,0.20) 65%, rgba(47,82,160,0) 80%)', zIndex: 2 }} />
+        {/* Couche 3 : fond violet en haut (body.no-fond:before), 500px */}
+        <div className="hero-grad-2" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '500px', background: 'linear-gradient(180deg, rgba(79,69,161,1) 0%, rgba(79,69,161,0) 100%)', zIndex: 3 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 7vw, 4.375rem)', fontWeight: 700, margin: 0, lineHeight: 1.0, textTransform: 'none' }}>
-            Réserver votre vol et<br />baptême de parapente<br />à La Clusaz
+            Réserver votre vol et<br className="max-lg:hidden" />{' '}baptême de<br />parapente à La<br className="max-lg:hidden" />{' '}Clusaz
           </h1>
         </div>
       </section>}
@@ -776,7 +775,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         
         {/* Chargement en mode direct — les vols n'ont pas encore été reçus de l'API */}
         {isDirect && !selectedFlight && (
-          <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: '700px' }}>
+          <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: isDirect && !isEmbed ? '120px' : '700px' }}>
             <div className="w-8 h-8 rounded-full border-4 border-slate-200 animate-spin" style={{ borderTopColor: '#E6007E' }} />
             <p style={{ fontSize: '1rem', fontWeight: 700, color: '#94a3b8' }}>Chargement des disponibilités…</p>
           </div>
@@ -786,7 +785,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         {step === 1 && !isDirect && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
-            <div className="flex justify-center mb-12 sticky top-4 z-40 transition-all duration-300">
+            <div className="flex justify-center mb-12 sticky top-[80px] lg:top-[90px] z-40 transition-all duration-300">
               <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
                 <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Sun size={18} strokeWidth={1.5} />été</button>
                 <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Snowflake size={18} strokeWidth={1.5} />hiver</button>
@@ -1065,7 +1064,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-0 '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
+                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-[80px] lg:top-[90px] '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
@@ -1498,7 +1497,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
       {/* --- LE PANIER FLOTTANT --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
-        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] z-[100] animate-in slide-in-from-bottom-full`} style={isEmbed ? { top: 0, willChange: 'transform' } : undefined}>
+        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)]`} style={isEmbed ? { top: 0, willChange: 'transform', zIndex: 9999 } : { zIndex: 9999 }}>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex-1 w-full">
@@ -1552,7 +1551,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
                 >
-                  Passer à l'inscription →
+                  Passer à l'inscription
                 </button>
               )}
             </div>

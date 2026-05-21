@@ -30,7 +30,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
   'cret-du-loup': {
     slug: 'cret-du-loup',
     volParam: 'loup',
-    name: 'Baptême parapente — Crêt du Loup',
+    name: 'Vol et baptême parapente – Crêt du Loup',
     heroImage: '/hiver-loup.jpg',
     season: 'Hiver',
     denivele: '800 m de dénivelé',
@@ -71,7 +71,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
   'beauregard': {
     slug: 'beauregard',
     volParam: 'beauregard',
-    name: 'Baptême parapente — Beauregard',
+    name: 'Vol et baptême parapente – Beauregard',
     heroImage: '/hhero2.jpg',
     season: 'Hiver',
     denivele: '500 m de dénivelé',
@@ -111,7 +111,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
   'aiguille': {
     slug: 'aiguille',
     volParam: 'aiguille',
-    name: 'Baptême parapente — L\'Aiguille',
+    name: 'Vol et baptême parapente – L\'Aiguille',
     heroImage: '/prestige.jpg',
     season: 'Hiver',
     denivele: '1 200 m de dénivelé',
