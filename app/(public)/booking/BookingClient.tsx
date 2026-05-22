@@ -113,6 +113,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
+  const skipInitialScroll = useRef(isDirect); // sur les pages /vols, pas de scroll auto à l'ouverture
 
   // 🎯 CORRECTION : On réinitialise les mémoires et on gère la hauteur de page (Sans remonter en haut !)
   useEffect(() => {
@@ -124,6 +125,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
     // 🎯 On glisse PILE sur la zone de l'étape correspondante
     if (step === 2) {
+      if (skipInitialScroll.current) { skipInitialScroll.current = false; return; }
       setTimeout(() => {
         const el = document.getElementById('etape-2-container');
         if (!el) return;
