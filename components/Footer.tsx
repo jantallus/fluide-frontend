@@ -191,6 +191,10 @@ export default function Footer() {
                 onPointerEnter={() => setHovered('cr-1')} onPointerLeave={() => setHovered(null)}>
                 CGV
               </a>
+              <a href="/politique-confidentialite" style={creditLinkStyle('cr-3')}
+                onPointerEnter={() => setHovered('cr-3')} onPointerLeave={() => setHovered(null)}>
+                Confidentialité
+              </a>
               <a href="https://www.laconfiserie.fr" target="_blank" rel="noopener" style={creditLinkStyle('cr-2')}
                 onPointerEnter={() => setHovered('cr-2')} onPointerLeave={() => setHovered(null)}>
                 Site : La Confiserie

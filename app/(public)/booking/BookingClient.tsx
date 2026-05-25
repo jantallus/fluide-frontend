@@ -1500,8 +1500,9 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       {/* --- LE PANIER FLOTTANT --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
         <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)]`} style={isEmbed ? { top: 0, willChange: 'transform', zIndex: 9999 } : { zIndex: 9999 }}>
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            
+          <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+
             <div className="flex-1 w-full">
               <span className="block mb-2" style={{ fontSize: '1.125rem', fontWeight: 700, color: '#312783' }}>
                 {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
@@ -1558,6 +1559,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
               )}
             </div>
 
+          </div>
+          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem', marginTop: '8px' }}>
+            En finalisant votre commande, vous acceptez nos <a href="https://www.fluide-parapente.fr/cgv/" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>CGV</a> et notre <a href="/politique-confidentialite" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>politique de confidentialité</a>.
+          </p>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import type { GiftCardShopTemplate, Complement } from '@/lib/types';
+import Image from 'next/image';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Clock, Wallet, MapPin, Mail, CalendarDays, Package, Sparkles } from 'lucide-react';
 
@@ -215,6 +216,30 @@ export default function CadeauPage() {
         </div>
       </section>
 
+      <section className="py-[70px]" style={{ backgroundColor: 'white' }}>
+        <div className="flex flex-wrap" style={{ width: '92%', maxWidth: '1240px', margin: '0 auto', alignItems: 'center' }}>
+
+          {/* Photo — col50 */}
+          <div className="w-full md:w-1/2" style={{ padding: '15px 20px' }}>
+            <img src="/cadeau-body.webp" alt="Cartes cadeaux vol parapente La Clusaz" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+
+          {/* Contenu — col50 + col-padding-left */}
+          <div className="w-full md:w-1/2" style={{ padding: '15px 20px', paddingLeft: '60px', marginTop: '-80px' }}>
+            <h2 style={{ fontSize: '1.875rem', fontWeight: 700, color: '#312783', lineHeight: '1.1', marginTop: 0, marginBottom: '15px' }}>Offrez une carte cadeau !</h2>
+            <p style={{ color: '#1D1D1B', fontSize: '1.125rem', lineHeight: '26px', margin: '15px 0' }}>
+              Offrez une expérience inoubliable avec notre carte cadeau pour un vol en parapente au-dessus de la vallée de La Clusaz ! Un cadeau unique qui allie sensations de liberté, panoramas alpins spectaculaires et immersion en pleine nature. Encadré par des moniteurs expérimentés, ce vol biplace est accessible à tous, des débutants aux plus audacieux.
+            </p>
+            <p style={{ color: '#1D1D1B', fontSize: '1.125rem', lineHeight: '26px', margin: '15px 0' }}>
+              Personnalisable selon les envies, la carte cadeau est valable 18 mois, offrant flexibilité et liberté de choix entre un vol l'été ou l'hiver sans contrainte.
+            </p>
+            <p style={{ marginTop: '15px' }}>
+              <button onClick={() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' })} className="btn-page-action">Voir les offres</button>
+            </p>
+          </div>
+
+        </div>
+      </section>
 
       <section id="boutique" style={{ backgroundColor: '#FFFFFF', padding: '100px 4vw' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -412,9 +437,6 @@ export default function CadeauPage() {
                 </button>
               </div>
               <p style={{ textAlign: 'center', color: '#1D1D1B', fontSize: '0.9rem', marginTop: '20px' }}>Le bon cadeau au format PDF vous sera de toute façon envoyé par email immédiatement après validation du paiement.</p>
-              <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', marginTop: '10px' }}>
-                En finalisant votre commande, vous acceptez nos <a href="https://www.fluide-parapente.fr/cgv/" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>CGV</a> et notre <a href="/politique-confidentialite" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>politique de confidentialité</a>.
-              </p>
             </div>
           )}
         </div>

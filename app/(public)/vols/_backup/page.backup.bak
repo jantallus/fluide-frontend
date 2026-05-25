@@ -1,13 +1,13 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { Mountain, Clock } from 'lucide-react';
-import { InfoIcon } from '@/components/icons/ActivityIcons';
+import { Mountain, Clock, Weight, MapPin, Award, Wind } from 'lucide-react';
+import { SkiIcon, SnowboardIcon, PedestrianIcon, InfoIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
 import OtherFlightsSection from './OtherFlightsSection';
 import BackNavigationGuard from './BackNavigationGuard';
 import ScrollToBookingButton from './ScrollToBookingButton';
-import { VOL_PAGES } from '../config';
+import { VOL_PAGES, type VolHighlight } from '../config';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -15,14 +15,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const config = VOL_PAGES[slug];
   if (!config) return {};
+  const description = config.description[0]?.type === 'paragraph' ? config.description[0].text : '';
   return {
     title: config.name,
+    description,
     alternates: { canonical: `/vols/${slug}`, languages: { fr: `/vols/${slug}`, 'x-default': `/vols/${slug}` } },
     openGraph: {
       title: `${config.name} · La Clusaz`,
+      description,
       images: [{ url: config.heroImage, alt: config.name }],
     },
   };
+}
+
+function HighlightIcon({ icon }: { icon: VolHighlight['icon'] }) {
+  const props = { size: 20, strokeWidth: 1.5 } as const;
+  switch (icon) {
+    case 'Mountain':   return <Mountain   {...props} />;
+    case 'Clock':      return <Clock      {...props} />;
+    case 'Weight':     return <Weight     {...props} />;
+    case 'MapPin':     return <MapPin     {...props} />;
+    case 'Award':      return <Award      {...props} />;
+    case 'Wind':       return <Wind       {...props} />;
+    case 'Ski':        return <SkiIcon    size={20} />;
+    case 'Snowboard':  return <SnowboardIcon size={20} />;
+    case 'Pedestrian': return <PedestrianIcon size={20} />;
+  }
 }
 
 export default async function VolPage({ params }: Props) {
@@ -30,9 +48,30 @@ export default async function VolPage({ params }: Props) {
   const config = VOL_PAGES[slug];
   if (!config) notFound();
 
+  const price = config.priceFrom.match(/\d+/)?.[0];
+  const description = config.description[0]?.type === 'paragraph' ? config.description[0].text : config.name;
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: config.name,
+    description,
+    image: `https://reservation.fluide-parapente.fr${config.heroImage}`,
+    brand: { '@type': 'Brand', name: 'Fluide Parapente' },
+    offers: {
+      '@type': 'Offer',
+      price,
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+      url: `https://reservation.fluide-parapente.fr/vols/${slug}`,
+    },
+  };
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', color: '#1D1D1B' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
       {config.backUrl && <BackNavigationGuard to={config.backUrl} />}
 
       {/* ── Contenu blanc avec SVG décoratif ── */}
@@ -90,6 +129,44 @@ export default async function VolPage({ params }: Props) {
             <p style={{ marginTop: '15px' }}>
               <ScrollToBookingButton />
             </p>
+
+            {/* Description */}
+            {config.description.map((block, i) => (
+              block.type === 'paragraph' ? (
+                <p key={i} style={{ fontSize: '18px', lineHeight: '26px', margin: '15px 0', color: '#1D1D1B' }}>
+                  {block.text}
+                </p>
+              ) : block.type === 'note' ? (
+                <p key={i} style={{ fontSize: '18px', lineHeight: '26px', margin: '15px 0', color: '#1D1D1B' }}>
+                  <strong>{block.label}</strong> {block.text}
+                </p>
+              ) : block.type === 'section' ? (
+                <div key={i}>
+                  <h2 style={{ color: '#312783', fontWeight: 700, fontSize: '24px', marginTop: '20px', lineHeight: '1.1em', marginBottom: 0 }}>
+                    {block.title}
+                  </h2>
+                  {block.paragraphs.map((p: string, j: number) => (
+                    <p key={j} style={{ fontSize: '18px', lineHeight: '26px', margin: '15px 0', color: '#1D1D1B' }}>
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              ) : null
+            ))}
+
+            {/* Highlights */}
+            {config.highlights.length > 0 && (
+              <ul style={{ listStyle: 'none', padding: 0, margin: '15px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {config.highlights.map((h, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#312783', fontWeight: 600, fontSize: '18px' }}>
+                    <span style={{ color: '#E6007E', flexShrink: 0 }}>
+                      <HighlightIcon icon={h.icon} />
+                    </span>
+                    {h.text}
+                  </li>
+                ))}
+              </ul>
+            )}
 
           </div>
         </div>
