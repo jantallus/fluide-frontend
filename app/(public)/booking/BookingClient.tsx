@@ -746,8 +746,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes pageReveal { 0% { opacity: 0; } 100% { opacity: 1; } }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-        .flight-img-wrap { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+        .flight-img-wrap { background-color: #f1f5f9; transform: translateZ(0); }
         .flight-img-wrap img { display: block; width: 100%; height: 100%; object-fit: cover; }
         .hero-animation-block { animation: ultraSmoothReveal 0.5s ease forwards; }
         .direct-mode-reveal { animation: pageReveal 0.25s ease 0.15s both; }
