@@ -595,7 +595,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   );
 
   useEffect(() => {
-    if (step === 3 && totalItems === 0) setStep(1);
+    if (step === 3 && totalItems === 0) setStep(isDirect ? 2 : 1);
   }, [totalItems, step]);
 
   // Repositionne le panier avant le paint quand il apparaît (useLayoutEffect = avant le paint)
