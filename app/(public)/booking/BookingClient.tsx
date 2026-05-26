@@ -762,7 +762,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           overflow: 'hidden',
         }}>
         {/* Couche 1 : photo dézoomée, haut tronqué */}
-        <div className="hero-booking-bg" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.jpg)', backgroundSize: '88%', backgroundPosition: 'right 12%', backgroundRepeat: 'no-repeat', zIndex: 1 }} />
+        <div className="hero-booking-bg" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.webp)', backgroundSize: '88%', backgroundPosition: 'right 12%', backgroundRepeat: 'no-repeat', zIndex: 1 }} />
         {/* Couche 2 : dégradé diagonal + couvercle gauche pour supprimer la ligne de démarcation */}
         <div className="hero-grad-1" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(47,82,160,1) 0%, rgba(47,82,160,1) 18%, rgba(47,82,160,0) 30%), linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.55) 50%, rgba(47,82,160,0.20) 65%, rgba(47,82,160,0) 80%)', zIndex: 2 }} />
         {/* Couche 3 : fond violet en haut (body.no-fond:before), 500px */}

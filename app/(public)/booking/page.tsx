@@ -32,7 +32,7 @@ const serviceSchema = {
 export default function Page() {
   return (
     <>
-      <link rel="preload" href="/hiver-hero.jpg" as="image" />
+      <link rel="preload" href="/hiver-hero.webp" as="image" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}

@@ -6,10 +6,10 @@ export default function HomePage() {
   const logoText = "fluide".split("");
 
   const summerFlights = [
-    { id: 1, title: "Vol Merle", duration: "6-10 min", price: "65€", img: "/merle.jpg", desc: "Baptême découverte pour les enfants ou -60kg." },
-    { id: 2, title: "Vol Loup", duration: "15 min", price: "90€", img: "/loup.jpg", desc: "Baptême de parapente pour tous (750m dénivelé)." },
-    { id: 3, title: "Ascendance", duration: "30 min", price: "130€", img: "/ascendance.jpg", desc: "Vol thermique au départ du Crêt du Loup." },
-    { id: 4, title: "Prestige", duration: "1 heure", price: "170€", img: "/prestige.jpg", desc: "Vol d'une heure pour pilotes en herbe ou passionnés." }
+    { id: 1, title: "Vol Merle", duration: "6-10 min", price: "65€", img: "/merle.webp", desc: "Baptême découverte pour les enfants ou -60kg." },
+    { id: 2, title: "Vol Loup", duration: "15 min", price: "90€", img: "/loup.webp", desc: "Baptême de parapente pour tous (750m dénivelé)." },
+    { id: 3, title: "Ascendance", duration: "30 min", price: "130€", img: "/ascendance.webp", desc: "Vol thermique au départ du Crêt du Loup." },
+    { id: 4, title: "Prestige", duration: "1 heure", price: "170€", img: "/prestige.webp", desc: "Vol d'une heure pour pilotes en herbe ou passionnés." }
   ];
 
   return (
@@ -70,7 +70,7 @@ export default function HomePage() {
       {/* --- HERO SECTION --- */}
       <section style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-          <Image src="/hero-parapente.jpg" alt="Hero" fill style={{ objectFit: 'cover' }} priority />
+          <Image src="/hero-parapente.webp" alt="Hero" fill style={{ objectFit: 'cover' }} priority />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,23,42,0.9) 0%, rgba(30,64,175,0.2) 30%, transparent 70%)' }} />
         </div>
 

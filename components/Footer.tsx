@@ -45,7 +45,7 @@ export default function Footer() {
   return (
     <footer id="footer" style={{
       backgroundColor: '#fff',
-      backgroundImage: 'url(/bg-footer.jpg)',
+      backgroundImage: 'url(/bg-footer.webp)',
       backgroundPosition: 'bottom left',
       backgroundSize: '100% auto',
       backgroundRepeat: 'no-repeat',

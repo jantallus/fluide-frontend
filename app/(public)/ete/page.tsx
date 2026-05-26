@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 export default function EtePage() {
   const summerFlights = [
-    { id: 1, title: "Vol Merle", duration: "6-10 min", price: "65€", img: "/merle.jpg", desc: "Le baptême idéal pour les enfants ou les petits gabarits (-60kg)." },
-    { id: 2, title: "Vol Loup", duration: "15 min", price: "90€", img: "/loup.jpg", desc: "Le grand classique au départ du Crêt du Loup. Accessible à tous !" },
-    { id: 3, title: "Vol Ascendance", duration: "30 min", price: "130€", img: "/ascendance.jpg", desc: "Utilisez les courants thermiques pour gagner de l'altitude." },
-    { id: 4, title: "Vol Prestige", duration: "1 heure", price: "170€", img: "/prestige.jpg", desc: "Une heure de pur plaisir au-dessus de la chaîne des Aravis." }
+    { id: 1, title: "Vol Merle", duration: "6-10 min", price: "65€", img: "/merle.webp", desc: "Le baptême idéal pour les enfants ou les petits gabarits (-60kg)." },
+    { id: 2, title: "Vol Loup", duration: "15 min", price: "90€", img: "/loup.webp", desc: "Le grand classique au départ du Crêt du Loup. Accessible à tous !" },
+    { id: 3, title: "Vol Ascendance", duration: "30 min", price: "130€", img: "/ascendance.webp", desc: "Utilisez les courants thermiques pour gagner de l'altitude." },
+    { id: 4, title: "Vol Prestige", duration: "1 heure", price: "170€", img: "/prestige.webp", desc: "Une heure de pur plaisir au-dessus de la chaîne des Aravis." }
   ];
 
   return (
@@ -90,7 +90,7 @@ export default function EtePage() {
       {/* --- SECTION 1 : HERO --- */}
       <section style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', alignItems: 'center', paddingLeft: '15vw', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-          <Image src="/ete-hero.jpg" alt="Parapente Été" fill style={{ objectFit: 'cover' }} priority />
+          <Image src="/ete-hero.webp" alt="Parapente Été" fill style={{ objectFit: 'cover' }} priority />
         </div>
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 3.8rem)', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.1, maxWidth: '800px', textShadow: '0 4px 15px rgba(0,0,0,0.6)' }}>
@@ -136,7 +136,7 @@ export default function EtePage() {
           </div>
 
           <div className="image-container-ete">
-            <Image src="/coldesaravis.jpg" alt="Vue du Col des Aravis" fill style={{ objectFit: 'cover' }} />
+            <Image src="/coldesaravis.webp" alt="Vue du Col des Aravis" fill style={{ objectFit: 'cover' }} />
           </div>
 
         </div>
