@@ -746,6 +746,9 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ultraSmoothReveal { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes pageReveal { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .flight-img-wrap { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+        .flight-img-wrap img { display: block; width: 100%; height: 100%; object-fit: cover; }
         .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .direct-mode-reveal { animation: pageReveal 0.25s ease 0.15s both; }
         .hero-booking { background: transparent !important; margin-top: -90px; }
@@ -874,12 +877,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   return (
                   <div key={flight.id} className="flight-card bg-slate-50 rounded-[10px] p-8 border border-slate-100 flex flex-col justify-between">
                     
-                    {/* 🎯 NOUVEAU : LA SUPERBE PHOTO DU VOL */}
                     {flight.image_url && (
-                      <div 
-                        className="w-full h-40 md:h-52 bg-cover bg-center rounded-[10px] mb-6 border border-slate-100"
-                        style={{ backgroundImage: `url(${flight.image_url})`, backgroundColor: '#e2e8f0' }}
-                      />
+                      <div className="flight-img-wrap w-full h-40 md:h-52 rounded-[10px] mb-6 border border-slate-100 overflow-hidden">
+                        <img src={flight.image_url} alt={flight.name} loading="lazy" decoding="async" />
+                      </div>
                     )}
 
                     <div>
