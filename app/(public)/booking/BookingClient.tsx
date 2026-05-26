@@ -749,7 +749,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         .flight-img-wrap { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
         .flight-img-wrap img { display: block; width: 100%; height: 100%; object-fit: cover; }
-        .hero-animation-block { will-change: transform, opacity; animation: ultraSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .hero-animation-block { animation: ultraSmoothReveal 0.5s ease forwards; }
         .direct-mode-reveal { animation: pageReveal 0.25s ease 0.15s both; }
         .hero-booking { background: transparent !important; margin-top: -90px; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
@@ -792,14 +792,14 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 🎯 SÉLECTEUR DE SAISON "COLLANT" (STICKY) */}
             <div className="flex justify-center mb-12 sticky top-[80px] lg:top-[90px] z-40 transition-all duration-300">
-              <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+              <div className="bg-white p-1.5 rounded-[10px] inline-flex border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
                 <button aria-pressed={activeSeason === 'Standard'} onClick={() => setActiveSeason('Standard')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Standard' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Standard' ? { backgroundColor: '#E6007E', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Sun size={18} strokeWidth={1.5} />été</button>
                 <button aria-pressed={activeSeason === 'Hiver'} onClick={() => setActiveSeason('Hiver')} className={`px-6 py-3 rounded-[5px] transition-all duration-300 flex items-center gap-2 ${activeSeason === 'Hiver' ? 'text-white shadow-md scale-105' : 'text-slate-500 hover:text-slate-800'}`} style={activeSeason === 'Hiver' ? { backgroundColor: '#312783', fontSize: '1.125rem', fontWeight: 700 } : { fontSize: '1.125rem', fontWeight: 700 }}><Snowflake size={18} strokeWidth={1.5} />hiver</button>
               </div>
             </div>
 
             {/* 💡 BANDEAU DE RÉASSURANCE (ASTUCES FLUIDES) */}
-          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm backdrop-blur-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)' }}>
+          <div className="max-w-7xl mx-auto mb-12 rounded-[10px] p-6 shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)' }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
               <div className="flex items-start gap-4">
@@ -1068,7 +1068,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
-                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-[80px] lg:top-[90px] '}z-40 bg-white/95 backdrop-blur-md pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
+                    <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-[80px] lg:top-[90px] '}z-40 bg-white pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
                       <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
@@ -1570,7 +1570,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={() => setInfoFlight(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60" onClick={() => setInfoFlight(null)}>
 
           {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
           <div
