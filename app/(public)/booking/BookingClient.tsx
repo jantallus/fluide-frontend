@@ -1574,7 +1574,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60" onClick={() => setInfoFlight(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={() => setInfoFlight(null)}>
 
           {/* role="dialog" + aria-modal indique aux lecteurs d'écran que c'est une fenêtre modale */}
           <div
