@@ -27,6 +27,11 @@ import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
+function cloudinaryOptimize(url: string, w = 600, h = 300): string {
+  if (!url.includes('res.cloudinary.com')) return url;
+  return url.replace('/image/upload/', `/image/upload/w_${w},h_${h},c_fill,f_auto,q_auto/`);
+}
+
 export default function ReserverPage({ volOverride, seasonOverride }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver' } = {}) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -878,7 +883,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     
                     {flight.image_url && (
                       <div className="flight-img-wrap w-full h-40 md:h-52 rounded-[10px] mb-6 border border-slate-100 overflow-hidden">
-                        <img src={flight.image_url} alt={flight.name} loading="lazy" decoding="async" />
+                        <img src={cloudinaryOptimize(flight.image_url)} alt={flight.name} decoding="async" />
                       </div>
                     )}
 
@@ -1606,7 +1611,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 {infoFlight.image_url && (
                   <div 
                     className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" 
-                    style={{ backgroundImage: `url(${infoFlight.image_url})` }} 
+                    style={{ backgroundImage: `url(${cloudinaryOptimize(infoFlight.image_url, 800, 600)})` }}
                   />
                 )}
                 
