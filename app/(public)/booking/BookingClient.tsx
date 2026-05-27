@@ -1088,8 +1088,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 <div className="relative shrink-0" ref={calendarRef}>
                   <button
                     onClick={() => setShowCalendar(v => !v)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-[5px] border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                    style={{ fontSize: '0.88rem' }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-[5px] border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    style={{ fontSize: '0.95rem' }}
                   >
                     <CalendarDays size={16} style={{ color: '#312783', flexShrink: 0 }} />
                     {formatPickedDate(pickedDate)}
@@ -1109,7 +1109,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     ];
                     const ds = (d: number) => getLocalYYYYMMDD(new Date(year, month, d));
                     return (
-                      <div className="absolute right-0 mt-2 z-50 bg-white rounded-[12px] border border-slate-200 p-4 select-none"
+                      <div className="absolute left-0 md:left-auto md:right-0 mt-2 z-50 bg-white rounded-[12px] border border-slate-200 p-4 select-none"
                         style={{ width: '272px', boxShadow: '0 8px 32px rgba(49,39,131,0.13)' }}>
                         {/* En-tête mois */}
                         <div className="flex items-center justify-between mb-3">
