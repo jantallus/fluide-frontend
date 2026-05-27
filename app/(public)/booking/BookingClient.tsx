@@ -570,6 +570,14 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     return grid;
   }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
 
+  const nextAvailableDate = useMemo(() => {
+    const today = getLocalYYYYMMDD(new Date());
+    const futureDates = Object.keys(gridData)
+      .filter(d => d >= today && Object.keys(gridData[d]).length > 0)
+      .sort();
+    return futureDates[0] ?? null;
+  }, [gridData]);
+
   const pickDate = (dateStr: string) => {
     setPickedDate(dateStr);
     setGridStartDate(calculateGridStart(dateStr, displayDaysCount));
@@ -1270,8 +1278,18 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                             {showRealSlots ? (
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
                                 {times.length === 0 ? (
-                                  <div className="rounded-[5px] py-8 border border-slate-200 flex items-center justify-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
-                                    <p className="text-xs font-bold" style={{ color: '#312783', opacity: 0.4 }}>Complet</p>
+                                  <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
+                                    {nextAvailableDate ? (
+                                      <>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#312783', opacity: 0.45 }}>Prochaines dispos en ligne</p>
+                                        <p className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>
+                                          à partir du {new Date(nextAvailableDate + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                                        </p>
+                                        <div className="w-8 border-t border-slate-300 my-0.5" />
+                                      </>
+                                    ) : null}
+                                    <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>Avant cette date, appelez le</p>
+                                    <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
                                   </div>
                                 ) : (
                                   times.map(timeStr => {
