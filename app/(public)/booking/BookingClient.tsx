@@ -570,13 +570,14 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     return grid;
   }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
 
-  const nextAvailableDate = useMemo(() => {
+  const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
+  useEffect(() => {
     const today = getLocalYYYYMMDD(new Date());
-    const futureDates = Object.keys(gridData)
-      .filter(d => d >= today && Object.keys(gridData[d]).length > 0)
-      .sort();
-    return futureDates[0] ?? null;
-  }, [gridData]);
+    fetch(`/api/proxy/public/next-available?start=${today}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setNextAvailableDate(data?.date ?? null))
+      .catch(() => setNextAvailableDate(null));
+  }, [selectedFlight?.id]);
 
   const pickDate = (dateStr: string) => {
     setPickedDate(dateStr);
