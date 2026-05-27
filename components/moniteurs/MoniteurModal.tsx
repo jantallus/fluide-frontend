@@ -59,19 +59,28 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
     if (userToEdit && !payload.password) delete payload.password;
 
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
-    if (res.ok) {
-      const userData = await res.json();
-      const userId = userToEdit?.id || userData.id;
-      await apiFetch(`/api/users/${userId}/availabilities`, {
-        method: 'PUT',
-        body: JSON.stringify({ availabilities }),
-      });
-      onSaved();
-      onClose();
-    } else {
+    if (!res.ok) {
       const err = await res.json();
       toast.error(err.error || "Erreur lors de l'enregistrement");
+      return;
     }
+
+    const userData = await res.json();
+    const userId = userToEdit?.id || userData.id;
+
+    const validAvailabilities = availabilities.filter(a => a.start_date && a.end_date);
+    const avRes = await apiFetch(`/api/users/${userId}/availabilities`, {
+      method: 'PUT',
+      body: JSON.stringify({ availabilities: validAvailabilities }),
+    });
+    if (!avRes.ok) {
+      const avErr = await avRes.json();
+      toast.error(avErr.error || "Erreur lors de l'enregistrement des disponibilités");
+      return;
+    }
+
+    onSaved();
+    onClose();
   };
 
   const updateAvailability = (idx: number, field: string, value: string) => {
