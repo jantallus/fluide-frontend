@@ -1088,8 +1088,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 <div className="relative shrink-0" ref={calendarRef}>
                   <button
                     onClick={() => setShowCalendar(v => !v)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-[5px] border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                    style={{ fontSize: '0.95rem' }}
+                    className="flex items-center gap-2 px-6 py-3 rounded-[5px] border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    style={{ fontSize: '1.05rem' }}
                   >
                     <CalendarDays size={16} style={{ color: '#312783', flexShrink: 0 }} />
                     {formatPickedDate(pickedDate)}
