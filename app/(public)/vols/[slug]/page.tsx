@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { Mountain, Clock } from 'lucide-react';
+import { Mountain, Clock, Ticket } from 'lucide-react';
 import { InfoIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
 import OtherFlightsSection from './OtherFlightsSection';
@@ -85,6 +85,22 @@ export default async function VolPage({ params }: Props) {
               </span>
               {config.priceFrom}
             </p>
+            {config.season === 'Standard' && (
+              <p style={{ fontWeight: 700, display: 'flex', alignItems: 'center', margin: '10px 0', color: '#E6007E', fontSize: '18px' }}>
+                <span style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+                  <Ticket size={20} strokeWidth={1.5} />
+                </span>
+                Montée en télésiège comprise
+              </p>
+            )}
+            {config.timeLabel && (
+              <p style={{ fontWeight: 700, display: 'flex', alignItems: 'center', margin: '10px 0', color: '#E6007E', fontSize: '18px' }}>
+                <span style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+                  <img src="/temps-restant.png" alt="" aria-hidden="true" style={{ width: 20, height: 20, objectFit: 'contain', filter: 'invert(14%) sepia(95%) saturate(6100%) hue-rotate(314deg) brightness(99%) contrast(104%)' }} />
+                </span>
+                {config.timeLabel}
+              </p>
+            )}
 
             {/* Bouton */}
             <p style={{ marginTop: '15px' }}>

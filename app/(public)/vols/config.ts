@@ -21,6 +21,7 @@ export interface VolPageConfig {
   denivele: string;
   statIcon?: 'Mountain' | 'Clock';
   priceFrom: string;
+  timeLabel?: string;
   backUrl?: string;
   description: DescriptionBlock[];
   highlights: VolHighlight[];
@@ -157,6 +158,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
     denivele: '7 min de vol',
     statIcon: 'Clock',
     priceFrom: 'À partir de 70 €',
+    timeLabel: '09h25 — premier créneau de la journée uniquement',
     description: [
       {
         type: 'paragraph',
@@ -195,6 +197,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
     denivele: '15 min de vol',
     statIcon: 'Clock',
     priceFrom: 'À partir de 90 €',
+    timeLabel: 'Toute la journée',
     description: [
       {
         type: 'paragraph',
@@ -219,6 +222,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
     denivele: '30 min de vol',
     statIcon: 'Clock',
     priceFrom: 'À partir de 130 €',
+    timeLabel: 'L\'après-midi uniquement — à partir de 13h10',
     description: [
       {
         type: 'paragraph',
@@ -253,6 +257,7 @@ export const VOL_PAGES: Record<string, VolPageConfig> = {
     denivele: '1h de vol',
     statIcon: 'Clock',
     priceFrom: 'À partir de 180 €',
+    timeLabel: '16h35 — dernier créneau de la journée uniquement',
     description: [],
     highlights: [],
   },

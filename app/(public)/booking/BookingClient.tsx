@@ -32,6 +32,16 @@ function cloudinaryOptimize(url: string, w = 600, h = 300): string {
   return url.replace('/image/upload/', `/image/upload/w_${w},h_${h},c_fill,f_auto,q_auto/`);
 }
 
+function getTimeSlotLabel(flight: { allowed_time_slots?: string[] }): string | null {
+  const slots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
+  if (slots.length === 0) return null;
+  const fmt = (t: string) => t.replace(':', 'h');
+  if (slots.length === 1) return `${fmt(slots[0])} uniquement`;
+  const firstHour = parseInt(slots[0].split(':')[0], 10);
+  if (firstHour >= 13) return `À partir de ${fmt(slots[0])}`;
+  return 'Toute la journée';
+}
+
 export default function ReserverPage({ volOverride, seasonOverride }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver' } = {}) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
