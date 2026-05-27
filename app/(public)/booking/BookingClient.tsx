@@ -24,7 +24,7 @@ import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
-import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, Globe } from 'lucide-react';
+import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
 function cloudinaryOptimize(url: string, w = 600, h = 300): string {
@@ -156,6 +156,15 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   useScrollLock(!!infoFlight);
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date();
+    if (d.getHours() >= 12) d.setDate(d.getDate() + 1);
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [showFlightSelect, setShowFlightSelect] = useState(false);
+  const flightSelectRef = useRef<HTMLDivElement>(null);
 
   // pickedDate et gridStartDate déclarés avant les hooks pour que le callback onReady puisse les setter
   const [pickedDate, setPickedDate] = useState<string>(() => {
@@ -427,6 +436,28 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length, step]); // 🎯 NOUVEAU : On a ajouté "step" ici pour forcer le réveil !
 
+  useEffect(() => {
+    if (!showCalendar) return;
+    const handler = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setShowCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCalendar]);
+
+  useEffect(() => {
+    if (!showFlightSelect) return;
+    const handler = (e: MouseEvent) => {
+      if (flightSelectRef.current && !flightSelectRef.current.contains(e.target as Node)) {
+        setShowFlightSelect(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFlightSelect]);
+
   const gridData = useMemo(() => {
     if (!selectedFlight || rawSlots.length === 0) return {};
 
@@ -539,10 +570,15 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     return grid;
   }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
 
-  const handleDatePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPickedDate(val);
-    setGridStartDate(calculateGridStart(val, displayDaysCount));
+  const pickDate = (dateStr: string) => {
+    setPickedDate(dateStr);
+    setGridStartDate(calculateGridStart(dateStr, displayDaysCount));
+    setShowCalendar(false);
+  };
+
+  const formatPickedDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
   };
 
   const shiftDays = (offset: number) => {
@@ -587,10 +623,6 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     });
   };
 
-  const handleRemovePassenger = (indexToRemove: number, flightKey: string) => {
-    setPassengers(prev => prev.filter((_, i) => i !== indexToRemove));
-    handleDecrementCart(flightKey);
-  };
 
   let totalItems = 0;
   Object.values(cart).forEach(qty => { totalItems += qty; });
@@ -994,7 +1026,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         {step === 2 && selectedFlight && (
           <div id="etape-2-container" className={`animate-in fade-in slide-in-from-right-8 duration-500 ${isDirect ? 'mt-0' : 'mt-16 md:mt-24'}`}>
             {!isDirect && (
-              <button onClick={() => setStep(1)} className="mb-6 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 shadow-sm border border-slate-100 w-fit transition-colors" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
+              <button onClick={() => setStep(1)} className="mb-6 bg-white px-4 py-2 rounded-[5px] text-slate-600 flex items-center gap-2 border border-slate-200 w-fit transition-colors hover:border-slate-300 hover:bg-slate-50" style={{ fontSize: '0.875rem', fontWeight: 700 }} onMouseEnter={e => (e.currentTarget.style.color = '#312783')} onMouseLeave={e => (e.currentTarget.style.color = '')}>
                 ← Retour au catalogue
               </button>
             )}
@@ -1010,42 +1042,128 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                         {selectedFlight.name}
                       </span>
                     ) : (
-                      <div className="relative">
-                        <select
-                          className="bg-opacity-5 border-2 rounded-[10px] py-1 pl-4 pr-10 outline-none cursor-pointer transition-all appearance-none" style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: 'rgba(230,0,126,0.2)', fontSize: '2rem', fontWeight: 700 }}
-                          value={selectedFlight.id}
-                          onChange={(e) => {
-                            const newFlight = flights.find(f => f.id.toString() === e.target.value);
-                            if (newFlight) setSelectedFlight(newFlight);
-                          }}
+                      <div className="relative" ref={flightSelectRef}>
+                        <button
+                          onClick={() => setShowFlightSelect(v => !v)}
+                          className="flex items-center gap-3 border-2 rounded-[5px] py-1 pl-4 pr-4 transition-all"
+                          style={{ color: '#E6007E', backgroundColor: 'rgba(230,0,126,0.04)', borderColor: showFlightSelect ? 'rgba(230,0,126,0.5)' : 'rgba(230,0,126,0.2)', fontSize: '2rem', fontWeight: 700 }}
                         >
-                          {filteredFlights.map(f => (
-                            <option key={f.id} value={f.id}>{f.name}</option>
-                          ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-sm" style={{ color: '#E6007E' }}>▼</div>
+                          {selectedFlight.name}
+                          <ChevronDown size={20} strokeWidth={2.5} style={{ flexShrink: 0, marginTop: '2px', transform: showFlightSelect ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                        </button>
+
+                        {showFlightSelect && (
+                          <div className="absolute left-0 mt-2 z-50 bg-white rounded-[10px] border border-slate-200 overflow-hidden"
+                            style={{ minWidth: '100%', boxShadow: '0 8px 32px rgba(49,39,131,0.13)' }}>
+                            {filteredFlights.map(f => {
+                              const isActive = f.id === selectedFlight.id;
+                              return (
+                                <button
+                                  key={f.id}
+                                  onClick={() => { setSelectedFlight(f); setShowFlightSelect(false); }}
+                                  className="w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-4"
+                                  style={{
+                                    fontSize: '1.1rem',
+                                    fontWeight: 700,
+                                    color: isActive ? '#fff' : '#312783',
+                                    backgroundColor: isActive ? '#312783' : 'transparent',
+                                  }}
+                                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.06)'; }}
+                                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                >
+                                  <span>{f.name}</span>
+                                  {isActive && <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>✓</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                   <p style={{ fontSize: '1rem', fontWeight: 700, color: '#009FE3', marginTop: '12px' }}>{getMarketingInfo(selectedFlight.name)}</p>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[10px] border border-slate-200 shrink-0">
-                  {displayDaysCount < 5 && (
-                    <button onClick={() => shiftDays(-1)} className="w-8 h-8 flex items-center justify-center rounded-[5px] hover:bg-white shadow-sm font-bold text-slate-500 transition-colors">←</button>
-                  )}
-                  <span className="ml-2 hidden md:inline" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
-                    {displayDaysCount === 7 ? "Semaine du" : "À partir du"}
-                  </span>
-                  <input 
-                    type="date" 
-                    className="font-bold bg-transparent border-none p-2 outline-none cursor-pointer text-slate-700" 
-                    value={pickedDate} 
-                    onChange={handleDatePick} 
-                  />
-                  {displayDaysCount < 5 && (
-                    <button onClick={() => shiftDays(1)} className="w-8 h-8 flex items-center justify-center rounded-[5px] hover:bg-white shadow-sm font-bold text-slate-500 transition-colors">→</button>
-                  )}
+                {/* Sélecteur de date — bouton + calendrier custom */}
+                <div className="relative shrink-0" ref={calendarRef}>
+                  <button
+                    onClick={() => setShowCalendar(v => !v)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-[5px] border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    style={{ fontSize: '0.88rem' }}
+                  >
+                    <CalendarDays size={16} style={{ color: '#312783', flexShrink: 0 }} />
+                    {formatPickedDate(pickedDate)}
+                    <ChevronDown size={14} style={{ color: '#94a3b8', flexShrink: 0, transform: showCalendar ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                  </button>
+
+                  {showCalendar && (() => {
+                    const today = getLocalYYYYMMDD(new Date());
+                    const year = calMonth.getFullYear();
+                    const month = calMonth.getMonth();
+                    const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const monthLabel = calMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                    const cells: (number | null)[] = [
+                      ...Array(firstDayOfWeek).fill(null),
+                      ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+                    ];
+                    const ds = (d: number) => getLocalYYYYMMDD(new Date(year, month, d));
+                    return (
+                      <div className="absolute right-0 mt-2 z-50 bg-white rounded-[12px] border border-slate-200 p-4 select-none"
+                        style={{ width: '272px', boxShadow: '0 8px 32px rgba(49,39,131,0.13)' }}>
+                        {/* En-tête mois */}
+                        <div className="flex items-center justify-between mb-3">
+                          <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500">
+                            <ChevronLeft size={16} />
+                          </button>
+                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#312783', textTransform: 'capitalize' }}>{monthLabel}</span>
+                          <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500">
+                            <ChevronRight size={16} />
+                          </button>
+                        </div>
+                        {/* Noms des jours */}
+                        <div className="grid grid-cols-7 mb-1">
+                          {['L','M','M','J','V','S','D'].map((d, i) => (
+                            <div key={i} className="flex items-center justify-center h-7"
+                              style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>{d}</div>
+                          ))}
+                        </div>
+                        {/* Grille des jours */}
+                        <div className="grid grid-cols-7 gap-y-1">
+                          {cells.map((d, i) => {
+                            if (!d) return <div key={i} />;
+                            const dateStr = ds(d);
+                            const isPast = dateStr < today;
+                            const isSelected = dateStr === pickedDate;
+                            const isToday = dateStr === today;
+                            return (
+                              <button
+                                key={i}
+                                disabled={isPast}
+                                onClick={() => { pickDate(dateStr); setCalMonth(new Date(year, month, 1)); }}
+                                className="flex items-center justify-center h-8 w-8 mx-auto rounded-full transition-colors"
+                                style={{
+                                  fontSize: '0.82rem',
+                                  fontWeight: isSelected || isToday ? 700 : 400,
+                                  backgroundColor: isSelected ? '#312783' : 'transparent',
+                                  color: isSelected ? '#fff' : isPast ? '#cbd5e1' : '#1e293b',
+                                  outline: isToday && !isSelected ? '2px solid #E6007E' : 'none',
+                                  outlineOffset: '-2px',
+                                  cursor: isPast ? 'default' : 'pointer',
+                                }}
+                                onMouseEnter={e => { if (!isPast && !isSelected) e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.08)'; }}
+                                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                {d}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1061,11 +1179,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     {Array.from({ length: displayDaysCount === 7 ? 7 : 5 }).map((_, i) => (
                       <div key={i} className="min-w-[75vw] md:min-w-[220px] flex-1 flex flex-col gap-3 animate-pulse">
                          {/* Faux header de jour */}
-                         <div className="h-14 bg-slate-200/60 rounded-xl mb-4"></div>
+                         <div className="h-14 bg-slate-200/60 rounded-[5px] mb-4"></div>
                          {/* Fausses cases horaires */}
-                         <div className="h-20 bg-slate-100 rounded-xl"></div>
-                         <div className="h-20 bg-slate-100 rounded-xl"></div>
-                         <div className="h-20 bg-slate-100/50 rounded-xl"></div>
+                         <div className="h-20 bg-slate-100 rounded-[5px]"></div>
+                         <div className="h-20 bg-slate-100 rounded-[5px]"></div>
+                         <div className="h-20 bg-slate-100/50 rounded-[5px]"></div>
                       </div>
                     ))}
                   </div>
@@ -1081,13 +1199,13 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           return (
                             <div key={`header-${dateStr}`} className={`min-w-[75vw] max-w-[75vw] md:min-w-[220px] md:max-w-none flex-1 flex gap-2 ${isHiddenOnDesktop ? 'md:hidden' : ''}`}>
                               {isFirstDesktop && (
-                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-bold">←</span></button>
+                                <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><ChevronLeft size={22} strokeWidth={2.5} /></button>
                               )}
                               <div className="flex-1 shadow-md rounded-[5px] p-4 flex flex-col items-center justify-center text-center" style={{ backgroundColor: '#312783' }}>
                                 <p className="font-bold text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
                               </div>
                               {isLastDesktop && (
-                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><span className="text-2xl font-bold">→</span></button>
+                                <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><ChevronRight size={22} strokeWidth={2.5} /></button>
                               )}
                             </div>
                           );
@@ -1152,8 +1270,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                             {showRealSlots ? (
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
                                 {times.length === 0 ? (
-                                  <div className="bg-slate-50 rounded-lg py-8 border border-dashed border-slate-200 flex items-center justify-center">
-                                    <p className="text-slate-400 text-xs font-bold">Complet</p>
+                                  <div className="rounded-[5px] py-8 border border-slate-200 flex items-center justify-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
+                                    <p className="text-xs font-bold" style={{ color: '#312783', opacity: 0.4 }}>Complet</p>
                                   </div>
                                 ) : (
                                   times.map(timeStr => {
@@ -1162,10 +1280,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                     const qtyInCart = cart[currentFlightKey] || 0;
                                     const isSelected = qtyInCart > 0;
                                     return (
-                                      <div key={timeStr} className={`p-4 rounded-lg border transition-colors ${isSelected ? 'shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`} style={isSelected ? { backgroundColor: 'rgba(230,0,126,0.06)', borderColor: '#E6007E' } : {}}>
+                                      <div key={timeStr} className={`p-4 rounded-[5px] border transition-colors ${isSelected ? 'shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`} style={isSelected ? { backgroundColor: 'rgba(230,0,126,0.06)', borderColor: '#E6007E' } : {}}>
                                         <div className="flex justify-between items-center mb-4">
                                           <span className={`font-bold text-lg ${isSelected ? '' : 'text-slate-700'}`} style={isSelected ? { color: '#312783' } : {}}>{timeStr}</span>
-                                          <span className={`text-[10px] font-bold px-2 py-1 rounded border ${capacity > 0 ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' : 'bg-rose-50 text-rose-500 border-rose-100'}`}>
+                                          <span className="text-[10px] font-bold px-2 py-1 rounded-[4px] border" style={capacity > 0 ? { backgroundColor: 'rgba(49,39,131,0.06)', color: '#312783', borderColor: 'rgba(49,39,131,0.15)' } : { backgroundColor: 'rgba(230,0,126,0.06)', color: '#E6007E', borderColor: 'rgba(230,0,126,0.2)' }}>
                                             {capacity} place{capacity > 1 ? 's' : ''}
                                           </span>
                                         </div>
@@ -1517,11 +1635,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
               <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scrollbar">
                 {Object.entries(cart).map(([key, qty]) => {
                   if (qty === 0) return null;
-                  const [fId, dStr, tStr] = key.split('|');
+                  const [fId, , tStr] = key.split('|');
                   const f = flights.find(fl => fl.id.toString() === fId);
                   return (
                     <div key={key} className="bg-slate-50 rounded-[10px] pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
-                      <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sky-500 text-sm">{qty}</span></span>
+                      <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sm font-bold" style={{ color: '#009FE3' }}>{qty}</span></span>
                       <div className="flex items-center gap-1 ml-2">
                         <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
                         <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
