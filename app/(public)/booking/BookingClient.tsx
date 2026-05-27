@@ -157,6 +157,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [calAvailDates, setCalAvailDates] = useState<Set<string>>(new Set());
   const [calMonth, setCalMonth] = useState(() => {
     const d = new Date();
     if (d.getHours() >= 12) d.setDate(d.getDate() + 1);
@@ -578,6 +579,18 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       .then(data => setNextAvailableDate(data?.date ?? null))
       .catch(() => setNextAvailableDate(null));
   }, [selectedFlight?.id]);
+
+  useEffect(() => {
+    if (!showCalendar) return;
+    const year = calMonth.getFullYear();
+    const month = calMonth.getMonth();
+    const start = getLocalYYYYMMDD(new Date(year, month, 1));
+    const end = getLocalYYYYMMDD(new Date(year, month + 1, 0));
+    fetch(`/api/proxy/public/available-dates?start=${start}&end=${end}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((dates: string[]) => setCalAvailDates(new Set(dates)))
+      .catch(() => setCalAvailDates(new Set()));
+  }, [calMonth, showCalendar]);
 
   const pickDate = (dateStr: string) => {
     setPickedDate(dateStr);
@@ -1147,12 +1160,13 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                             const isPast = dateStr < today;
                             const isSelected = dateStr === pickedDate;
                             const isToday = dateStr === today;
+                            const hasSlots = calAvailDates.has(dateStr);
                             return (
                               <button
                                 key={i}
                                 disabled={isPast}
                                 onClick={() => { pickDate(dateStr); setCalMonth(new Date(year, month, 1)); }}
-                                className="flex items-center justify-center h-8 w-8 mx-auto rounded-full transition-colors"
+                                className="flex flex-col items-center justify-center h-8 w-8 mx-auto rounded-full transition-colors"
                                 style={{
                                   fontSize: '0.82rem',
                                   fontWeight: isSelected || isToday ? 700 : 400,
@@ -1165,7 +1179,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                 onMouseEnter={e => { if (!isPast && !isSelected) e.currentTarget.style.backgroundColor = 'rgba(49,39,131,0.08)'; }}
                                 onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
-                                {d}
+                                <span style={{ lineHeight: 1 }}>{d}</span>
+                                {hasSlots && !isPast && (
+                                  <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: isSelected ? 'rgba(255,255,255,0.7)' : '#E6007E', flexShrink: 0, marginTop: 1 }} />
+                                )}
                               </button>
                             );
                           })}
