@@ -6,7 +6,6 @@ import { InfoIcon } from '@/components/icons/ActivityIcons';
 import BookingClient from '../../booking/BookingClient';
 import OtherFlightsSection from './OtherFlightsSection';
 import BackNavigationGuard from './BackNavigationGuard';
-import ScrollToBookingButton from './ScrollToBookingButton';
 import { VOL_PAGES } from '../config';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -102,10 +101,6 @@ export default async function VolPage({ params }: Props) {
               </p>
             )}
 
-            {/* Bouton */}
-            <p style={{ marginTop: '15px' }}>
-              <ScrollToBookingButton />
-            </p>
 
           </div>
         </div>
