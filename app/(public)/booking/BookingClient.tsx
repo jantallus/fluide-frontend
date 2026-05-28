@@ -1313,7 +1313,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                             <p key={i} className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>{line}</p>
                                           ))}
                                           <div className="w-8 border-t border-slate-300 my-0.5" />
-                                          <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>Avant cette date, appelez le</p>
+                                          <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>En dehors de ces dates, appelez le</p>
                                         </>
                                       )}
                                       {(!msg || msg.offSeason) && (

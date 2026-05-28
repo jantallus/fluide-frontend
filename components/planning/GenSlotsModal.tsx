@@ -17,6 +17,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all',
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const sendGenerationRequest = async (force = false) => {
     try {
@@ -42,11 +43,42 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     }
   };
 
+  const sendDeleteRequest = async (force = false) => {
+    try {
+      const res = await apiFetch('/api/delete-slots', {
+        method: 'POST',
+        body: JSON.stringify({ startDate: genConfig.startDate, endDate: genConfig.endDate, monitor_id: genConfig.monitor_id, forceOverwrite: force }),
+      });
+      const data = await res.json();
+      if (res.status === 409 && data.warning) {
+        const confirmed = await confirm(data.message);
+        if (confirmed) return sendDeleteRequest(true);
+        else { setIsDeleting(false); return; }
+      }
+      if (res.ok) {
+        toast.success(`🗑️ ${data.deleted || 0} créneau(x) supprimé(s).`);
+        onClose();
+        await loadAppointments();
+      } else {
+        toast.error('Erreur : ' + (data.error || 'Erreur inconnue'));
+      }
+    } catch {
+      toast.error('Erreur de connexion au serveur.');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
     setIsGenerating(true);
     await sendGenerationRequest(false);
     setIsGenerating(false);
+  };
+
+  const handleDelete = async () => {
+    if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
+    setIsDeleting(true);
+    await sendDeleteRequest(false);
+    setIsDeleting(false);
   };
 
   return (
@@ -91,6 +123,13 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
             className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}
           >
             {isGenerating ? '⏳ Génération en cours...' : '🚀 Lancer la génération'}
+          </button>
+          <button
+            disabled={isDeleting}
+            onClick={handleDelete}
+            className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isDeleting ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
+          >
+            {isDeleting ? '⏳ Suppression...' : '🗑️ Supprimer ces créneaux'}
           </button>
           <button onClick={onClose} className="w-full text-slate-300 font-bold uppercase text-[10px]">Fermer</button>
         </div>
