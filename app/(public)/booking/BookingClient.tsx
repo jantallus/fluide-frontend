@@ -33,15 +33,6 @@ function cloudinaryOptimize(url: string, w = 600, h = 300): string {
   return url.replace('/image/upload/', `/image/upload/w_${w},h_${h},c_fill,f_auto,q_auto/`);
 }
 
-function getTimeSlotLabel(flight: { allowed_time_slots?: string[] }): string | null {
-  const slots = Array.isArray(flight.allowed_time_slots) ? flight.allowed_time_slots : [];
-  if (slots.length === 0) return null;
-  const fmt = (t: string) => t.replace(':', 'h');
-  if (slots.length === 1) return `${fmt(slots[0])} uniquement`;
-  const firstHour = parseInt(slots[0].split(':')[0], 10);
-  if (firstHour >= 13) return `À partir de ${fmt(slots[0])}`;
-  return 'Toute la journée';
-}
 
 export default function ReserverPage({ volOverride, seasonOverride }: { volOverride?: string; seasonOverride?: 'Standard' | 'Hiver' } = {}) {
   const { toast } = useToast();
@@ -1308,7 +1299,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
                                 {times.length === 0 ? (() => {
                                   const today = getLocalYYYYMMDD(new Date());
-                                  const msg = getSeasonMessage(today, nextAvailableDate);
+                                  const contextDate = dateStr >= today ? dateStr : today;
+                                  const nextFromHere = Object.keys(gridData)
+                                    .filter(d => d > contextDate && Object.keys(gridData[d]).length > 0)
+                                    .sort()[0] ?? nextAvailableDate;
+                                  const msg = getSeasonMessage(contextDate, nextFromHere);
                                   return (
                                     <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
                                       {msg && !msg.offSeason && (
