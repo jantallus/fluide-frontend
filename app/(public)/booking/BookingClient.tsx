@@ -22,6 +22,7 @@ interface BookingPassenger {
 import { useToast } from '@/components/ui/ToastProvider';
 import { contactSchema } from '@/lib/schemas';
 import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } from '@/lib/booking-utils';
+import { getSeasonMessage } from '@/lib/season-schedule';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
 import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
@@ -1305,21 +1306,28 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           >
                             {showRealSlots ? (
                               <div className="flex flex-col gap-2 animate-in fade-in duration-500">
-                                {times.length === 0 ? (
-                                  <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
-                                    {nextAvailableDate ? (
-                                      <>
-                                        <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#312783', opacity: 0.45 }}>Prochaines dispos en ligne</p>
-                                        <p className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>
-                                          à partir du {new Date(nextAvailableDate + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-                                        </p>
-                                        <div className="w-8 border-t border-slate-300 my-0.5" />
-                                      </>
-                                    ) : null}
-                                    <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>Avant cette date, appelez le</p>
-                                    <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
-                                  </div>
-                                ) : (
+                                {times.length === 0 ? (() => {
+                                  const today = getLocalYYYYMMDD(new Date());
+                                  const msg = getSeasonMessage(today, nextAvailableDate);
+                                  return (
+                                    <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
+                                      {msg && !msg.offSeason && (
+                                        <>
+                                          <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#312783', opacity: 0.45 }}>{msg.headline}</p>
+                                          {msg.lines.map((line, i) => (
+                                            <p key={i} className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>{line}</p>
+                                          ))}
+                                          <div className="w-8 border-t border-slate-300 my-0.5" />
+                                          <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>Avant cette date, appelez le</p>
+                                        </>
+                                      )}
+                                      {(!msg || msg.offSeason) && (
+                                        <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>En dehors de la saison, appelez le</p>
+                                      )}
+                                      <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
+                                    </div>
+                                  );
+                                })() : (
                                   times.map(timeStr => {
                                     const capacity = gridData[dateStr][timeStr];
                                     const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
