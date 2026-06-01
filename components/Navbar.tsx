@@ -59,7 +59,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           position: absolute;
           left: 50%;
           transform: translateX(-50%);
-          bottom: -4px;
+          bottom: 27px;
           background-color: #fff;
           transition: width 0.3s ease;
         }
@@ -102,7 +102,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
         {/* Nav desktop */}
         <nav
           className="hidden lg:block"
-          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', whiteSpace: 'nowrap' }}
+          style={{ position: 'absolute', top: 0, right: '210px', whiteSpace: 'nowrap' }}
           aria-label="Navigation principale"
         >
           {LINKS.map(l => (
@@ -111,7 +111,8 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
               href={l.href}
               className="nav-link"
               style={{
-                margin: '0 15px',
+                margin: '0 13px',
+                lineHeight: '90px',
                 color: '#fff',
               }}
               onPointerEnter={() => setHoveredLink(l.href)}
