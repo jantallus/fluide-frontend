@@ -70,10 +70,10 @@ body, *:not(.font-georgia) {
   top: 0;
   right: 210px;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 @media (min-width: 1280px) {
-  .fluide-nav { right: 220px; gap: 3px; }
+  .fluide-nav { right: 220px; gap: 1px; }
 }
 
 .nav-link {
