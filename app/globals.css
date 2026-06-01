@@ -71,9 +71,6 @@ body, *:not(.font-georgia) {
   right: 210px;
   align-items: center;
 }
-@media (min-width: 1280px) {
-  .fluide-nav { right: 220px; }
-}
 
 .nav-link {
   display: block;
@@ -86,10 +83,6 @@ body, *:not(.font-georgia) {
   padding: 0;
   margin: 0 13px;
   white-space: nowrap;
-}
-@media (min-width: 1280px) {
-  .nav-link { font-size: 18px; margin: 0 17px; }
-  .nav-cta  { font-size: 18px !important; }
 }
 .nav-link::after {
   content: "";
