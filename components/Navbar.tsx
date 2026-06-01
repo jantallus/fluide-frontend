@@ -1,8 +1,5 @@
 "use client";
 import { useState, useEffect, useLayoutEffect } from 'react';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], weight: ['700'] });
 
 const LINKS = [
   { label: 'Parapente La Clusaz',  href: 'https://www.fluide-parapente.fr/' },
@@ -16,7 +13,6 @@ const CTA = { label: 'Réserver un vol', href: 'https://reservation.fluide-parap
 
 export default function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [ctaHovered, setCtaHovered] = useState(false);
   const [hoveredMobileLink, setHoveredMobileLink] = useState<string | null>(null);
   const [mobileCTAHovered, setMobileCTAHovered] = useState(false);
@@ -48,12 +44,12 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           display: inline-block;
           position: relative;
           color: #fff;
-          font-family: ${inter.style.fontFamily} !important;
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 700;
-          line-height: normal;
+          line-height: 90px;
           text-decoration: none;
           padding: 0;
+          margin: 0 13px;
           white-space: nowrap;
         }
         .nav-link::after {
@@ -110,18 +106,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           aria-label="Navigation principale"
         >
           {LINKS.map(l => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="nav-link"
-              style={{
-                margin: '0 13px',
-                lineHeight: '90px',
-                color: '#fff',
-              }}
-              onPointerEnter={() => setHoveredLink(l.href)}
-              onPointerLeave={() => setHoveredLink(null)}
-            >{l.label}</a>
+            <a key={l.href} href={l.href} className="nav-link">{l.label}</a>
           ))}
         </nav>
 
