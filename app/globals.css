@@ -65,6 +65,15 @@ body, *:not(.font-georgia) {
 }
 
 /* ── Navbar ── */
+.fluide-nav {
+  position: absolute;
+  top: 0;
+  right: 210px;
+}
+@media (min-width: 1280px) {
+  .fluide-nav { right: 220px; }
+}
+
 .nav-link {
   display: inline-block;
   position: relative;
