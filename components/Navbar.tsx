@@ -76,7 +76,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
         {/* Nav desktop */}
         <nav
           className="hidden lg:block fluide-nav"
-          style={{ position: 'absolute', top: 0, right: '210px' }}
+          style={{ position: 'absolute', top: 0, right: '230px' }}
           aria-label="Navigation principale"
         >
           {LINKS.map(l => (
