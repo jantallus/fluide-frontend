@@ -48,6 +48,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           display: inline-block;
           position: relative;
           color: #fff;
+          font-family: ${inter.style.fontFamily} !important;
           font-size: 15px;
           font-weight: 700;
           line-height: normal;
@@ -112,7 +113,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
             <a
               key={l.href}
               href={l.href}
-              className={`nav-link ${inter.className}`}
+              className="nav-link"
               style={{
                 margin: '0 13px',
                 lineHeight: '90px',
@@ -135,7 +136,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
             transform: 'translateY(-50%)',
             backgroundColor: ctaHovered ? '#312783' : '#E6007E',
             color: '#fff',
-            fontFamily: inter.style.fontFamily,
+            fontFamily: 'inherit',
             fontSize: '16px',
             fontWeight: 700,
             lineHeight: '24px',
@@ -200,7 +201,6 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
               <li key={l.href} style={{ textAlign: 'center', display: 'block', margin: '20px 0', padding: 0, lineHeight: '25px' }}>
                 <a
                   href={l.href}
-                  className={inter.className}
                   style={{ display: 'block', color: hoveredMobileLink === l.href ? '#E6007E' : '#fff', fontWeight: 700, fontSize: '20px', textDecoration: 'none', transition: 'color 0.3s ease' }}
                   onClick={() => setOpen(false)}
                   onPointerEnter={() => setHoveredMobileLink(l.href)}
@@ -212,7 +212,6 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           <div style={{ marginTop: '30px', textAlign: 'center' }}>
             <a
               href={CTA.href}
-              className={inter.className}
               style={{ display: 'inline-block', backgroundColor: mobileCTAHovered ? '#312783' : '#E6007E', color: '#fff', fontWeight: 700, fontSize: '18px', lineHeight: '24px', padding: '12px 17px', borderRadius: '5px', textDecoration: 'none', transition: 'background-color 0.3s ease' }}
               onClick={() => setOpen(false)}
               onPointerEnter={() => setMobileCTAHovered(true)}
