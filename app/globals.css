@@ -58,8 +58,8 @@
   --fluide-gris:      #F3F3F3;
 }
 
-body, *:not(.font-georgia):not(.nav-link) {
-  font-family: 'Aeonik', sans-serif !important;
+body, *:not(.font-georgia) {
+  font-family: 'Aeonik', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -78,7 +78,7 @@ body, *:not(.font-georgia):not(.nav-link) {
   white-space: nowrap;
 }
 nav.fluide-nav .nav-link {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Inter', sans-serif;
 }
 .nav-link::after {
   content: "";
