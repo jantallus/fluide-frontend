@@ -102,7 +102,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
         {/* Nav desktop */}
         <nav
           className="hidden lg:block"
-          style={{ position: 'absolute', top: '50%', left: '50vw', transform: 'translate(-50%, -50%)', whiteSpace: 'nowrap' }}
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', whiteSpace: 'nowrap' }}
           aria-label="Navigation principale"
         >
           {LINKS.map(l => (
