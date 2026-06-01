@@ -29,11 +29,19 @@ export function calculateBookingPrice(
     if (f && f.price_cents) flightTotal += (f.price_cents / 100) * qty;
   });
 
-  // Total des options sélectionnées par passager
+  // Total des options sélectionnées par passager (hors compléments offerts par l'activité)
   passengers.forEach(p => {
+    const passengerFlight = flights.find(f => f.id.toString() === p.flightId);
     (p.selectedComplements ?? []).forEach(compId => {
       const comp = complementsList.find(c => c.id === compId);
-      if (comp && comp.price_cents) complementsTotal += comp.price_cents / 100;
+      if (!comp || !comp.price_cents) return;
+      const isLockedByActivity = !!(passengerFlight?.activity_gopro && (
+        comp.name.toLowerCase().includes('photo') ||
+        comp.name.toLowerCase().includes('vidéo') ||
+        comp.name.toLowerCase().includes('video') ||
+        comp.name.toLowerCase().includes('gopro')
+      ));
+      if (!isLockedByActivity) complementsTotal += comp.price_cents / 100;
     });
   });
 
