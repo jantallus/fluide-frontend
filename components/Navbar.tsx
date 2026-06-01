@@ -40,32 +40,6 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
   return (
     <>
       <style>{`
-        .nav-link {
-          display: inline-block;
-          position: relative;
-          color: #fff;
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 90px;
-          text-decoration: none;
-          padding: 0;
-          margin: 0 13px;
-          white-space: nowrap;
-        }
-        .nav-link::after {
-          content: "";
-          width: 0;
-          height: 1px;
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          bottom: 27px;
-          background-color: #fff;
-          transition: width 0.3s ease;
-        }
-        .nav-link:hover::after { width: 100%; }
-        .nav-link:hover { opacity: 1 !important; color: #fff !important; }
-
         /* Hamburger */
         .hbg-inner,
         .hbg-inner::before,

@@ -69,12 +69,12 @@ body, *:not(.font-georgia) {
   display: inline-block;
   position: relative;
   color: #fff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: normal;
+  line-height: 90px;
   text-decoration: none;
   padding: 0;
-  margin: 0 10px;
+  margin: 0 13px;
   white-space: nowrap;
 }
 .nav-link::after {
@@ -84,7 +84,7 @@ body, *:not(.font-georgia) {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: -4px;
+  bottom: 27px;
   background-color: #fff;
   transition: width 0.3s ease;
 }
