@@ -69,16 +69,13 @@ body, *:not(.font-georgia) {
   display: inline-block;
   position: relative;
   color: #fff;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 90px;
   text-decoration: none;
   padding: 0;
-  margin: 0 13px;
+  margin: 0 17px;
   white-space: nowrap;
-}
-nav.fluide-nav .nav-link {
-  font-family: 'Inter', sans-serif;
 }
 .nav-link::after {
   content: "";
