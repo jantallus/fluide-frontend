@@ -69,7 +69,8 @@ body, *:not(.font-georgia) {
   display: inline-block;
   position: relative;
   color: #fff;
-  font-size: 16px;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 15px;
   font-weight: 700;
   line-height: 90px;
   text-decoration: none;
