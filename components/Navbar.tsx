@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useLayoutEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 const LINKS = [
   { label: 'Parapente La Clusaz',  href: 'https://www.fluide-parapente.fr/' },
@@ -12,6 +13,7 @@ const LINKS = [
 const CTA = { label: 'Réserver un vol', href: 'https://reservation.fluide-parapente.fr/booking' };
 
 export default function Navbar({ transparentOnTop = false }: { transparentOnTop?: boolean }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [ctaHovered, setCtaHovered] = useState(false);
   const [hoveredMobileLink, setHoveredMobileLink] = useState<string | null>(null);
@@ -78,9 +80,10 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           className="hidden lg:flex fluide-nav"
           aria-label="Navigation principale"
         >
-          {LINKS.map(l => (
-            <a key={l.href} href={l.href} className="nav-link">{l.label}</a>
-          ))}
+          {LINKS.map(l => {
+            const isActive = pathname === new URL(l.href).pathname;
+            return <a key={l.href} href={l.href} className={`nav-link${isActive ? ' nav-link-active' : ''}`}>{l.label}</a>;
+          })}
         </nav>
 
         {/* CTA */}
@@ -155,17 +158,20 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
           }}
         >
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 auto', display: 'block' }}>
-            {LINKS.map(l => (
-              <li key={l.href} style={{ textAlign: 'center', display: 'block', margin: '20px 0', padding: 0, lineHeight: '25px' }}>
-                <a
-                  href={l.href}
-                  style={{ display: 'block', color: hoveredMobileLink === l.href ? '#E6007E' : '#fff', fontWeight: 700, fontSize: '20px', textDecoration: 'none', transition: 'color 0.3s ease' }}
-                  onClick={() => setOpen(false)}
-                  onPointerEnter={() => setHoveredMobileLink(l.href)}
-                  onPointerLeave={() => setHoveredMobileLink(null)}
-                >{l.label}</a>
-              </li>
-            ))}
+            {LINKS.map(l => {
+              const isActive = pathname === new URL(l.href).pathname;
+              return (
+                <li key={l.href} style={{ textAlign: 'center', display: 'block', margin: '20px 0', padding: 0, lineHeight: '25px' }}>
+                  <a
+                    href={l.href}
+                    style={{ display: 'block', color: (hoveredMobileLink === l.href || isActive) ? '#E6007E' : '#fff', fontWeight: 700, fontSize: '20px', textDecoration: 'none', transition: 'color 0.3s ease' }}
+                    onClick={() => setOpen(false)}
+                    onPointerEnter={() => setHoveredMobileLink(l.href)}
+                    onPointerLeave={() => setHoveredMobileLink(null)}
+                  >{l.label}</a>
+                </li>
+              );
+            })}
           </ul>
           <div style={{ marginTop: '30px', textAlign: 'center' }}>
             <a
