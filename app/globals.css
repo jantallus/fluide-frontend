@@ -79,6 +79,7 @@ body, *:not(.font-georgia) {
 }
 @media (min-width: 1280px) {
   .nav-link { font-size: 18px; margin: 0 17px; }
+  .nav-cta  { font-size: 18px !important; }
 }
 .nav-link::after {
   content: "";

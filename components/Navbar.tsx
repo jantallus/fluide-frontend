@@ -87,7 +87,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
         {/* CTA */}
         <a
           href={CTA.href}
-          className="hidden lg:inline-block"
+          className="hidden lg:inline-block nav-cta"
           style={{
             position: 'absolute',
             right: '29px',
