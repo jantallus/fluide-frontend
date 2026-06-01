@@ -96,7 +96,7 @@ export default function Navbar({ transparentOnTop = false }: { transparentOnTop?
             backgroundColor: ctaHovered ? '#312783' : '#E6007E',
             color: '#fff',
             fontFamily: 'inherit',
-            fontSize: '16px',
+            fontSize: '17px',
             fontWeight: 700,
             lineHeight: '24px',
             padding: '12px 17px',
