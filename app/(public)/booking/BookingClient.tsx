@@ -651,6 +651,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   let totalItems = 0;
   Object.values(cart).forEach(qty => { totalItems += qty; });
 
+  // Hors-saison : mai–octobre pour les vols hiver, novembre–avril pour les vols été
+  const currentMonth = new Date().getMonth(); // 0 = janvier
+  const isWinterOffSeason = currentMonth >= 4 && currentMonth <= 10;
+  const isSummerOffSeason = currentMonth <= 3 || currentMonth >= 10;
+
   const { originalPrice, discountAmount, finalPrice } = calculateBookingPrice(
     cart, flights, passengers, complementsList, appliedVoucher
   );
@@ -1228,8 +1233,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       </div>
                     ))}
                   </div>
-                ) : !isSearchingTimes && rawSlots.length === 0 && isDirect && selectedFlight ? (
-                  /* Aucun créneau pour ce vol — message saisonnier */
+                ) : isDirect && selectedFlight && !isSearchingTimes &&
+                    ((seasonOverride === 'Hiver' && isWinterOffSeason) ||
+                     (seasonOverride !== 'Hiver' && seasonOverride !== undefined && isSummerOffSeason)) ? (
+                  /* Hors-saison pour ce vol — message saisonnier */
                   <div className="text-center py-14 px-6 bg-slate-50 rounded-[10px] border border-slate-100">
                     <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#312783', marginBottom: '8px' }}>
                       {seasonOverride === 'Hiver'
