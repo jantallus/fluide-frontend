@@ -1228,33 +1228,6 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       </div>
                     ))}
                   </div>
-                ) : !isSearchingTimes && rawSlots.length === 0 && isDirect && selectedFlight ? (
-                  /* Aucun créneau disponible pour ce vol — message saisonnier */
-                  <div className="text-center py-14 px-6 bg-slate-50 rounded-[10px] border border-slate-100">
-                    <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#312783', marginBottom: '8px' }}>
-                      {seasonOverride === 'Hiver'
-                        ? 'Prochaines dispos en ligne pour ce vol à partir de décembre.'
-                        : seasonOverride === undefined
-                        ? 'Aucun créneau disponible pour le moment.'
-                        : 'Pas de dispos pour ce vol avant juin.'}
-                    </p>
-                    {seasonOverride !== undefined && (
-                      <p style={{ fontSize: '1rem', fontWeight: 400, color: '#1D1D1B' }}>
-                        Avant cela, recherchez un créneau sur{' '}
-                        <a
-                          href={seasonOverride === 'Hiver' ? '/vols/decouverte' : '/vols/beauregard'}
-                          style={{ color: '#E6007E', fontWeight: 700, textDecoration: 'underline' }}
-                        >
-                          {seasonOverride === 'Hiver' ? 'un vol été' : 'nos vols hiver'}
-                        </a>
-                        {' '}ou appelez le{' '}
-                        <a href="tel:+33677285102" style={{ color: '#E6007E', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                          06 77 28 51 02
-                        </a>
-                        .
-                      </p>
-                    )}
-                  </div>
                 ) : (
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
