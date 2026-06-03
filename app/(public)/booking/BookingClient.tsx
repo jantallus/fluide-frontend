@@ -1254,7 +1254,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                         <p style={{ fontSize: '1rem', fontWeight: 400, color: '#1D1D1B' }}>
                           Avant cela, recherchez un créneau sur{' '}
                           <a
-                            href={isWinterFlight ? '/vols/decouverte' : '/vols/beauregard'}
+                            href={isWinterFlight ? 'https://www.fluide-parapente.fr/bapteme-vol-ete/' : 'https://www.fluide-parapente.fr/bapteme-vol-biplace/'}
                             style={{ color: '#E6007E', fontWeight: 700, textDecoration: 'underline' }}
                           >
                             {isWinterFlight ? 'un vol été' : 'nos vols hiver'}
