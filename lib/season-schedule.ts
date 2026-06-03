@@ -58,7 +58,7 @@ export function getSeasonMessage(
       lines.push(`puis ${label} jusqu'au ${fmtDate(second.end)}`);
     }
 
-    return { headline: 'Dispos en ligne', lines, offSeason: false };
+    return { headline: 'Prochaines dispos en ligne', lines, offSeason: false };
   } else {
     // On est avant la prochaine période
     const startLabel = fmtDate(first.start);
