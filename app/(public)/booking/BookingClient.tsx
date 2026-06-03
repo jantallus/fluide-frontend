@@ -651,10 +651,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   let totalItems = 0;
   Object.values(cart).forEach(qty => { totalItems += qty; });
 
-  // Hors-saison : mai–octobre pour les vols hiver, novembre–avril pour les vols été
-  const currentMonth = new Date().getMonth(); // 0 = janvier
-  const isWinterOffSeason = currentMonth >= 4 && currentMonth <= 10;
-  const isSummerOffSeason = currentMonth <= 3 || currentMonth >= 10;
+  // Hors-saison basée sur la date affichée dans la grille (pas la date réelle)
+  const pickedMonth = new Date(pickedDate + 'T12:00:00').getMonth(); // 0 = janvier
+  const isWinterOffSeason = pickedMonth >= 4 && pickedMonth <= 10;
+  const isSummerOffSeason = pickedMonth <= 3 || pickedMonth >= 10;
 
   const { originalPrice, discountAmount, finalPrice } = calculateBookingPrice(
     cart, flights, passengers, complementsList, appliedVoucher
