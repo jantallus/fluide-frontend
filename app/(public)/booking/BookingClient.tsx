@@ -1361,10 +1361,25 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                     <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
                                       {msg && !msg.offSeason && (
                                         <>
-                                          <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#312783', opacity: 0.45 }}>{msg.headline}</p>
-                                          {msg.lines.map((line, i) => (
-                                            <p key={i} className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>{line}</p>
-                                          ))}
+                                          {nextFromHere ? (
+                                            <button
+                                              onClick={() => pickDate(nextFromHere)}
+                                              className="flex flex-col items-center gap-1 group cursor-pointer"
+                                              style={{ background: 'none', border: 'none', padding: 0 }}
+                                            >
+                                              <p className="text-[9px] font-bold uppercase tracking-wider leading-tight group-hover:underline" style={{ color: '#312783', opacity: 0.45 }}>{msg.headline}</p>
+                                              {msg.lines.map((line, i) => (
+                                                <p key={i} className="text-[10px] font-black leading-tight group-hover:underline" style={{ color: '#312783' }}>{line}</p>
+                                              ))}
+                                            </button>
+                                          ) : (
+                                            <>
+                                              <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#312783', opacity: 0.45 }}>{msg.headline}</p>
+                                              {msg.lines.map((line, i) => (
+                                                <p key={i} className="text-[10px] font-black leading-tight" style={{ color: '#312783' }}>{line}</p>
+                                              ))}
+                                            </>
+                                          )}
                                           <div className="w-8 border-t border-slate-300 my-0.5" />
                                           <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>En dehors de ces dates, appelez le</p>
                                         </>

@@ -60,8 +60,9 @@ export function getSeasonMessage(
 
     return { headline: 'Prochaines dispos en ligne', lines, offSeason: false };
   } else {
-    // On est avant la prochaine période
-    const startLabel = fmtDate(first.start);
+    // On est avant la prochaine période — utilise la vraie prochaine date DB si disponible
+    const displayStart = nextAvailStr && nextAvailStr >= todayStr ? nextAvailStr : first.start;
+    const startLabel = fmtDate(displayStart);
     const patternLabel = first.pattern === 'daily' ? 'tous les jours' : 'les weekends';
     lines.push(`à partir du ${startLabel} ${patternLabel}`);
 
