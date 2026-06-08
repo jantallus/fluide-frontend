@@ -842,11 +842,23 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           backgroundColor: '#2F52A0',
           overflow: 'hidden',
         }}>
-        {/* Couche 1 : photo dézoomée, haut tronqué */}
-        <div className="hero-booking-bg" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url(/hiver-hero.webp)', backgroundSize: '88%', backgroundPosition: 'right 12%', backgroundRepeat: 'no-repeat', zIndex: 1 }} />
-        {/* Couche 2 : dégradé diagonal + couvercle gauche pour supprimer la ligne de démarcation */}
-        <div className="hero-grad-1" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(47,82,160,1) 0%, rgba(47,82,160,1) 18%, rgba(47,82,160,0) 30%), linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.55) 50%, rgba(47,82,160,0.20) 65%, rgba(47,82,160,0) 80%)', zIndex: 2 }} />
-        {/* Couche 3 : fond violet en haut (body.no-fond:before), 500px */}
+        {/* Couche 1 : photo */}
+        <div className="hero-booking-bg" style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundImage: activeSeason === 'Hiver' ? 'url(/hiver-hero.webp)' : 'url(/coldesaravis.jpg)',
+          backgroundSize: activeSeason === 'Hiver' ? '88%' : '120%',
+          backgroundPosition: activeSeason === 'Hiver' ? 'right 12%' : 'center 55%',
+          backgroundRepeat: 'no-repeat', zIndex: 1,
+        }} />
+        {/* Couche 2 : dégradé */}
+        <div className="hero-grad-1" style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: activeSeason === 'Hiver'
+            ? 'linear-gradient(to right, rgba(47,82,160,1) 0%, rgba(47,82,160,1) 18%, rgba(47,82,160,0) 30%), linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.55) 50%, rgba(47,82,160,0.20) 65%, rgba(47,82,160,0) 80%)'
+            : 'linear-gradient(to bottom, rgba(47,82,160,0.18) 0%, rgba(47,82,160,0.05) 50%, rgba(47,82,160,0.0) 70%)',
+          zIndex: 2,
+        }} />
+        {/* Couche 3 : fond violet en haut */}
         <div className="hero-grad-2" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '500px', background: 'linear-gradient(180deg, rgba(79,69,161,1) 0%, rgba(79,69,161,0) 100%)', zIndex: 3 }} />
         <div className="hero-animation-block" style={{ position: 'relative', zIndex: 10 }}>
           <h1 style={{ color: 'white', fontSize: 'clamp(2.5rem, 7vw, 4.375rem)', fontWeight: 700, margin: 0, lineHeight: 1.0, textTransform: 'none' }}>
