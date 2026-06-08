@@ -832,8 +832,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         .hero-booking { background: transparent !important; margin-top: -90px; }
         .btn-reserver { background-color: #E6007E !important; color: white !important; border: none; transition: background-color 0.3s ease !important; border-radius: 5px; font-size: 1.125rem; font-weight: 700; padding: 12px 17px; }
         .btn-reserver:hover { background-color: #312783 !important; }
-@media (max-width: 1024px) { .hero-booking { min-height: 532px !important; margin-top: -80px; padding-left: 0 !important; padding-top: 0 !important; justify-content: center; align-items: center !important; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 105% !important; background-position: center 10% !important; } .hero-grad-1 { background: linear-gradient(22deg, rgba(47,82,160,0.90) 5%, rgba(47,82,160,0.65) 28%, rgba(47,82,160,0.45) 47%, rgba(47,82,160,0.28) 62%, rgba(47,82,160,0.15) 75%, rgba(47,82,160,0.06) 88%, rgba(47,82,160,0) 100%) !important; } .hero-grad-2 { background: linear-gradient(to right, rgba(79,69,161,1) 0%, rgba(79,69,161,0.7) 20%, rgba(79,69,161,0) 50%) !important; height: 100% !important; } }
-@media (max-width: 768px) { .hero-booking-bg { background-size: 170% !important; background-position: center 5% !important; } }
+@media (max-width: 1024px) { .hero-booking { min-height: 532px !important; margin-top: -80px; padding-left: 0 !important; padding-top: 0 !important; justify-content: center; align-items: center !important; } .hero-animation-block { text-align: center; padding: 0 6vw; } .hero-animation-block h1 { font-size: 3.2rem !important; line-height: 1.1 !important; } .hero-booking-bg { background-size: 105% !important; background-position: center 10% !important; } .hero-booking-bg.hero-booking-bg-ete { background-size: 150% !important; background-position: center 40% !important; } .hero-grad-1 { background: linear-gradient(22deg, rgba(47,82,160,0.90) 5%, rgba(47,82,160,0.65) 28%, rgba(47,82,160,0.45) 47%, rgba(47,82,160,0.28) 62%, rgba(47,82,160,0.15) 75%, rgba(47,82,160,0.06) 88%, rgba(47,82,160,0) 100%) !important; } .hero-grad-1.hero-grad-1-ete { background: linear-gradient(to bottom, rgba(47,82,160,0.18) 0%, rgba(47,82,160,0.05) 50%, rgba(47,82,160,0.0) 70%) !important; } .hero-grad-2 { background: linear-gradient(to right, rgba(79,69,161,1) 0%, rgba(79,69,161,0.7) 20%, rgba(79,69,161,0) 50%) !important; height: 100% !important; } }
+@media (max-width: 768px) { .hero-booking-bg { background-size: 170% !important; background-position: center 5% !important; } .hero-booking-bg.hero-booking-bg-ete { background-size: 190% !important; background-position: center 38% !important; } }
       `}} />
 
       {!isDirect && <section className="hero-booking" style={{
@@ -843,7 +843,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           overflow: 'hidden',
         }}>
         {/* Couche 1 : photo */}
-        <div className="hero-booking-bg" style={{
+        <div className={activeSeason === 'Hiver' ? 'hero-booking-bg' : 'hero-booking-bg hero-booking-bg-ete'} style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           backgroundImage: activeSeason === 'Hiver' ? 'url(/hiver-hero.webp)' : 'url(/coldesaravis.jpg)',
           backgroundSize: activeSeason === 'Hiver' ? '88%' : '120%',
@@ -851,7 +851,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           backgroundRepeat: 'no-repeat', zIndex: 1,
         }} />
         {/* Couche 2 : dégradé */}
-        <div className="hero-grad-1" style={{
+        <div className={activeSeason === 'Hiver' ? 'hero-grad-1' : 'hero-grad-1 hero-grad-1-ete'} style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           background: activeSeason === 'Hiver'
             ? 'linear-gradient(to right, rgba(47,82,160,1) 0%, rgba(47,82,160,1) 18%, rgba(47,82,160,0) 30%), linear-gradient(45deg, rgba(47,82,160,1) 15%, rgba(47,82,160,0.55) 50%, rgba(47,82,160,0.20) 65%, rgba(47,82,160,0) 80%)'
