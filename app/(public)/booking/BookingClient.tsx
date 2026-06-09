@@ -846,7 +846,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         <div className={activeSeason === 'Hiver' ? 'hero-booking-bg' : 'hero-booking-bg hero-booking-bg-ete'} style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           backgroundImage: activeSeason === 'Hiver' ? 'url(/hiver-hero.webp)' : 'url(/coldesaravis.jpg)',
-          backgroundSize: activeSeason === 'Hiver' ? '88%' : '120%',
+          backgroundSize: activeSeason === 'Hiver' ? '88%' : '108%',
           backgroundPosition: activeSeason === 'Hiver' ? 'right 12%' : 'center 55%',
           backgroundRepeat: 'no-repeat', zIndex: 1,
         }} />
