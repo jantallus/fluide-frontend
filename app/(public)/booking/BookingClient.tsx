@@ -423,13 +423,14 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       if (!hasAnimatedIntro.current) {
         hasAnimatedIntro.current = true;
 
-        // Positionner la grille dans le viewport avant l'animation (scroll instantané)
-        const etape2El = document.getElementById('etape-2-container');
-        if (etape2El) {
+        // Positionner le bouton du vol juste sous le bandeau avant l'animation
+        const titreEl = document.getElementById('etape-2-vol-titre');
+        const anchorEl = titreEl ?? document.getElementById('etape-2-container');
+        if (anchorEl) {
           if (isEmbed) {
-            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: etape2El.offsetTop }, '*');
+            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: anchorEl.offsetTop - 80 }, '*');
           } else {
-            window.scrollTo({ top: etape2El.getBoundingClientRect().top + window.scrollY - 80, behavior: 'instant' });
+            window.scrollTo({ top: anchorEl.getBoundingClientRect().top + window.scrollY - 80, behavior: 'instant' });
           }
         }
 
@@ -1136,7 +1137,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
             <div className="bg-white rounded-[10px] p-6 md:p-10">
               
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
+              <div id="etape-2-vol-titre" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-10 border-b border-slate-100">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="font-bold leading-tight" style={{ color: '#312783', fontSize: '2rem', fontWeight: 700 }}>Réservation :</h2>
