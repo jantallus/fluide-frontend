@@ -21,7 +21,7 @@ export function useAvailabilities(
         dStart.setDate(dStart.getDate() - 10);
 
         const dEnd = new Date(gridStartDate);
-        dEnd.setDate(dEnd.getDate() + 10);
+        dEnd.setDate(dEnd.getDate() + 60);
 
         // Passe par le proxy Next.js pour ne pas exposer l'URL du backend dans le bundle client.
         const res = await fetch(

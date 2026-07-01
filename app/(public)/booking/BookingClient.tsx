@@ -560,8 +560,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
     const grid: Record<string, Record<string, number>> = {};
     
-    // 🎯 2. LE MOTEUR CONSTRUIT 21 JOURS (-10 à +10)
-    const weekDays = Array.from({ length: 21 }).map((_, i) => {
+    // 🎯 2. LE MOTEUR CONSTRUIT 71 JOURS (-10 à +60)
+    const weekDays = Array.from({ length: 71 }).map((_, i) => {
       const d = new Date(gridStartDate);
       d.setDate(d.getDate() - 10 + i);
       return getLocalYYYYMMDD(d);
@@ -673,6 +673,9 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   };
 
   const handleIncrementCart = (key: string) => {
+    const [, dateStr, timeStr] = key.split('|');
+    const capacity = gridData[dateStr]?.[timeStr] ?? 0;
+    if (capacity <= 0) return;
     setCart(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
   };
 
@@ -695,6 +698,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   );
 
   useEffect(() => {
+    if (totalItems === 0) setCartOpen(false);
     if (step === 3 && totalItems === 0) setStep(isDirect ? 2 : 1);
   }, [totalItems, step]);
 
@@ -713,8 +717,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     cartBarRef.current.style.transform = `translate3d(0,${y}px,0)`;
   }, [isEmbed, totalItems]);
 
-  // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (21 JOURS)
-  const weekDays = Array.from({ length: 21 }).map((_, i) => {
+  // 🎯 3. LA VARIABLE POUR DESSINER L'ÉCRAN (71 JOURS)
+  const weekDays = Array.from({ length: 71 }).map((_, i) => {
     const d = new Date(gridStartDate);
     d.setDate(d.getDate() - 10 + i);
     return getLocalYYYYMMDD(d);
@@ -1868,14 +1872,16 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
               <div className="px-4 py-3 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                 {Object.entries(cart).map(([key, qty]) => {
                   if (qty === 0) return null;
-                  const [fId, , tStr] = key.split('|');
+                  const [fId, dStr, tStr] = key.split('|');
                   const f = flights.find(fl => fl.id.toString() === fId);
+                  const slotCapacity = gridData[dStr]?.[tStr] ?? 0;
+                  const atCapacity = slotCapacity <= 0;
                   return (
                     <div key={key} className="bg-slate-50 rounded-[10px] pl-3 pr-2 py-2 flex items-center justify-between gap-2 text-xs font-bold text-slate-700 border border-slate-200">
                       <span className="flex-1 min-w-0 truncate">{f?.name} <span className="text-slate-400 font-normal">({tStr})</span> × <span style={{ color: '#009FE3' }}>{qty}</span></span>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-200 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1">−</button>
-                        <button onClick={() => handleIncrementCart(key)} className="w-6 h-6 bg-white border border-slate-200 rounded-[5px] flex items-center justify-center hover:text-emerald-500 transition-colors" title="Ajouter 1"><Plus size={12} /></button>
+                        <button onClick={() => handleIncrementCart(key)} disabled={atCapacity} className={`w-6 h-6 bg-white border rounded-[5px] flex items-center justify-center transition-colors ${atCapacity ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 hover:text-emerald-500'}`} title="Ajouter 1"><Plus size={12} /></button>
                         <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer cette ligne"><Trash2 size={12} /></button>
                       </div>
                     </div>
