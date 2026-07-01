@@ -422,10 +422,23 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
       if (!hasAnimatedIntro.current) {
         hasAnimatedIntro.current = true;
+
+        // Positionner la grille dans le viewport avant l'animation (scroll instantané)
+        const etape2El = document.getElementById('etape-2-container');
+        if (etape2El) {
+          if (isEmbed) {
+            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: etape2El.offsetTop }, '*');
+          } else {
+            window.scrollTo({ top: etape2El.getBoundingClientRect().top + window.scrollY - 80, behavior: 'instant' });
+          }
+        }
+
         const startAnimDate = new Date(pickedDate);
         startAnimDate.setDate(startAnimDate.getDate() - 1);
         const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
+        // Délai allongé pour embed (parent iframe doit scroller) vs direct (scroll instantané)
+        const animDelay = isEmbed ? 400 : 60;
         setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
@@ -450,7 +463,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
              centerHorizontally(targetEl, 'auto');
              setIsGridExpanded(true);
           }
-        }, 20);
+        }, animDelay);
 
       } else {
         // 🧭 NAVIGATION CLASSIQUE (Flèches ou calendrier)
