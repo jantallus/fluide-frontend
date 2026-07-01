@@ -134,12 +134,18 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     if (step === 2) {
       if (skipInitialScroll.current) { skipInitialScroll.current = false; return; }
       setTimeout(() => {
-        const el = document.getElementById('etape-2-container');
+        const isMobile = window.innerWidth < 768;
+        // Sur mobile : scroll instantané vers le titre du vol (juste sous la navbar)
+        // Sur desktop : smooth scroll vers le container
+        const el = isMobile
+          ? (document.getElementById('etape-2-vol-titre') ?? document.getElementById('etape-2-container'))
+          : document.getElementById('etape-2-container');
         if (!el) return;
         if (isEmbed) {
-          window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop }, '*');
+          window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - 80 }, '*');
         } else {
-          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
+          const behavior = isMobile ? 'instant' : 'smooth';
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior });
         }
       }, 50);
     } else if (step === 3) {
@@ -423,23 +429,13 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       if (!hasAnimatedIntro.current) {
         hasAnimatedIntro.current = true;
 
-        // Positionner le bouton du vol juste sous le bandeau avant l'animation
-        const titreEl = document.getElementById('etape-2-vol-titre');
-        const anchorEl = titreEl ?? document.getElementById('etape-2-container');
-        if (anchorEl) {
-          if (isEmbed) {
-            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: anchorEl.offsetTop - 80 }, '*');
-          } else {
-            window.scrollTo({ top: anchorEl.getBoundingClientRect().top + window.scrollY - 80, behavior: 'instant' });
-          }
-        }
-
         const startAnimDate = new Date(pickedDate);
         startAnimDate.setDate(startAnimDate.getDate() - 1);
         const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
-        // Délai allongé pour embed (parent iframe doit scroller) vs direct (scroll instantané)
-        const animDelay = isEmbed ? 400 : 60;
+        // Le scroll vertical est géré par le useEffect step (instant sur mobile)
+        // On attend juste qu'il soit appliqué avant de jouer l'animation horizontale
+        const animDelay = isEmbed ? 400 : 80;
         setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
