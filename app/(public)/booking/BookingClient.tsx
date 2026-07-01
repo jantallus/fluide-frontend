@@ -25,7 +25,7 @@ import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } fr
 import { getSeasonMessage } from '@/lib/season-schedule';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
-import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, X } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
 function cloudinaryOptimize(url: string, w = 600, h = 300): string {
@@ -158,6 +158,30 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   useScrollLock(!!infoFlight);
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  // Réinitialise isCheckingOut si l'utilisateur revient en arrière depuis Stripe (bfcache)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setIsCheckingOut(false);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
+  // Restaure le panier si l'utilisateur revient depuis Stripe via le bouton "Retour"
+  useEffect(() => {
+    const saved = sessionStorage.getItem('booking_restore');
+    if (!saved) return;
+    try {
+      const state = JSON.parse(saved);
+      if (state.cart) setCart(state.cart);
+      if (state.contact) setContact(state.contact);
+      if (state.passengers) setPassengers(state.passengers);
+      setStep(3);
+    } catch (e) {}
+    sessionStorage.removeItem('booking_restore');
+  }, []);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calAvailDates, setCalAvailDates] = useState<Set<string>>(new Set());
   const [calMonth, setCalMonth] = useState(() => {
@@ -439,16 +463,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     }
   }, [pickedDate, isSearchingTimes, rawSlots.length, step]); // 🎯 NOUVEAU : On a ajouté "step" ici pour forcer le réveil !
 
-  useEffect(() => {
-    if (!showCalendar) return;
-    const handler = (e: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
-        setShowCalendar(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showCalendar]);
+  // Le calendrier est maintenant une modale fixed — fermeture gérée par le backdrop
 
   useEffect(() => {
     if (!showFlightSelect) return;
@@ -807,6 +822,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       const data = await res.json();
       
       if (data.url) {
+        sessionStorage.setItem('booking_restore', JSON.stringify({ cart, contact, passengers }));
         window.location.href = data.url;
       } else {
         toast.error("Erreur lors de la création du paiement : " + (data.error || "Inconnue"));
@@ -1163,8 +1179,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     ];
                     const ds = (d: number) => getLocalYYYYMMDD(new Date(year, month, d));
                     return (
-                      <div className="absolute left-0 md:left-auto md:right-0 mt-2 z-50 bg-white rounded-[12px] border border-slate-200 p-4 select-none"
-                        style={{ width: '272px', boxShadow: '0 8px 32px rgba(49,39,131,0.13)' }}>
+                      <>
+                      {/* Backdrop */}
+                      <div className="fixed inset-0 z-[9998] bg-slate-900/20" onClick={() => setShowCalendar(false)} />
+                      <div className="fixed z-[9999] bg-white rounded-[12px] border border-slate-200 p-4 select-none"
+                        style={{ width: '288px', boxShadow: '0 8px 40px rgba(49,39,131,0.18)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
                         {/* En-tête mois */}
                         <div className="flex items-center justify-between mb-3">
                           <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
@@ -1172,10 +1191,16 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                             <ChevronLeft size={16} />
                           </button>
                           <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#312783', textTransform: 'capitalize' }}>{monthLabel}</span>
-                          <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500">
-                            <ChevronRight size={16} />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500">
+                              <ChevronRight size={16} />
+                            </button>
+                            <button onClick={() => setShowCalendar(false)}
+                              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400">
+                              <X size={15} />
+                            </button>
+                          </div>
                         </div>
                         {/* Noms des jours */}
                         <div className="grid grid-cols-7 mb-1">
@@ -1220,6 +1245,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           })}
                         </div>
                       </div>
+                      </>
                     );
                   })()}
                 </div>
@@ -1294,9 +1320,17 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                               {isFirstDesktop && (
                                 <button onClick={() => shiftDays(-1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><ChevronLeft size={22} strokeWidth={2.5} /></button>
                               )}
-                              <div className="flex-1 shadow-md rounded-[5px] p-4 flex flex-col items-center justify-center text-center" style={{ backgroundColor: '#312783' }}>
+                              <button
+                                onClick={() => setShowCalendar(true)}
+                                className="flex-1 shadow-md rounded-[5px] p-4 flex flex-col items-center justify-center text-center transition-colors outline-none border-none"
+                                style={{ backgroundColor: '#312783', cursor: 'pointer' }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1e1a5e')}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#312783')}
+                                title="Changer de date"
+                              >
                                 <p className="font-bold text-white capitalize text-md leading-tight">{getDayName(dateStr)}</p>
-                              </div>
+                                <CalendarDays size={11} color="rgba(255,255,255,0.45)" style={{ marginTop: '4px' }} />
+                              </button>
                               {isLastDesktop && (
                                 <button onClick={() => shiftDays(1)} className="hidden md:flex shrink-0 w-12 shadow-md rounded-[5px] items-center justify-center text-white transition-colors cursor-pointer outline-none border-none" style={{ backgroundColor: '#009FE3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#009FE3')}><ChevronRight size={22} strokeWidth={2.5} /></button>
                               )}
@@ -1750,74 +1784,104 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         )}
       </div>
 
-      {/* --- LE PANIER FLOTTANT --- */}
+      {/* --- PANIER FAB + PANNEAU --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
-        <div ref={cartBarRef} className={`${isEmbed ? 'absolute left-0 right-0' : 'fixed bottom-0 left-0 right-0'} bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)]`} style={isEmbed ? { top: 0, willChange: 'transform', zIndex: 9999 } : { zIndex: 9999 }}>
-          <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <>
+          {/* Backdrop */}
+          {cartOpen && (
+            <div className="fixed inset-0 z-[9997]" onClick={() => setCartOpen(false)} />
+          )}
 
-            <div className="flex-1 w-full">
-              <span className="block mb-2" style={{ fontSize: '1.125rem', fontWeight: 700, color: '#312783' }}>
-                {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
-              </span>
-              
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scrollbar">
+          {/* Panneau expansible */}
+          {cartOpen && (
+            <div
+              ref={cartBarRef}
+              className="fixed z-[9998] bg-white rounded-2xl shadow-2xl"
+              style={{ bottom: '80px', right: '16px', width: 'min(360px, calc(100vw - 32px))' }}
+            >
+              {/* En-tête */}
+              <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100">
+                <span style={{ fontWeight: 700, color: '#312783', fontSize: '1rem' }}>
+                  {totalItems} vol{totalItems > 1 ? 's' : ''} sélectionné{totalItems > 1 ? 's' : ''}
+                </span>
+                <button onClick={() => setCartOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+                  <X size={16} color="#94a3b8" />
+                </button>
+              </div>
+
+              {/* Articles */}
+              <div className="px-4 py-3 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                 {Object.entries(cart).map(([key, qty]) => {
                   if (qty === 0) return null;
                   const [fId, , tStr] = key.split('|');
                   const f = flights.find(fl => fl.id.toString() === fId);
                   return (
-                    <div key={key} className="bg-slate-50 rounded-[10px] pl-3 pr-1 py-1 flex items-center gap-2 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm">
-                      <span>{f?.name} <span className="text-slate-400">({tStr})</span> : <span className="text-sm font-bold" style={{ color: '#009FE3' }}>{qty}</span></span>
-                      <div className="flex items-center gap-1 ml-2">
-                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-100 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1 place">-</button>
-                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer ce vol">❌</button>
+                    <div key={key} className="bg-slate-50 rounded-[10px] pl-3 pr-2 py-2 flex items-center justify-between gap-2 text-xs font-bold text-slate-700 border border-slate-200">
+                      <span className="flex-1 min-w-0 truncate">{f?.name} <span className="text-slate-400 font-normal">({tStr})</span> × <span style={{ color: '#009FE3' }}>{qty}</span></span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-200 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1">−</button>
+                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer">×</button>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-0">
-              <div className="text-right">
-                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</p>
-                {/* 🎯 NOUVEAU : Si un bon est appliqué, on affiche l'ancien prix barré ! */}
-                {discountAmount > 0 && (
-                  <p className="text-sm font-bold text-rose-400 line-through mb-[-4px]">{originalPrice.toFixed(2)} €</p>
-                )}
-                <p className="text-2xl font-bold" style={{ color: '#009FE3' }}>{finalPrice.toFixed(2)} €</p>
-              </div>
-              
-              {step === 3 ? (
-                 <button 
-                  onClick={handleSubmit}
-                  disabled={!isFormValid || isCheckingOut}
-                  className={`flex-1 md:flex-none px-8 md:px-10 py-4 rounded-[5px] font-bold uppercase text-[11px] md:text-[12px] tracking-widest transition-all shadow-lg ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-                >
-                  {isCheckingOut 
-                    ? 'Validation...' 
-                    : (finalPrice === 0 ? '✨ Valider (Gratuit)' : '🔒 Payer la réservation')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setStep(3)}
-                  className="flex-1 md:flex-none text-white px-10 py-4 rounded-[5px] transition-all"
-                  style={{ fontSize: '1.125rem', fontWeight: 700, backgroundColor: '#E6007E' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
-                >
-                  Passer à l'inscription
-                </button>
-              )}
-            </div>
 
-          </div>
-          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.72rem', marginTop: '8px' }}>
-            En finalisant votre commande, vous acceptez nos <a href="https://www.fluide-parapente.fr/cgv/" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>CGV</a> et notre <a href="/politique-confidentialite" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>politique de confidentialité</a>.
-          </p>
-          </div>
-        </div>
+              {/* Total + bouton */}
+              <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
+                  <div className="text-right">
+                    {discountAmount > 0 && (
+                      <span className="text-sm font-bold text-rose-400 line-through mr-2">{originalPrice.toFixed(2)} €</span>
+                    )}
+                    <span className="text-2xl font-bold" style={{ color: '#009FE3' }}>{finalPrice.toFixed(2)} €</span>
+                  </div>
+                </div>
+
+                {step === 3 ? (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!isFormValid || isCheckingOut}
+                    className={`w-full py-3 rounded-[8px] font-bold uppercase text-xs tracking-widest transition-all shadow-md ${isFormValid && !isCheckingOut ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                  >
+                    {isCheckingOut ? 'Validation...' : (finalPrice === 0 ? '✨ Valider (Gratuit)' : '🔒 Payer la réservation')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setStep(3); setCartOpen(false); }}
+                    className="w-full text-white py-3 rounded-[8px] transition-all font-bold"
+                    style={{ backgroundColor: '#E6007E', fontSize: '0.95rem' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
+                  >
+                    Passer à l'inscription
+                  </button>
+                )}
+
+                <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.68rem', marginTop: '8px' }}>
+                  En finalisant, vous acceptez nos <a href="https://www.fluide-parapente.fr/cgv/" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>CGV</a> et notre <a href="/politique-confidentialite" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>politique de confidentialité</a>.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* FAB */}
+          <button
+            onClick={() => setCartOpen(o => !o)}
+            className="fixed z-[9999] flex items-center justify-center shadow-xl transition-transform active:scale-95"
+            style={{ bottom: '20px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#E6007E', border: 'none', cursor: 'pointer' }}
+            aria-label="Voir le panier"
+          >
+            <ShoppingCart size={24} color="white" strokeWidth={2} />
+            <span
+              className="absolute flex items-center justify-center font-bold"
+              style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+            >
+              {totalItems}
+            </span>
+          </button>
+        </>
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
       {infoFlight && (
