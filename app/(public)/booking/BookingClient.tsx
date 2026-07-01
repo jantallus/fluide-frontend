@@ -1824,9 +1824,12 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       {/* --- PANIER FAB + PANNEAU --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — flou sur mobile uniquement */}
           {cartOpen && (
-            <div className="fixed inset-0 z-[9997]" onClick={() => setCartOpen(false)} />
+            <div
+              className="fixed inset-0 z-[9997] md:bg-transparent md:backdrop-blur-none bg-black/30 backdrop-blur-sm"
+              onClick={() => setCartOpen(false)}
+            />
           )}
 
           {/* Panneau expansible */}
@@ -1933,18 +1936,19 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
             const fabBg = step === 3 ? (isFormValid ? '#E6007E' : '#94a3b8') : '#E6007E';
             return (
               <div className="fixed z-[9999] flex flex-col items-center gap-1" style={{ bottom: '20px', right: '16px' }}>
-                {step === 3 && (() => {
+                {step === 3 && !cartOpen && (() => {
                   const hasDiscount = discountAmount > 0;
-                  const h = hasDiscount ? 52 : 40;
-                  // Étiquette pistolet prix : coins concaves + vagues sur les côtés
+                  const h = hasDiscount ? 56 : 44;
+                  // Étiquette pistolet prix : côtés gauche/droit = arcs convexes atteignant exactement les bords de l'élément (96px)
+                  // C P1 P2 endpoint : P1/P2 aux bords → tangente horizontale aux coins → transition douce avec haut/bas droits
                   const path = hasDiscount
-                    ? `M 10,0 L 80,0 Q 80,12 90,12 C 82,20 82,32 90,40 Q 80,40 80,52 L 10,52 Q 10,40 0,40 C 8,32 8,20 0,12 Q 10,12 10,0 Z`
-                    : `M 10,0 L 80,0 Q 80,10 90,10 C 82,15 82,25 90,30 Q 80,30 80,40 L 10,40 Q 10,30 0,30 C 8,25 8,15 0,10 Q 10,10 10,0 Z`;
+                    ? `M 12,0 L 84,0 C 100,0 100,56 84,56 L 12,56 C -4,56 -4,0 12,0 Z`
+                    : `M 12,0 L 84,0 C 100,0 100,44 84,44 L 12,44 C -4,44 -4,0 12,0 Z`;
                   return (
                     <div style={{ filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.22))' }}>
                       <div style={{
                         clipPath: `path('${path}')`,
-                        width: '90px',
+                        width: '96px',
                         height: `${h}px`,
                         backgroundColor: 'white',
                         display: 'flex',
