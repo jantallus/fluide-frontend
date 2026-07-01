@@ -25,7 +25,7 @@ import { getLocalYYYYMMDD, getDayName, calculateGridStart, getMarketingInfo } fr
 import { getSeasonMessage } from '@/lib/season-schedule';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { calculateBookingPrice } from '@/lib/price-utils';
-import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, X } from 'lucide-react';
+import { Gift, Camera, Zap, Clock, Weight, FileText, Mountain, Wind, Sun, Snowflake, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, X, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { SkiIcon, SnowboardIcon, PedestrianIcon, ChildrenIcon, GoproIcon } from '@/components/icons/ActivityIcons';
 
 function cloudinaryOptimize(url: string, w = 600, h = 300): string {
@@ -662,6 +662,15 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     });
   };
 
+  const handleIncrementCart = (key: string) => {
+    setCart(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+  };
+
+  const handleClearCart = () => {
+    setCart({});
+    setCartOpen(false);
+  };
+
 
   let totalItems = 0;
   Object.values(cart).forEach(qty => { totalItems += qty; });
@@ -712,8 +721,19 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     }
   });
 
-  const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email && 
+  const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email &&
                       passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked);
+
+  const missingFields: string[] = step === 3 ? [
+    !contact.firstName ? 'Prénom du contact' : null,
+    !contact.lastName  ? 'Nom du contact'    : null,
+    !contact.phone     ? 'Téléphone'         : null,
+    !contact.email     ? 'Email'             : null,
+    ...passengers.flatMap((p, i) => [
+      !p.firstName    ? `Prénom passager ${i + 1}` : null,
+      !p.weightChecked ? `Confirmation de poids passager ${i + 1}` : null,
+    ]),
+  ].filter((v): v is string => !!v) : [];
 
   const handleApplyVoucher = async () => {
     if (!voucherInput.trim()) return;
@@ -1809,6 +1829,21 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 </button>
               </div>
 
+              {/* Champs manquants — affiché uniquement à l'étape 3 si formulaire incomplet */}
+              {step === 3 && missingFields.length > 0 && (
+                <div className="mx-4 mt-3 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle size={13} color="#f59e0b" />
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#92400e' }}>À compléter avant de payer :</span>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                    {missingFields.map((f, i) => (
+                      <li key={i} style={{ fontSize: '0.72rem', color: '#92400e', lineHeight: 1.6 }}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Articles */}
               <div className="px-4 py-3 flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                 {Object.entries(cart).map(([key, qty]) => {
@@ -1820,7 +1855,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       <span className="flex-1 min-w-0 truncate">{f?.name} <span className="text-slate-400 font-normal">({tStr})</span> × <span style={{ color: '#009FE3' }}>{qty}</span></span>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => handleDecrementCart(key)} className="w-6 h-6 bg-white border border-slate-200 rounded-[5px] flex items-center justify-center hover:text-rose-500 transition-colors" title="Enlever 1">−</button>
-                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer">×</button>
+                        <button onClick={() => handleIncrementCart(key)} className="w-6 h-6 bg-white border border-slate-200 rounded-[5px] flex items-center justify-center hover:text-emerald-500 transition-colors" title="Ajouter 1"><Plus size={12} /></button>
+                        <button onClick={() => handleDeleteCartItem(key)} className="w-6 h-6 bg-rose-50 rounded-[5px] flex items-center justify-center text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Supprimer cette ligne"><Trash2 size={12} /></button>
                       </div>
                     </div>
                   );
@@ -1859,6 +1895,15 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   </button>
                 )}
 
+                <button
+                  onClick={handleClearCart}
+                  className="w-full flex items-center justify-center gap-2 mt-3 py-2 rounded-[8px] border border-rose-100 text-rose-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                  style={{ fontSize: '0.78rem', fontWeight: 600 }}
+                >
+                  <Trash2 size={13} />
+                  Vider le panier
+                </button>
+
                 <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.68rem', marginTop: '8px' }}>
                   En finalisant, vous acceptez nos <a href="https://www.fluide-parapente.fr/cgv/" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>CGV</a> et notre <a href="/politique-confidentialite" target="_blank" rel="noopener" style={{ color: '#312783', textDecoration: 'underline' }}>politique de confidentialité</a>.
                 </p>
@@ -1867,20 +1912,29 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           )}
 
           {/* FAB */}
-          <button
-            onClick={() => setCartOpen(o => !o)}
-            className="fixed z-[9999] flex items-center justify-center shadow-xl transition-transform active:scale-95"
-            style={{ bottom: '20px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#E6007E', border: 'none', cursor: 'pointer' }}
-            aria-label="Voir le panier"
-          >
-            <ShoppingCart size={24} color="white" strokeWidth={2} />
-            <span
-              className="absolute flex items-center justify-center font-bold"
-              style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
-            >
-              {totalItems}
-            </span>
-          </button>
+          {(() => {
+            const fabBg = step === 3 ? (isFormValid ? '#E6007E' : '#94a3b8') : '#E6007E';
+            return (
+              <button
+                onClick={() => setCartOpen(o => !o)}
+                className="fixed z-[9999] flex items-center justify-center shadow-xl transition-all active:scale-95"
+                style={{ bottom: '20px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
+                aria-label="Voir le panier"
+              >
+                {step === 3 ? (
+                  <img src="/caisse.svg" alt="Caisse" style={{ width: '28px', height: '28px' }} />
+                ) : (
+                  <ShoppingCart size={24} color="white" strokeWidth={2} />
+                )}
+                <span
+                  className="absolute flex items-center justify-center font-bold"
+                  style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+                >
+                  {totalItems}
+                </span>
+              </button>
+            );
+          })()}
         </>
       )}
       {/* 🎯 POPUP D'INFORMATION SUR LE VOL */}
