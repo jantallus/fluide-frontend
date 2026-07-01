@@ -850,17 +850,24 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       });
 
       const data = await res.json();
-      
+
       if (data.url) {
         sessionStorage.setItem('booking_restore', JSON.stringify({ cart, contact, passengers }));
         window.location.href = data.url;
+      } else if (res.status === 409) {
+        // Créneau plus disponible — retour à la sélection
+        toast.error(data.error || "Ce créneau n'est plus disponible. Veuillez en choisir un autre.");
+        setIsCheckingOut(false);
+        setCart({});
+        setPassengers([]);
+        setStep(2);
       } else {
-        toast.error("Erreur lors de la création du paiement : " + (data.error || "Inconnue"));
+        toast.error(data.error || "Une erreur est survenue. Veuillez réessayer ou nous contacter par téléphone.");
         setIsCheckingOut(false);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erreur de connexion au serveur de paiement.");
+      toast.error("Erreur de connexion au serveur de paiement. Veuillez réessayer.");
       setIsCheckingOut(false);
     }
   };
@@ -1925,24 +1932,60 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           {(() => {
             const fabBg = step === 3 ? (isFormValid ? '#E6007E' : '#94a3b8') : '#E6007E';
             return (
-              <button
-                onClick={() => setCartOpen(o => !o)}
-                className="fixed z-[9999] flex items-center justify-center shadow-xl transition-all active:scale-95"
-                style={{ bottom: '20px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
-                aria-label="Voir le panier"
-              >
-                {step === 3 ? (
-                  <img src="/caisse.svg" alt="Caisse" style={{ width: '28px', height: '28px' }} />
-                ) : (
-                  <ShoppingCart size={24} color="white" strokeWidth={2} />
-                )}
-                <span
-                  className="absolute flex items-center justify-center font-bold"
-                  style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+              <div className="fixed z-[9999] flex flex-col items-center gap-1" style={{ bottom: '20px', right: '16px' }}>
+                {step === 3 && (() => {
+                  const hasDiscount = discountAmount > 0;
+                  const h = hasDiscount ? 52 : 40;
+                  // Étiquette pistolet prix : coins concaves + vagues sur les côtés
+                  const path = hasDiscount
+                    ? `M 10,0 L 80,0 Q 80,12 90,12 C 82,20 82,32 90,40 Q 80,40 80,52 L 10,52 Q 10,40 0,40 C 8,32 8,20 0,12 Q 10,12 10,0 Z`
+                    : `M 10,0 L 80,0 Q 80,10 90,10 C 82,15 82,25 90,30 Q 80,30 80,40 L 10,40 Q 10,30 0,30 C 8,25 8,15 0,10 Q 10,10 10,0 Z`;
+                  return (
+                    <div style={{ filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.22))' }}>
+                      <div style={{
+                        clipPath: `path('${path}')`,
+                        width: '90px',
+                        height: `${h}px`,
+                        backgroundColor: 'white',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '2px',
+                      }}>
+                        {hasDiscount && (
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textDecoration: 'line-through', lineHeight: 1 }}>
+                            {originalPrice.toFixed(2)} €
+                          </span>
+                        )}
+                        <span style={{ fontSize: '15px', fontWeight: 800, color: '#E6007E', lineHeight: 1 }}>
+                          {finalPrice.toFixed(2)} €
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <button
+                  onClick={() => setCartOpen(o => !o)}
+                  className="flex items-center justify-center shadow-xl transition-all active:scale-95"
+                  style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
+                  aria-label="Voir le panier"
                 >
-                  {totalItems}
-                </span>
-              </button>
+                  {step === 3 ? (
+                    <img src="/caisse.svg" alt="Caisse" style={{ width: '28px', height: '28px', filter: 'brightness(0) invert(1)' }} />
+                  ) : (
+                    <ShoppingCart size={24} color="white" strokeWidth={2} />
+                  )}
+                  {step !== 3 && (
+                    <span
+                      className="absolute flex items-center justify-center font-bold"
+                      style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+                    >
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
             );
           })()}
         </>

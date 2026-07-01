@@ -9,8 +9,8 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const session_id = searchParams.get('session_id');
   
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'refunded'>('loading');
+
   // NOUVEAU : Mémoire pour le Bon Cadeau
   const [isGiftCard, setIsGiftCard] = useState(false);
   const [giftCode, setGiftCode] = useState('');
@@ -30,15 +30,17 @@ function SuccessContent() {
         });
 
         if (res.ok) {
-          const data = await res.json(); // On lit la réponse du serveur
-          
-          // 🎁 C'est un bon cadeau !
-          if (data.is_gift_card) {
-            setIsGiftCard(true);
-            setGiftCode(data.code);
+          const data = await res.json();
+
+          if (data.refunded) {
+            setStatus('refunded');
+          } else {
+            if (data.is_gift_card) {
+              setIsGiftCard(true);
+              setGiftCode(data.code);
+            }
+            setStatus('success');
           }
-          
-          setStatus('success');
         } else {
           setStatus('error');
         }
@@ -166,7 +168,34 @@ function SuccessContent() {
           </div>
         )}
 
-        {/* ÉCRAN 3 : ERREUR */}
+        {/* ÉCRAN 3 : REMBOURSEMENT AUTOMATIQUE */}
+        {status === 'refunded' && (
+          <div className="animate-in zoom-in-95 duration-500">
+            <div className="flex justify-center mb-6">
+              <XCircle size={72} strokeWidth={1.5} style={{ color: '#f59e0b' }} />
+            </div>
+            <h1 className="text-4xl font-black uppercase italic mb-4" style={{ color: '#f59e0b' }}>Créneau indisponible</h1>
+            <p className="text-slate-600 font-medium mb-4">
+              Votre paiement a bien été reçu, mais le créneau que vous aviez choisi n'était malheureusement plus disponible au moment de l'enregistrement.
+            </p>
+            <p className="text-slate-600 font-medium mb-8">
+              <strong>Vous avez été intégralement remboursé</strong> — le virement peut prendre 5 à 10 jours ouvrés selon votre banque. N'hésitez pas à nous appeler ou à réessayer avec un autre créneau.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = '/booking'}
+                className="text-white px-8 py-4 rounded-[5px] font-black uppercase tracking-widest text-xs transition-colors"
+                style={{ backgroundColor: '#E6007E' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#312783')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E6007E')}
+              >
+                Choisir un autre créneau
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ÉCRAN 4 : ERREUR */}
         {status === 'error' && (
           <div className="animate-in zoom-in-95 duration-500">
             <div className="flex justify-center mb-6">
