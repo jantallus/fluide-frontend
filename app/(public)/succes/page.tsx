@@ -112,7 +112,7 @@ function SuccessContent() {
               <ul className="text-sm text-slate-600 space-y-2">
                 <li>• Habillez-vous chaudement (même en été).</li>
                 <li>• Prenez des lunettes de soleil.</li>
-                <li>• Soyez sur place 15 min avant l'heure du vol.</li>
+                <li>• Soyez sur place 5 min avant l'heure de réservation.</li>
               </ul>
             </div>
             <button

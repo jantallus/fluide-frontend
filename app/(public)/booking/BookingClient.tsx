@@ -1549,8 +1549,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
               {/* 🎯 NOUVEAU : LA SECTION BON CADEAU EST MAINTENANT TOUT EN HAUT ! */}
               {/* 🎯 SECTION BON CADEAU (Douce et Rassurante) */}
               <div className="mb-12 border-2 rounded-[10px] p-6 md:p-8 relative overflow-hidden shadow-sm" style={{ backgroundColor: 'rgba(49,39,131,0.04)', borderColor: 'rgba(49,39,131,0.2)' }}>
-                <div className="absolute -right-6 -top-6 text-9xl opacity-10 pointer-events-none">🎁</div>
-                
+                <img src="/cadeau.svg" aria-hidden="true" className="absolute -right-4 -top-4 pointer-events-none select-none" style={{ width: '140px', height: '140px', opacity: 0.07, filter: 'invert(18%) sepia(82%) saturate(600%) hue-rotate(220deg)' }} />
                 <h3 className="mb-2 flex items-center gap-3 relative z-10" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#312783' }}>
                   Vous avez un bon cadeau ou un code promo ?
                 </h3>
@@ -1661,7 +1660,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Message / Remarque (Facultatif)</label>
                   <textarea
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold outline-none focus:border-[#312783] h-24 text-slate-800"
-                    placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème auditif...)"
+                    placeholder="Une information à transmettre au pilote ? (ex: cadeau surprise, problème de genou...)"
                     value={contact.notes}
                     onChange={e => setContact({...contact, notes: e.target.value})}
                   />
@@ -1944,35 +1943,49 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
               <div className="fixed z-[9999] flex flex-col items-center gap-1" style={{ bottom: '20px', right: '16px' }}>
                 {step === 3 && !cartOpen && (() => {
                   const hasDiscount = discountAmount > 0;
-                  const h = hasDiscount ? 56 : 44;
-                  // Étiquette pistolet prix : côtés gauche/droit = arcs convexes atteignant exactement les bords de l'élément (96px)
-                  // C P1 P2 endpoint : P1/P2 aux bords → tangente horizontale aux coins → transition douce avec haut/bas droits
-                  const path = hasDiscount
-                    ? `M 12,0 L 84,0 C 100,0 100,56 84,56 L 12,56 C -4,56 -4,0 12,0 Z`
-                    : `M 12,0 L 84,0 C 100,0 100,44 84,44 L 12,44 C -4,44 -4,0 12,0 Z`;
                   return (
-                    <div style={{ filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.22))' }}>
-                      <div style={{
-                        clipPath: `path('${path}')`,
-                        width: '96px',
-                        height: `${h}px`,
-                        backgroundColor: 'white',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '2px',
-                      }}>
-                        {hasDiscount && (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textDecoration: 'line-through', lineHeight: 1 }}>
-                            {originalPrice.toFixed(2)} €
-                          </span>
-                        )}
-                        <span style={{ fontSize: '15px', fontWeight: 800, color: '#E6007E', lineHeight: 1 }}>
-                          {finalPrice.toFixed(2)} €
-                        </span>
-                      </div>
-                    </div>
+                    <svg
+                      width="96"
+                      height={hasDiscount ? 60 : 50}
+                      viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
+                      style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
+                    >
+                      <g transform="rotate(45 12 12)">
+                        <path
+                          d="m4 20c1.88 1.88 4.54 1 6 2.5l12.5-12.5c-1.5-1.46-.62-4.12-2.5-6s-4.54-1-6-2.5l-12.5 12.5c1.5 1.46.62 4.12 2.5 6z"
+                          fill="#e8eaed"
+                          stroke="#94a3b8"
+                          strokeOpacity={0.4}
+                          strokeWidth="0.5"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                      </g>
+                      {hasDiscount && (
+                        <text
+                          x="12" y="9.5"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="2.8"
+                          fontWeight="700"
+                          fill="#94a3b8"
+                          style={{ textDecoration: 'line-through' }}
+                        >
+                          {originalPrice.toFixed(2)} €
+                        </text>
+                      )}
+                      <text
+                        x="12"
+                        y={hasDiscount ? 14 : 12}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize="4"
+                        fontWeight="800"
+                        fill="#E6007E"
+                      >
+                        {finalPrice.toFixed(2)} €
+                      </text>
+                    </svg>
                   );
                 })()}
                 <button
