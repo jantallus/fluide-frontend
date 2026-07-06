@@ -1948,7 +1948,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       width="96"
                       height={hasDiscount ? 60 : 50}
                       viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
-                      style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
+                      style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))', cursor: 'pointer' }}
+                      onClick={() => setCartOpen(o => !o)}
                     >
                       <g transform="rotate(45 12 12)">
                         <path
