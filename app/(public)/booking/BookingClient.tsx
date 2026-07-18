@@ -119,7 +119,6 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
-  const isIntroAnimatingRef = useRef(false);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
   const skipInitialScroll = useRef(isDirect); // sur les pages /vols, pas de scroll auto à l'ouverture
 
@@ -416,15 +415,16 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         if (headerContainer && behavior === 'auto') headerContainer.scrollLeft = pos;
       };
 
-      // 🪄 On enlève le "voile blanc" (opacity-0) instantanément pour un ressenti immédiat
+      // 🪄 On enlève le "voile blanc" (opacity-0) du body instantanément
       container.classList.remove('opacity-0');
-      if (headerContainer) headerContainer.classList.remove('opacity-0');
+      // Le header sera révélé après l'animation pour éviter le conflit de compositing
 
       if (window.innerWidth >= 768) {
+        if (headerContainer) headerContainer.classList.remove('opacity-0');
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) centerHorizontally(targetEl, 'auto');
-          setIsGridExpanded(true); 
+          setIsGridExpanded(true);
         }, 10); // Instantané sur PC
         return;
       }
@@ -436,47 +436,40 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         startAnimDate.setDate(startAnimDate.getDate() - 1);
         const startAnimDateStr = getLocalYYYYMMDD(startAnimDate);
 
-        // Le scroll vertical est géré par le useEffect step (instant sur mobile)
-        // On attend juste qu'il soit appliqué avant de jouer l'animation horizontale
         const animDelay = isEmbed ? 400 : 80;
         setTimeout(() => {
           const startEl = document.getElementById(`mobile-col-${startAnimDateStr}`);
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
           if (startEl && targetEl) {
-            isIntroAnimatingRef.current = true;
             container.style.scrollSnapType = 'none';
-            // Téléportation sur la veille
             centerHorizontally(startEl, 'auto');
-
-            // boucle rAF : recopie le scrollLeft du body (animé nativement) sur le header
-            const rafSync = () => {
-              if (!isIntroAnimatingRef.current) return;
-              if (headerContainer) headerContainer.scrollLeft = container.scrollLeft;
-              requestAnimationFrame(rafSync);
-            };
 
             requestAnimationFrame(() => {
               setTimeout(() => {
-                // Swipe pur et fluide vers le jour J
                 centerHorizontally(targetEl, 'smooth');
-                requestAnimationFrame(rafSync);
 
                 setTimeout(() => {
-                  isIntroAnimatingRef.current = false;
                   container.style.scrollSnapType = '';
+                  // Sync header à la position finale puis le révéler
+                  if (headerContainer) {
+                    headerContainer.scrollLeft = container.scrollLeft;
+                    headerContainer.classList.remove('opacity-0');
+                  }
                   setIsGridExpanded(true);
                 }, 300);
               }, 50);
             });
           } else if (targetEl) {
              centerHorizontally(targetEl, 'auto');
+             if (headerContainer) headerContainer.classList.remove('opacity-0');
              setIsGridExpanded(true);
           }
         }, animDelay);
 
       } else {
         // 🧭 NAVIGATION CLASSIQUE (Flèches ou calendrier)
+        if (headerContainer) headerContainer.classList.remove('opacity-0');
         setTimeout(() => {
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
           if (targetEl) centerHorizontally(targetEl, 'smooth');
@@ -1399,7 +1392,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     <div 
                       ref={bodyScrollRef}
                       onScroll={(e) => { 
-                        if (headerScrollRef.current && !isIntroAnimatingRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
+                        if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
                         
                         // 🎯 NOUVEAU : Synchronisation magique du Swipe (Uniquement sur mobile)
                         if (window.innerWidth < 768) {
