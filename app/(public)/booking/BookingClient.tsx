@@ -119,6 +119,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   const [infoFlight, setInfoFlight] = useState<FlightType | null>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSwipingRef = useRef(false);
+  const isIntroAnimatingRef = useRef(false);
   const [isGridExpanded, setIsGridExpanded] = useState(false); // 🚀 LE TURBO : Mémoire d'expansion
   const skipInitialScroll = useRef(isDirect); // sur les pages /vols, pas de scroll auto à l'ouverture
 
@@ -412,6 +413,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       const centerHorizontally = (el: HTMLElement, behavior: 'auto' | 'smooth') => {
         const pos = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
         container.scrollTo({ left: pos, behavior });
+        if (headerContainer) headerContainer.scrollTo({ left: pos, behavior });
       };
 
       // 🪄 On enlève le "voile blanc" (opacity-0) instantanément pour un ressenti immédiat
@@ -442,20 +444,22 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           const targetEl = document.getElementById(`mobile-col-${pickedDate}`);
 
           if (startEl && targetEl) {
+            isIntroAnimatingRef.current = true;
             container.style.scrollSnapType = 'none';
             // Téléportation sur la veille
             centerHorizontally(startEl, 'auto');
 
             requestAnimationFrame(() => {
               setTimeout(() => {
-                // Swipe pur et fluide vers le jour J
+                // Swipe pur et fluide vers le jour J (body + header en même temps)
                 centerHorizontally(targetEl, 'smooth');
-                
-                setTimeout(() => { 
-                  container.style.scrollSnapType = ''; 
-                  setIsGridExpanded(true); 
-                }, 300); // On divise le temps d'attente par deux !
-              }, 50); 
+
+                setTimeout(() => {
+                  isIntroAnimatingRef.current = false;
+                  container.style.scrollSnapType = '';
+                  setIsGridExpanded(true);
+                }, 300);
+              }, 50);
             });
           } else if (targetEl) {
              centerHorizontally(targetEl, 'auto');
@@ -1387,7 +1391,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     <div 
                       ref={bodyScrollRef}
                       onScroll={(e) => { 
-                        if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
+                        if (headerScrollRef.current && !isIntroAnimatingRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; 
                         
                         // 🎯 NOUVEAU : Synchronisation magique du Swipe (Uniquement sur mobile)
                         if (window.innerWidth < 768) {
