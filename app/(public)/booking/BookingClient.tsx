@@ -413,7 +413,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       const centerHorizontally = (el: HTMLElement, behavior: 'auto' | 'smooth') => {
         const pos = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
         container.scrollTo({ left: pos, behavior });
-        if (headerContainer) headerContainer.scrollTo({ left: pos, behavior });
+        if (headerContainer && behavior === 'auto') headerContainer.scrollLeft = pos;
       };
 
       // 🪄 On enlève le "voile blanc" (opacity-0) instantanément pour un ressenti immédiat
@@ -449,10 +449,18 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
             // Téléportation sur la veille
             centerHorizontally(startEl, 'auto');
 
+            // boucle rAF : recopie le scrollLeft du body (animé nativement) sur le header
+            const rafSync = () => {
+              if (!isIntroAnimatingRef.current) return;
+              if (headerContainer) headerContainer.scrollLeft = container.scrollLeft;
+              requestAnimationFrame(rafSync);
+            };
+
             requestAnimationFrame(() => {
               setTimeout(() => {
-                // Swipe pur et fluide vers le jour J (body + header en même temps)
+                // Swipe pur et fluide vers le jour J
                 centerHorizontally(targetEl, 'smooth');
+                requestAnimationFrame(rafSync);
 
                 setTimeout(() => {
                   isIntroAnimatingRef.current = false;
