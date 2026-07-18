@@ -1353,19 +1353,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   <div className="relative">
                     {/* 🎯 LE BANDEAU DES JOURS (Esclave) */}
                     <div ref={datesBarRef} className={`${isEmbed ? 'relative ' : 'sticky top-[80px] lg:top-[90px] '}z-40 bg-white pt-4 pb-4 border-b border-slate-200`} style={isEmbed ? { willChange: 'transform' } : undefined}>
-                      {/* Mobile : bouton date unique basé sur pickedDate — aucune sync JS nécessaire */}
-                      <div className="md:hidden px-[12.5vw]">
-                        <button
-                          onClick={() => setShowCalendar(true)}
-                          className="w-full shadow-md rounded-[5px] p-4 flex flex-col items-center justify-center text-center outline-none border-none"
-                          style={{ backgroundColor: '#312783', cursor: 'pointer' }}
-                        >
-                          <p className="font-bold text-white capitalize text-md leading-tight">{getDayName(pickedDate)}</p>
-                          <CalendarDays size={11} color="rgba(255,255,255,0.45)" style={{ marginTop: '4px' }} />
-                        </button>
-                      </div>
-                      {/* Desktop : bandeau scrollable synchronisé avec la grille */}
-                      <div ref={headerScrollRef} className="hidden md:flex overflow-hidden gap-4 md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
+                      <div ref={headerScrollRef} className="flex overflow-hidden gap-4 px-[12.5vw] md:px-0 opacity-0 md:opacity-100 transition-opacity duration-300">
                         {weekDays.map((dateStr, i) => {
                           const isFirstDesktop = i === 10;
                           const isLastDesktop = i === 10 + displayDaysCount - 1;
