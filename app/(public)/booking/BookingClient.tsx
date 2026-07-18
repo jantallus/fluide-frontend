@@ -2004,7 +2004,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   {step === 3 && !cartOpen && (
                     <button
                       onClick={isFormValid ? handleSubmit : () => setCartOpen(true)}
-                      disabled={isFormValid && isCheckingOut}
+                      disabled={!!isFormValid && isCheckingOut}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap"
                       style={{ backgroundColor: isFormValid ? '#E6007E' : '#94a3b8', color: 'white', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                     >
@@ -2013,7 +2013,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   )}
                   <button
                     onClick={step === 3 && isFormValid ? handleSubmit : () => setCartOpen(o => !o)}
-                    disabled={step === 3 && isFormValid && isCheckingOut}
+                    disabled={step === 3 && !!isFormValid && isCheckingOut}
                     className="relative flex items-center justify-center shadow-xl transition-all active:scale-95"
                     style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
                     aria-label={step === 3 && isFormValid ? 'Payer la réservation' : 'Voir le panier'}
