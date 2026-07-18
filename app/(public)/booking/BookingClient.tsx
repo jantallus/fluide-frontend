@@ -250,6 +250,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [passengers, setPassengers] = useState<BookingPassenger[]>([]);
   
   // 🎯 RÉFÉRENCES SÉCURISÉES POUR ÉVITER L'EFFET DOMINO (Double-clic)
@@ -795,6 +796,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   };
 
   const handleSubmit = async () => {
+    setHasAttemptedSubmit(true);
     if (!isFormValid || isCheckingOut) return;
 
     const result = contactSchema.safeParse(contact);
@@ -1222,7 +1224,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                     return (
                       <>
                       {/* Backdrop */}
-                      <div className="fixed inset-0 z-[9998] bg-slate-900/20" onClick={() => setShowCalendar(false)} />
+                      <div className="fixed inset-0 z-[9998] bg-black/30 backdrop-blur-sm" onClick={() => setShowCalendar(false)} />
                       <div className="fixed z-[9999] bg-white rounded-[12px] border border-slate-200 p-4 select-none"
                         style={{ width: '288px', boxShadow: '0 8px 40px rgba(49,39,131,0.18)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
                         {/* En-tête mois */}
@@ -1706,10 +1708,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                         />
                       </div>
 
-                      <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-[10px] border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-                        <input 
-                          type="checkbox" 
-                          className={`w-6 h-6 mt-0.5 ${p.weightChecked ? 'accent-emerald-500' : 'accent-rose-500'}`} 
+                      <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-[10px] border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : hasAttemptedSubmit ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
+                        <input
+                          type="checkbox"
+                          className={`w-6 h-6 mt-0.5 ${p.weightChecked ? 'accent-emerald-500' : hasAttemptedSubmit ? 'accent-rose-500' : 'accent-slate-400'}`}
                           checked={p.weightChecked}
                           onChange={e => {
                             const newP = [...passengers];
@@ -1718,10 +1720,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           }}
                         />
                         <div>
-                          <span className={`font-bold block ${p.weightChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
+                          <span className={`font-bold block ${p.weightChecked ? 'text-emerald-900' : hasAttemptedSubmit ? 'text-rose-900' : 'text-slate-700'}`}>
                             Je certifie peser entre {p.weight_min} et {p.weight_max} kg *
                           </span>
-                          <span className={`text-xs ${p.weightChecked ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          <span className={`text-xs ${p.weightChecked ? 'text-emerald-600' : hasAttemptedSubmit ? 'text-rose-500' : 'text-slate-500'}`}>
                             Information obligatoire pour des raisons de sécurité.
                           </span>
                         </div>
@@ -1827,10 +1829,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       {/* --- PANIER FAB + PANNEAU --- */}
       {totalItems > 0 && (step === 1 || step === 2 || step === 3) && (
         <>
-          {/* Backdrop — flou sur mobile uniquement */}
+          {/* Backdrop */}
           {cartOpen && (
             <div
-              className="fixed inset-0 z-[9997] md:bg-transparent md:backdrop-blur-none bg-black/30 backdrop-blur-sm"
+              className="fixed inset-0 z-[9997] bg-black/30 backdrop-blur-sm"
               onClick={() => setCartOpen(false)}
             />
           )}
@@ -1888,6 +1890,33 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 })}
               </div>
 
+              {/* Options sélectionnées */}
+              {step === 3 && (() => {
+                const compCounts: Record<number, number> = {};
+                passengers.forEach(p => {
+                  (p.selectedComplements || []).forEach((id: number) => {
+                    compCounts[id] = (compCounts[id] || 0) + 1;
+                  });
+                });
+                const entries = Object.entries(compCounts);
+                if (entries.length === 0) return null;
+                return (
+                  <div className="px-4 pb-2 flex flex-col gap-1.5">
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Options</span>
+                    {entries.map(([idStr, count]) => {
+                      const comp = complementsList.find(c => c.id === parseInt(idStr));
+                      if (!comp) return null;
+                      return (
+                        <div key={idStr} className="bg-slate-50 rounded-[10px] px-3 py-2 flex items-center justify-between gap-2 text-xs font-bold text-slate-700 border border-slate-200">
+                          <span className="flex-1 min-w-0 truncate">{comp.name} × <span style={{ color: '#009FE3' }}>{count}</span></span>
+                          <span style={{ color: '#94a3b8', fontWeight: 600 }}>+{(comp.price_cents / 100 * count).toFixed(0)} €</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               {/* Total + bouton */}
               <div className="px-4 pb-4 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-3">
@@ -1939,76 +1968,67 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           {/* FAB */}
           {(() => {
             const fabBg = step === 3 ? (isFormValid ? '#E6007E' : '#94a3b8') : '#E6007E';
+            const hasDiscount = discountAmount > 0;
             return (
-              <div className="fixed z-[9999] flex flex-col items-center gap-1" style={{ bottom: '20px', right: '16px' }}>
-                {step === 3 && !cartOpen && (() => {
-                  const hasDiscount = discountAmount > 0;
-                  return (
-                    <svg
-                      width="96"
-                      height={hasDiscount ? 60 : 50}
-                      viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
-                      style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))', cursor: 'pointer' }}
-                      onClick={() => setCartOpen(o => !o)}
-                    >
-                      <g transform="rotate(45 12 12)">
-                        <path
-                          d="m4 20c1.88 1.88 4.54 1 6 2.5l12.5-12.5c-1.5-1.46-.62-4.12-2.5-6s-4.54-1-6-2.5l-12.5 12.5c1.5 1.46.62 4.12 2.5 6z"
-                          fill="#e8eaed"
-                          stroke="#94a3b8"
-                          strokeOpacity={0.4}
-                          strokeWidth="0.5"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
-                      </g>
-                      {hasDiscount && (
-                        <text
-                          x="12" y="9.5"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="2.8"
-                          fontWeight="700"
-                          fill="#94a3b8"
-                          style={{ textDecoration: 'line-through' }}
-                        >
-                          {originalPrice.toFixed(2)} €
-                        </text>
-                      )}
-                      <text
-                        x="12"
-                        y={hasDiscount ? 14 : 12}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fontSize="4"
-                        fontWeight="800"
-                        fill="#E6007E"
-                      >
-                        {finalPrice.toFixed(2)} €
+              <div className="fixed z-[9999] flex flex-col items-end gap-1" style={{ bottom: '20px', right: '16px' }}>
+                {step === 3 && !cartOpen && (
+                  <svg
+                    width="96"
+                    height={hasDiscount ? 60 : 50}
+                    viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
+                    style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))', cursor: 'pointer' }}
+                    onClick={isFormValid ? handleSubmit : () => setCartOpen(true)}
+                  >
+                    <g transform="rotate(45 12 12)">
+                      <path
+                        d="m4 20c1.88 1.88 4.54 1 6 2.5l12.5-12.5c-1.5-1.46-.62-4.12-2.5-6s-4.54-1-6-2.5l-12.5 12.5c1.5 1.46.62 4.12 2.5 6z"
+                        fill="#e8eaed"
+                        stroke="#94a3b8"
+                        strokeOpacity={0.4}
+                        strokeWidth="0.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </g>
+                    {hasDiscount && (
+                      <text x="12" y="9.5" textAnchor="middle" dominantBaseline="middle" fontSize="2.8" fontWeight="700" fill="#94a3b8" style={{ textDecoration: 'line-through' }}>
+                        {originalPrice.toFixed(2)} €
                       </text>
-                    </svg>
-                  );
-                })()}
-                <button
-                  onClick={() => setCartOpen(o => !o)}
-                  className="flex items-center justify-center shadow-xl transition-all active:scale-95"
-                  style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
-                  aria-label="Voir le panier"
-                >
-                  {step === 3 ? (
-                    <img src="/caisse.svg" alt="Caisse" style={{ width: '28px', height: '28px', filter: 'brightness(0) invert(1)' }} />
-                  ) : (
-                    <ShoppingCart size={24} color="white" strokeWidth={2} />
-                  )}
-                  {step !== 3 && (
-                    <span
-                      className="absolute flex items-center justify-center font-bold"
-                      style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+                    )}
+                    <text x="12" y={hasDiscount ? 14 : 12} textAnchor="middle" dominantBaseline="middle" fontSize="4" fontWeight="800" fill="#E6007E">
+                      {finalPrice.toFixed(2)} €
+                    </text>
+                  </svg>
+                )}
+                <div className="flex items-center gap-2">
+                  {step === 3 && !cartOpen && (
+                    <button
+                      onClick={isFormValid ? handleSubmit : () => setCartOpen(true)}
+                      disabled={isFormValid && isCheckingOut}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap"
+                      style={{ backgroundColor: isFormValid ? '#E6007E' : '#94a3b8', color: 'white', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                     >
-                      {totalItems}
-                    </span>
+                      {isCheckingOut ? 'Validation...' : (isFormValid ? 'Payer la réservation →' : 'Voir le récapitulatif →')}
+                    </button>
                   )}
-                </button>
+                  <button
+                    onClick={step === 3 && isFormValid ? handleSubmit : () => setCartOpen(o => !o)}
+                    disabled={step === 3 && isFormValid && isCheckingOut}
+                    className="relative flex items-center justify-center shadow-xl transition-all active:scale-95"
+                    style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: fabBg, border: 'none', cursor: 'pointer' }}
+                    aria-label={step === 3 && isFormValid ? 'Payer la réservation' : 'Voir le panier'}
+                  >
+                    <ShoppingCart size={24} color="white" strokeWidth={2} />
+                    {step !== 3 && (
+                      <span
+                        className="absolute flex items-center justify-center font-bold"
+                        style={{ top: '-4px', right: '-4px', minWidth: '20px', height: '20px', borderRadius: '10px', backgroundColor: '#312783', color: 'white', fontSize: '11px', padding: '0 4px' }}
+                      >
+                        {totalItems}
+                      </span>
+                    )}
+                  </button>
+                </div>
               </div>
             );
           })()}
