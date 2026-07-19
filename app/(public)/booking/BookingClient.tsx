@@ -1736,7 +1736,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
                       {complementsList.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-slate-100">
-                          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '12px' }} className="ml-2">Options disponibles (paiement sur place possible)</p>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '12px' }} className="ml-2">Options disponibles (en cas de doute, possibilité de l'ajouter le jour du vol)</p>
                           <div className="grid gap-3">
                             {complementsList.map((comp) => {
                               const isSelected = p.selectedComplements?.includes(comp.id) || false;
