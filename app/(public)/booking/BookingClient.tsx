@@ -1975,36 +1975,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
             const fabBg = step === 3 ? (isFormValid ? '#E6007E' : '#94a3b8') : '#E6007E';
             const hasDiscount = discountAmount > 0;
             return (
-              <div className="fixed z-[9999] flex flex-col items-end gap-1" style={{ bottom: '20px', right: '16px' }}>
-                {step === 3 && !cartOpen && (
-                  <svg
-                    width="96"
-                    height={hasDiscount ? 60 : 50}
-                    viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
-                    style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))', cursor: 'pointer' }}
-                    onClick={isFormValid ? handleSubmit : () => setCartOpen(true)}
-                  >
-                    <g transform="rotate(45 12 12)">
-                      <path
-                        d="m4 20c1.88 1.88 4.54 1 6 2.5l12.5-12.5c-1.5-1.46-.62-4.12-2.5-6s-4.54-1-6-2.5l-12.5 12.5c1.5 1.46.62 4.12 2.5 6z"
-                        fill="#e8eaed"
-                        stroke="#94a3b8"
-                        strokeOpacity={0.4}
-                        strokeWidth="0.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                    </g>
-                    {hasDiscount && (
-                      <text x="12" y="9.5" textAnchor="middle" dominantBaseline="middle" fontSize="2.8" fontWeight="700" fill="#94a3b8" style={{ textDecoration: 'line-through' }}>
-                        {originalPrice.toFixed(2)} €
-                      </text>
-                    )}
-                    <text x="12" y={hasDiscount ? 14 : 12} textAnchor="middle" dominantBaseline="middle" fontSize="4" fontWeight="800" fill="#E6007E">
-                      {finalPrice.toFixed(2)} €
-                    </text>
-                  </svg>
-                )}
+              <div className="fixed z-[9999]" style={{ bottom: '20px', right: '16px' }}>
                 <div className="flex items-center gap-2">
                   {step === 3 && !cartOpen && (
                     <button
@@ -2016,6 +1987,37 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       {isCheckingOut ? 'Validation...' : (isFormValid ? 'Payer la réservation →' : 'Voir le récapitulatif →')}
                     </button>
                   )}
+                  {/* Bouton FAB — position relative pour centrer l'étiquette prix */}
+                  <div className="relative">
+                    {step === 3 && !cartOpen && (
+                      <svg
+                        width="96"
+                        height={hasDiscount ? 60 : 50}
+                        viewBox={`-1 ${hasDiscount ? 4 : 5} 26 ${hasDiscount ? 16 : 14}`}
+                        style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))', cursor: 'pointer', position: 'absolute', bottom: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)' }}
+                        onClick={isFormValid ? handleSubmit : () => setCartOpen(true)}
+                      >
+                        <g transform="rotate(45 12 12)">
+                          <path
+                            d="m4 20c1.88 1.88 4.54 1 6 2.5l12.5-12.5c-1.5-1.46-.62-4.12-2.5-6s-4.54-1-6-2.5l-12.5 12.5c1.5 1.46.62 4.12 2.5 6z"
+                            fill="#e8eaed"
+                            stroke="#94a3b8"
+                            strokeOpacity={0.4}
+                            strokeWidth="0.5"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                          />
+                        </g>
+                        {hasDiscount && (
+                          <text x="12" y="9.5" textAnchor="middle" dominantBaseline="middle" fontSize="2.8" fontWeight="700" fill="#94a3b8" style={{ textDecoration: 'line-through' }}>
+                            {originalPrice.toFixed(2)} €
+                          </text>
+                        )}
+                        <text x="12" y={hasDiscount ? 14 : 12} textAnchor="middle" dominantBaseline="middle" fontSize="4" fontWeight="800" fill="#E6007E">
+                          {finalPrice.toFixed(2)} €
+                        </text>
+                      </svg>
+                    )}
                   <button
                     onClick={step === 3 && isFormValid ? handleSubmit : () => setCartOpen(o => !o)}
                     disabled={step === 3 && !!isFormValid && isCheckingOut}
@@ -2033,7 +2035,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       </span>
                     )}
                   </button>
-                </div>
+                  </div>{/* fin relative FAB wrapper */}
+                </div>{/* fin flex items-center */}
               </div>
             );
           })()}
