@@ -604,6 +604,21 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     return grid;
   }, [rawSlots, selectedFlight, cart, gridStartDate, flights, displayDaysCount]);
 
+  // Dates qui ont des créneaux pilote planifiés mais tous complets (capacity=0)
+  const fullDates = useMemo(() => {
+    const today = getLocalYYYYMMDD(new Date());
+    const datesWithSlots = new Set<string>();
+    rawSlots.forEach(s => {
+      const dStr = new Date(s.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      if (dStr >= today) datesWithSlots.add(dStr);
+    });
+    const out = new Set<string>();
+    datesWithSlots.forEach(d => {
+      if (Object.keys(gridData[d] || {}).length === 0) out.add(d);
+    });
+    return out;
+  }, [rawSlots, gridData]);
+
   const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
   useEffect(() => {
     const today = getLocalYYYYMMDD(new Date());
@@ -1450,6 +1465,32 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                   const nextFromHere = Object.keys(gridData)
                                     .filter(d => d > contextDate && Object.keys(gridData[d]).length > 0)
                                     .sort()[0] ?? nextAvailableDate;
+                                  const isFull = fullDates.has(dateStr);
+
+                                  if (isFull) {
+                                    return (
+                                      <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(230,0,126,0.03)' }}>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#E6007E', opacity: 0.7 }}>Complet</p>
+                                        {nextFromHere ? (
+                                          <button
+                                            onClick={() => pickDate(nextFromHere)}
+                                            className="flex flex-col items-center gap-0.5 group cursor-pointer"
+                                            style={{ background: 'none', border: 'none', padding: 0 }}
+                                          >
+                                            <p className="text-[9px] leading-tight group-hover:underline" style={{ color: '#312783', opacity: 0.5 }}>Prochaines réservations disponibles le</p>
+                                            <p className="text-[10px] font-black leading-tight group-hover:underline" style={{ color: '#312783' }}>
+                                              {new Date(nextFromHere + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </p>
+                                          </button>
+                                        ) : (
+                                          <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.5 }}>Prochaines réservations disponibles bientôt</p>
+                                        )}
+                                        <div className="w-8 border-t border-slate-300 my-0.5" />
+                                        <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
+                                      </div>
+                                    );
+                                  }
+
                                   const msg = getSeasonMessage(contextDate, nextFromHere);
                                   return (
                                     <div className="rounded-[5px] py-5 px-3 border border-slate-200 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(49,39,131,0.03)' }}>
