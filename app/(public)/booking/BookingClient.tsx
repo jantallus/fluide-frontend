@@ -1522,8 +1522,36 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                       <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
                                     </div>
                                   );
-                                })() : (
-                                  times.map(timeStr => {
+                                })() : (() => {
+                                  const today = getLocalYYYYMMDD(new Date());
+                                  const contextDate = dateStr >= today ? dateStr : today;
+                                  const allFull = times.length > 0 && times.every(t => {
+                                    const key = `${selectedFlight.id}|${dateStr}|${t}`;
+                                    return gridData[dateStr][t] === 0 && (cart[key] || 0) === 0;
+                                  });
+                                  if (allFull) {
+                                    const nextFromHere = Object.keys(gridData)
+                                      .filter(d => d > contextDate && Object.keys(gridData[d]).some(t => gridData[d][t] > 0))
+                                      .sort()[0] ?? nextAvailableDate;
+                                    return (
+                                      <div className="rounded-[5px] py-5 px-3 border border-rose-100 flex flex-col items-center justify-center gap-1.5 text-center" style={{ backgroundColor: 'rgba(230,0,126,0.03)' }}>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#E6007E', opacity: 0.7 }}>Complet</p>
+                                        {nextFromHere ? (
+                                          <button onClick={() => pickDate(nextFromHere)} className="flex flex-col items-center gap-0.5 group cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+                                            <p className="text-[9px] leading-tight group-hover:underline" style={{ color: '#312783', opacity: 0.5 }}>Prochaines réservations disponibles le</p>
+                                            <p className="text-[10px] font-black leading-tight group-hover:underline" style={{ color: '#312783' }}>
+                                              {new Date(nextFromHere + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </p>
+                                          </button>
+                                        ) : (
+                                          <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.5 }}>Prochaines réservations disponibles bientôt</p>
+                                        )}
+                                        <div className="w-8 border-t border-slate-300 my-0.5" />
+                                        <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
+                                      </div>
+                                    );
+                                  }
+                                  return times.map(timeStr => {
                                     const capacity = gridData[dateStr][timeStr];
                                     const currentFlightKey = `${selectedFlight.id}|${dateStr}|${timeStr}`;
                                     const qtyInCart = cart[currentFlightKey] || 0;
@@ -1567,8 +1595,8 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                         </div>
                                       </div>
                                     );
-                                  })
-                                )}
+                                  });
+                                })()}
                               </div>
                             ) : (
                               <div className="flex flex-col gap-2 opacity-0 pointer-events-none">
