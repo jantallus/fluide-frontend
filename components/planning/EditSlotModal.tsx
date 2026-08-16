@@ -55,7 +55,8 @@ export default function EditSlotModal({
   const [moveGroup, setMoveGroup] = useState(false);
   const [pasteZoneOpen, setPasteZoneOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
-  const [parsed, setParsed] = useState<{ names: string[]; phone: string; email: string } | null>(null);
+  const [parsed, setParsed] = useState<{ names: string[]; phone: string; email: string; weights: string[] } | null>(null);
+  const [passengerWeights, setPassengerWeights] = useState<string[]>(['']);
 
   // ── Parsing message collé ─────────────────────────────────────────────────
   const parseMessage = () => {
@@ -149,7 +150,8 @@ export default function EditSlotModal({
     }
 
     const names = [...new Set(found)].slice(0, 6);
-    setParsed({ names, phone, email });
+    const weights = [...text.matchAll(/(\d+)\s*(?:kg|kgs?|kilos?)\b/gi)].map(m => m[1]);
+    setParsed({ names, phone, email, weights });
   };
 
   const applyParsed = () => {
@@ -162,6 +164,9 @@ export default function EditSlotModal({
       email: parsed.email || f.email,
     }));
     if (parsed.names.length > 1) setGroupSize(parsed.names.length - 1); // 1er nom = contact, reste = passagers
+    if (parsed.weights.length > 0) {
+      setPassengerWeights(prev => Array.from({ length: Math.max(prev.length, parsed.weights.length) }, (_, i) => parsed.weights[i] || prev[i] || ''));
+    }
     setPasteZoneOpen(false);
     setPasteText('');
     setParsed(null);
@@ -190,10 +195,20 @@ export default function EditSlotModal({
     setSelectedMonitors([]);
     setBlockUntilMs(selectedEvent.end_time ? new Date(selectedEvent.end_time).getTime() : 0);
     setGroupSize(1);
+    setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
     setIsManual(false);
     setMoveGroup(false);
   }, [selectedEvent, currentUser]);
+
+  // Sync taille du tableau de poids avec le nombre de passagers
+  useEffect(() => {
+    setPassengerWeights(prev => {
+      const next = [...prev];
+      while (next.length < groupSize) next.push('');
+      return next.slice(0, groupSize);
+    });
+  }, [groupSize]);
 
   // ── useMemos ───────────────────────────────────────────────────────────────
   const parsedOpeningPeriods = useMemo(() =>
@@ -452,7 +467,7 @@ export default function EditSlotModal({
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
         else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (formData.title || ''); }
-        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked' } });
+        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index] } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(baseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -463,7 +478,7 @@ export default function EditSlotModal({
         }
       });
     } else if (slotsNeeded > 1) {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked' } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0] } });
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
       for (let i = 1; i < slotsNeeded; i++) {
         const nextMs = startMs + i * slotDuration * 60000;
@@ -471,7 +486,7 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available' } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0] } });
     }
     applyAll(updatesToApply);
   };
@@ -782,19 +797,29 @@ export default function EditSlotModal({
                   </div>
                 )}
 
-                {formData.flight_type_id && (() => {
-                  const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
-                  const wMin = flight?.weight_min ?? 20; const wMax = flight?.weight_max ?? 110;
-                  return (
-                    <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors ${formData.weightChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-                      <input type="checkbox" className={`w-6 h-6 mt-0.5 ${formData.weightChecked ? 'accent-emerald-500' : 'accent-rose-500'}`} checked={formData.weightChecked} onChange={e => setFormData({ ...formData, weightChecked: e.target.checked })} />
-                      <div>
-                        <span className={`font-bold block ${formData.weightChecked ? 'text-emerald-900' : 'text-rose-900'}`}>Le client certifie peser entre {wMin} et {wMax} kg</span>
-                        <span className={`text-[10px] ${formData.weightChecked ? 'text-emerald-600' : 'text-rose-500'}`}>Cochez pour confirmer au pilote que le poids a été vérifié.</span>
+                <div className="flex flex-col gap-2">
+                  {passengerWeights.map((w, i) => {
+                    const namesList = formData.title.split(',').map((n: string) => n.trim()).filter((n: string) => n);
+                    const label = namesList[i] || (passengerWeights.length > 1 ? `Passager ${i + 1}` : 'Passager');
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-500 font-medium w-28 shrink-0 truncate">{label}</span>
+                        <div className="relative flex-1">
+                          <input
+                            type="number"
+                            min={1}
+                            max={200}
+                            placeholder="Poids (kg) — optionnel"
+                            value={w}
+                            onChange={e => setPassengerWeights(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                            className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                          />
+                          {w && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-medium pointer-events-none">kg</span>}
+                        </div>
                       </div>
-                    </label>
-                  );
-                })()}
+                    );
+                  })}
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
