@@ -765,7 +765,7 @@ export default function EditSlotModal({
                       <button onClick={() => handleMainChange(1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
                       <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
                     </div>
-                    {groupSize > 0 && displayDistribution && (
+                    {(groupSize > 1 || isManual) && displayDistribution && (
                       <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
                         {displayDistribution.canFit ? (
                           <>
