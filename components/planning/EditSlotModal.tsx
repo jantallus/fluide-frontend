@@ -66,7 +66,19 @@ export default function EditSlotModal({
     const phone = phoneMatch ? phoneMatch[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
     const email = emailMatch ? emailMatch[0] : '';
 
-    // Texte nettoyé : retire téléphone, email, poids (85kg, 56 kg...), nombres isolés
+    // Si le texte contient des poids, on les utilise comme séparateurs de personnes
+    // Ex: "Couturier Maxence 85kg Maud 56kg" → ["Couturier Maxence", "Maud"]
+    const weightSplit = text.replace(phoneMatch?.[0] ?? '\x00', '').split(/\d+\s*(?:kg|kgs?|kilos?)\b/gi);
+    const namesByWeight: string[] = [];
+    if (weightSplit.length > 1) {
+      const cap2 = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      weightSplit.forEach(seg => {
+        const words = seg.trim().split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]+$/.test(w));
+        if (words.length > 0) namesByWeight.push(cap2(words.join(' ')));
+      });
+    }
+
+    // Texte nettoyé : retire téléphone, email, poids, nombres isolés
     const clean = text
       .replace(phoneMatch?.[0] ?? '\x00', ' ')
       .replace(emailMatch?.[0] ?? '\x00', ' ')
@@ -104,23 +116,23 @@ export default function EditSlotModal({
       });
     }
 
-    // 5. Format liste compact : "Nom Prénom Prénom2" — texte réduit à des mots-lettres
-    // Regroupe les tokens capitalisés consécutifs puis les tokens seuls
+    // 5. Format liste compact avec poids comme séparateurs (priorité)
+    if (found.length === 0 && namesByWeight.length > 0) {
+      namesByWeight.forEach(n => found.push(n));
+    }
+
+    // 5b. Format liste sans poids : regroupe par paires (max 2 mots) puis mots seuls capitalisés
     if (found.length === 0) {
       const tokens = clean.split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]*$/.test(w));
       const skipToken = /^(bonjour|bonsoir|salut|merci|oui|non|et|ou|le|la|les|de|du|des|un|une|vol|vols|pour|avec|re|fw|bjr|cdt|ok|bsr|bonne|cher|chère)$/i;
-      // Regroupe les mots en séquences de tokens capitalisés (2+) ou isole ceux qui restent
       let i = 0;
       while (i < tokens.length) {
         if (skipToken.test(tokens[i])) { i++; continue; }
-        // Essaie de former un groupe 2-3 mots si tous capitalisés
-        let j = i + 1;
-        while (j < i + 3 && j < tokens.length && /^[A-ZÀ-Ÿ]/.test(tokens[j]) && !skipToken.test(tokens[j])) j++;
-        if (j > i + 1) {
-          found.push(cap(tokens.slice(i, j).join(' ')));
-          i = j;
+        // Groupe de 2 mots max (Nom Prénom)
+        if (i + 1 < tokens.length && /^[A-ZÀ-Ÿ]/.test(tokens[i + 1]) && !skipToken.test(tokens[i + 1])) {
+          found.push(cap(tokens[i] + ' ' + tokens[i + 1]));
+          i += 2;
         } else if (/^[A-ZÀ-Ÿ]/.test(tokens[i])) {
-          // Mot seul capitalisé → prénom isolé
           found.push(cap(tokens[i]));
           i++;
         } else { i++; }
