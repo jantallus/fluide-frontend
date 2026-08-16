@@ -60,21 +60,55 @@ export default function EditSlotModal({
   // ── Parsing message collé ─────────────────────────────────────────────────
   const parseMessage = () => {
     const text = pasteText;
+
     const emailMatch = text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/);
     const phoneMatch = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
     const phone = phoneMatch ? phoneMatch[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
     const email = emailMatch ? emailMatch[0] : '';
 
-    // Cherche les noms : segments courts (1-4 mots) composés uniquement de lettres/tirets/apostrophes
-    const segments = text.split(/[\n,;\/|•\t]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 50);
-    const namePattern = /^[A-ZÀ-ÿa-z][a-zA-ZÀ-ÿ'\-]+(?: [A-ZÀ-ÿa-z][a-zA-ZÀ-ÿ'\-]+){0,3}$/;
-    const skipWords = /^(bonjour|bonsoir|salut|merci|oui|non|svp|stp|pour|avec|les|des|une|vol|vols|nous|vous|tel|email|mail|contact|message|nom|prénom|prenom|je|me|ma|mon|notre|vos|re|rdv|bonne|cher|chère|madame|monsieur|mme|mr|dr)$/i;
-    const names = segments
-      .filter(s => namePattern.test(s) && !s.includes('@') && !/\d/.test(s) && !skipWords.test(s.split(' ')[0]))
-      .map(s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .slice(0, 6);
+    // Texte nettoyé des infos déjà extraites
+    const clean = text.replace(phoneMatch?.[0] ?? '\x00', ' ').replace(emailMatch?.[0] ?? '\x00', ' ');
 
+    const W = "[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\\-]{1,25}";
+    const FN = `${W}(?:\\s+${W}){0,2}`;
+    const cap = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    const found: string[] = [];
+
+    // 1. Étiquettes explicites : "Nom : Dupont", "Prénom : Jean"
+    let m: RegExpExecArray | null;
+    const labelRe = new RegExp(`(?:nom|prénom|prenom|contact|client)\\s*[:\\-]\\s*(${FN})`, 'gi');
+    while ((m = labelRe.exec(clean)) !== null) found.push(cap(m[1]));
+
+    // 2. Formules françaises : "je m'appelle X", "c'est X", "je suis X"
+    const introRe = new RegExp(`(?:je\\s+m['']appelle|c['']est|je\\s+suis|mon\\s+nom\\s+est|je\\s+me\\s+nomme)\\s+(${FN})`, 'gi');
+    while ((m = introRe.exec(clean)) !== null) found.push(cap(m[1]));
+
+    // 3. "pour/avec X, Y et Z"
+    const groupRe = /(?:pour|avec|réserver\s+pour|réservation\s+(?:de\s+)?(?:un\s+groupe\s+de\s+\d+\s+pour\s+)?)\s*((?:[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)?)(?:\s*,\s*[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)*(?:\s+et\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)?)/gi;
+    while ((m = groupRe.exec(clean)) !== null) {
+      m[1].split(/,|\s+et\s+/i).map(p => cap(p.trim())).filter(p => p.length > 1).forEach(p => found.push(p));
+    }
+
+    // 4. Lignes courtes purement nominales (1-4 mots, que des lettres)
+    if (found.length === 0) {
+      const skipLine = /\b(bonjour|bonsoir|salut|merci|voudrais|voulais|réserver|souhaite|cordialement|bonne|cher|chère|madame|monsieur|bjr|cdt|objet|sujet|re|fw)\b/i;
+      clean.split('\n').map(l => l.trim()).filter(l => l.length > 1 && l.length < 45 && !l.includes('@') && !/\d/.test(l)).forEach(line => {
+        const words = line.replace(/[.,!?;:]+$/, '').split(/\s+/);
+        if (words.length >= 1 && words.length <= 4 && words.every(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]*$/.test(w)) && !skipLine.test(line))
+          found.push(cap(line));
+      });
+    }
+
+    // 5. Séquences de 2+ mots commençant par une majuscule (noms propres)
+    if (found.length === 0) {
+      const properRe = /\b([A-ZÀ-Ÿ][a-zA-ZÀ-ÿà-ÿ'\-]{1,}(?:\s+[A-ZÀ-Ÿ][a-zA-ZÀ-ÿà-ÿ'\-]{1,}){1,2})\b/g;
+      const skipPair = /^(Bonjour|Bonsoir|Merci|Cordialement|Bonne|Madame|Monsieur|Bien|Cher|Chère|Objet|Re)\b/i;
+      while ((m = properRe.exec(clean)) !== null) {
+        if (!skipPair.test(m[1])) found.push(cap(m[1]));
+      }
+    }
+
+    const names = [...new Set(found)].slice(0, 6);
     setParsed({ names, phone, email });
   };
 
