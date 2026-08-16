@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
-import type { EventClickArg } from '@fullcalendar/core';
+import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
 
 export default function PlanningAdmin() {
   const { toast } = useToast();
@@ -62,6 +62,36 @@ export default function PlanningAdmin() {
     setShowEditModal(true);
   }, [currentUser, toast]);
 
+  const renderEventContent = useCallback((arg: EventContentArg) => {
+    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null };
+    const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
+
+    if (!isBooked) {
+      return (
+        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
+          {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
+        </div>
+      );
+    }
+
+    const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
+    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null].filter(Boolean).join(' · ');
+
+    return (
+      <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+        {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+        <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {ep.title}{badges && ` ${badges}`}
+        </span>
+        {subLine && (
+          <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {subLine}
+          </span>
+        )}
+      </div>
+    );
+  }, []);
+
   const parsedOpeningPeriods = useMemo(() =>
     openingPeriods.map(p => {
       if (!p.start || !p.end) return null;
@@ -96,7 +126,7 @@ export default function PlanningAdmin() {
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : isEmptyAndOOS ? '#f8fafc' : (a.status === 'available' ? '#ffffff' : flightColor),
         textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
-        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason },
+        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null },
       };
     });
   }, [appointments, flightTypes, parsedOpeningPeriods]);
@@ -126,15 +156,15 @@ export default function PlanningAdmin() {
       allDaySlot={false}
       height="auto"
       eventClick={handleEventClick}
+      eventContent={renderEventContent}
       slotDuration="00:15:00"
       snapDuration="00:05:00"
       eventOverlap={false}
       slotEventOverlap={false}
-      displayEventTime={true}
       eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
       dayMinWidth={130}
     />
-  ), [calendarEvents, monitors, timeBounds, handleEventClick, loadAppointments]);
+  ), [calendarEvents, monitors, timeBounds, handleEventClick, loadAppointments, renderEventContent]);
 
   return (
     <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
