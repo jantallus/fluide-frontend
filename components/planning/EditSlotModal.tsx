@@ -66,16 +66,21 @@ export default function EditSlotModal({
     const phone = phoneMatch ? phoneMatch[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
     const email = emailMatch ? emailMatch[0] : '';
 
-    // Texte nettoyé des infos déjà extraites
-    const clean = text.replace(phoneMatch?.[0] ?? '\x00', ' ').replace(emailMatch?.[0] ?? '\x00', ' ');
+    // Texte nettoyé : retire téléphone, email, poids (85kg, 56 kg...), nombres isolés
+    const clean = text
+      .replace(phoneMatch?.[0] ?? '\x00', ' ')
+      .replace(emailMatch?.[0] ?? '\x00', ' ')
+      .replace(/\d+\s*(?:kg|kgs?|kilos?)\b/gi, ' ')
+      .replace(/\b\d+\b/g, ' ')
+      .replace(/\s+/g, ' ').trim();
 
     const W = "[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\\-]{1,25}";
     const FN = `${W}(?:\\s+${W}){0,2}`;
     const cap = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     const found: string[] = [];
+    let m: RegExpExecArray | null;
 
     // 1. Étiquettes explicites : "Nom : Dupont", "Prénom : Jean"
-    let m: RegExpExecArray | null;
     const labelRe = new RegExp(`(?:nom|prénom|prenom|contact|client)\\s*[:\\-]\\s*(${FN})`, 'gi');
     while ((m = labelRe.exec(clean)) !== null) found.push(cap(m[1]));
 
@@ -84,7 +89,7 @@ export default function EditSlotModal({
     while ((m = introRe.exec(clean)) !== null) found.push(cap(m[1]));
 
     // 3. "pour/avec X, Y et Z"
-    const groupRe = /(?:pour|avec|réserver\s+pour|réservation\s+(?:de\s+)?(?:un\s+groupe\s+de\s+\d+\s+pour\s+)?)\s*((?:[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)?)(?:\s*,\s*[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)*(?:\s+et\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)?)/gi;
+    const groupRe = /(?:pour|avec|réserver\s+pour|réservation\s+(?:de\s+)?)\s*((?:[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)?)(?:\s*,\s*[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)*(?:\s+et\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)?)/gi;
     while ((m = groupRe.exec(clean)) !== null) {
       m[1].split(/,|\s+et\s+/i).map(p => cap(p.trim())).filter(p => p.length > 1).forEach(p => found.push(p));
     }
@@ -99,7 +104,30 @@ export default function EditSlotModal({
       });
     }
 
-    // 5. Séquences de 2+ mots commençant par une majuscule (noms propres)
+    // 5. Format liste compact : "Nom Prénom Prénom2" — texte réduit à des mots-lettres
+    // Regroupe les tokens capitalisés consécutifs puis les tokens seuls
+    if (found.length === 0) {
+      const tokens = clean.split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]*$/.test(w));
+      const skipToken = /^(bonjour|bonsoir|salut|merci|oui|non|et|ou|le|la|les|de|du|des|un|une|vol|vols|pour|avec|re|fw|bjr|cdt|ok|bsr|bonne|cher|chère)$/i;
+      // Regroupe les mots en séquences de tokens capitalisés (2+) ou isole ceux qui restent
+      let i = 0;
+      while (i < tokens.length) {
+        if (skipToken.test(tokens[i])) { i++; continue; }
+        // Essaie de former un groupe 2-3 mots si tous capitalisés
+        let j = i + 1;
+        while (j < i + 3 && j < tokens.length && /^[A-ZÀ-Ÿ]/.test(tokens[j]) && !skipToken.test(tokens[j])) j++;
+        if (j > i + 1) {
+          found.push(cap(tokens.slice(i, j).join(' ')));
+          i = j;
+        } else if (/^[A-ZÀ-Ÿ]/.test(tokens[i])) {
+          // Mot seul capitalisé → prénom isolé
+          found.push(cap(tokens[i]));
+          i++;
+        } else { i++; }
+      }
+    }
+
+    // 6. Filet : séquences de 2+ mots en majuscule initiale dans le texte complet
     if (found.length === 0) {
       const properRe = /\b([A-ZÀ-Ÿ][a-zA-ZÀ-ÿà-ÿ'\-]{1,}(?:\s+[A-ZÀ-Ÿ][a-zA-ZÀ-ÿà-ÿ'\-]{1,}){1,2})\b/g;
       const skipPair = /^(Bonjour|Bonsoir|Merci|Cordialement|Bonne|Madame|Monsieur|Bien|Cher|Chère|Objet|Re)\b/i;
