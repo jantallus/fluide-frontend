@@ -53,6 +53,45 @@ export default function EditSlotModal({
   const [isManual, setIsManual] = useState(false);
   const [moveConfig, setMoveConfig] = useState({ date: '', time: '', monitorId: 'random' });
   const [moveGroup, setMoveGroup] = useState(false);
+  const [pasteZoneOpen, setPasteZoneOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [parsed, setParsed] = useState<{ names: string[]; phone: string; email: string } | null>(null);
+
+  // ── Parsing message collé ─────────────────────────────────────────────────
+  const parseMessage = () => {
+    const text = pasteText;
+    const emailMatch = text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/);
+    const phoneMatch = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
+    const phone = phoneMatch ? phoneMatch[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
+    const email = emailMatch ? emailMatch[0] : '';
+
+    // Cherche les noms : segments courts (1-4 mots) composés uniquement de lettres/tirets/apostrophes
+    const segments = text.split(/[\n,;\/|•\t]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 50);
+    const namePattern = /^[A-ZÀ-ÿa-z][a-zA-ZÀ-ÿ'\-]+(?: [A-ZÀ-ÿa-z][a-zA-ZÀ-ÿ'\-]+){0,3}$/;
+    const skipWords = /^(bonjour|bonsoir|salut|merci|oui|non|svp|stp|pour|avec|les|des|une|vol|vols|nous|vous|tel|email|mail|contact|message|nom|prénom|prenom|je|me|ma|mon|notre|vos|re|rdv|bonne|cher|chère|madame|monsieur|mme|mr|dr)$/i;
+    const names = segments
+      .filter(s => namePattern.test(s) && !s.includes('@') && !/\d/.test(s) && !skipWords.test(s.split(' ')[0]))
+      .map(s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(0, 6);
+
+    setParsed({ names, phone, email });
+  };
+
+  const applyParsed = () => {
+    if (!parsed) return;
+    const title = parsed.names.join(', ') || formData.title;
+    setFormData(f => ({
+      ...f,
+      title: title || f.title,
+      phone: parsed.phone || f.phone,
+      email: parsed.email || f.email,
+    }));
+    if (parsed.names.length > 1) setGroupSize(parsed.names.length - 1); // 1er nom = contact, reste = passagers
+    setPasteZoneOpen(false);
+    setPasteText('');
+    setParsed(null);
+  };
 
   // ── Init depuis selectedEvent ──────────────────────────────────────────────
   useEffect(() => {
@@ -544,6 +583,58 @@ export default function EditSlotModal({
               </div>
             ) : (
               <>
+                {/* ── Zone de collage message ── */}
+                <div className="mb-2">
+                  <button
+                    onClick={() => { setPasteZoneOpen(o => !o); setParsed(null); }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase text-slate-400 hover:bg-slate-100 transition-colors"
+                  >
+                    <span>✨ Importer depuis un message</span>
+                    <span>{pasteZoneOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {pasteZoneOpen && (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm font-medium text-slate-700 resize-none focus:outline-none focus:border-sky-200"
+                        rows={5}
+                        placeholder={"Collez ici un message, un email, un SMS...\nEx : Bonjour, je m'appelle Jean Dupont, je voudrais réserver pour moi et ma femme Marie. Tel: 06 12 34 56 78, jean@mail.com"}
+                        value={pasteText}
+                        onChange={e => { setPasteText(e.target.value); setParsed(null); }}
+                      />
+                      <button
+                        onClick={parseMessage}
+                        disabled={!pasteText.trim()}
+                        className="w-full py-2 rounded-xl text-[11px] font-black uppercase text-white transition-colors disabled:opacity-40"
+                        style={{ backgroundColor: '#009FE3' }}
+                      >
+                        Analyser le message
+                      </button>
+                      {parsed && (
+                        <div className="bg-sky-50 border border-sky-100 rounded-2xl p-3 space-y-1.5">
+                          <p className="text-[10px] font-black uppercase text-sky-400 mb-2">Résultat détecté</p>
+                          {parsed.names.length > 0 ? (
+                            <p className="text-xs text-slate-700"><span className="font-black text-slate-400 uppercase text-[9px]">Noms </span>{parsed.names.join(', ')}</p>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 italic">Aucun nom détecté — à saisir manuellement</p>
+                          )}
+                          {parsed.phone && <p className="text-xs text-slate-700"><span className="font-black text-slate-400 uppercase text-[9px]">Tél </span>{parsed.phone}</p>}
+                          {parsed.email && <p className="text-xs text-slate-700"><span className="font-black text-slate-400 uppercase text-[9px]">Email </span>{parsed.email}</p>}
+                          {parsed.names.length > 1 && (
+                            <p className="text-[10px] text-emerald-600 font-bold">→ {parsed.names.length - 1} passager(s) détecté(s) (1er nom = contact)</p>
+                          )}
+                          <button
+                            onClick={applyParsed}
+                            className="w-full mt-1 py-1.5 rounded-xl text-[11px] font-black uppercase text-white"
+                            style={{ backgroundColor: '#E6007E' }}
+                          >
+                            Remplir le formulaire
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="mb-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du contact et passagers</label>
                   <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Julien, Christophe, Alexandre..." />
