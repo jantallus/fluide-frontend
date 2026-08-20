@@ -103,7 +103,8 @@ export default function PlanningAdmin() {
   const calendarEvents = useMemo(() => {
     return appointments.map(a => {
       const flight = flightTypes?.find((f: FlightType) => f.id === a.flight_type_id);
-      const flightColor = flight?.color_code || '#0ea5e9';
+      const partnerColor = (a.payment_data as { partner_color?: string } | null)?.partner_color;
+      const flightColor = partnerColor || flight?.color_code || '#0ea5e9';
       let isSlotOutOfSeason = false;
       if (parsedOpeningPeriods.length > 0) {
         const slotDate = new Date(a.start_time);
