@@ -398,11 +398,21 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
 
     if (!isSearchingTimes && rawSlots.length > 0 && bodyScrollRef.current) {
       
-      // 🛑 SÉCURITÉ SWIPE : Si le client a glissé au doigt, on ne force pas le recentrage !
+      // 🛑 SÉCURITÉ SWIPE : Si le client a glissé au doigt, on ne force pas le recentrage horizontal !
       if (isSwipingRef.current) {
         isSwipingRef.current = false; // On désarme le verrou
         setIsGridExpanded(true);
-        return; 
+        // Scroll vertical retour au début des créneaux après un swipe de jour
+        setTimeout(() => {
+          const el = bodyScrollRef.current;
+          if (!el) return;
+          if (isEmbed) {
+            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - 80 }, '*');
+          } else {
+            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+          }
+        }, 50);
+        return;
       }
 
       const container = bodyScrollRef.current;
