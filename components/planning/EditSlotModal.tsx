@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
-import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, OpeningPeriod } from '@/lib/types';
+import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, OpeningPeriod, Partner } from '@/lib/types';
 
 type FormData = {
   title: string; flight_type_id: string; weightChecked: boolean;
@@ -57,6 +57,13 @@ export default function EditSlotModal({
   const [pasteText, setPasteText] = useState('');
   const [parsed, setParsed] = useState<{ names: string[]; phone: string; email: string; weights: string[] } | null>(null);
   const [passengerWeights, setPassengerWeights] = useState<string[]>(['']);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState('');
+
+  // ── Fetch partenaires ────────────────────────────────────────────────────────
+  useEffect(() => {
+    apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then(setPartners).catch(() => {});
+  }, []);
 
   // ── Parsing message collé ─────────────────────────────────────────────────
   const parseMessage = () => {
@@ -197,6 +204,7 @@ export default function EditSlotModal({
     setGroupSize(1);
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
+    setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
     setIsManual(false);
     setMoveGroup(false);
   }, [selectedEvent, currentUser]);
@@ -451,9 +459,22 @@ export default function EditSlotModal({
       return applyAll(updatesToApply);
     }
 
-    if (!formData.title?.trim()) { toast.error('❌ Le nom du contact est obligatoire pour une réservation.'); return; }
+    const selectedPartner = partners.find(p => p.id.toString() === selectedPartnerId);
+    const pf = selectedPartner?.booking_fields;
+    const effectiveTitle = (selectedPartner && pf?.name === false)
+      ? `Client ${selectedPartner.name}`
+      : formData.title;
+    const partnerPaymentData = selectedPartner
+      ? { partner: true, partner_id: selectedPartner.id, partner_name: selectedPartner.name, code: selectedPartner.code, partner_color: selectedPartner.color_code }
+      : {};
+
+    if (!pf || pf.name !== false) {
+      if (!effectiveTitle?.trim()) { toast.error('❌ Le nom du contact est obligatoire pour une réservation.'); return; }
+    }
     if (!formData.flight_type_id) { toast.error('❌ Veuillez choisir un type de vol.'); return; }
-    if (!formData.phone?.trim()) { toast.error('❌ Le numéro de téléphone est obligatoire.'); return; }
+    if (!pf || pf.phone !== false) {
+      if (!formData.phone?.trim()) { toast.error('❌ Le numéro de téléphone est obligatoire.'); return; }
+    }
     const selectedFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id.toString());
     const flightDuration = selectedFlight?.duration_minutes || selectedFlight?.duration || 0;
     slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
@@ -462,12 +483,12 @@ export default function EditSlotModal({
     if (groupSize > 1 || isManual) {
       if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) { toast.error('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.'); return; }
       displayDistribution.slotsToUse.forEach((baseSlot, index) => {
-        const namesList = formData.title.split(',').map((n: string) => n.trim()).filter((n: string) => n);
+        const namesList = effectiveTitle.split(',').map((n: string) => n.trim()).filter((n: string) => n);
         let passengerTitle = '';
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
-        else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (formData.title || ''); }
-        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index] } });
+        else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (effectiveTitle || ''); }
+        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: partnerPaymentData } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(baseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -478,15 +499,15 @@ export default function EditSlotModal({
         }
       });
     } else if (slotsNeeded > 1) {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0] } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: partnerPaymentData } });
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
       for (let i = 1; i < slotsNeeded; i++) {
         const nextMs = startMs + i * slotDuration * 60000;
         const nextSlot = appointments.find(a => a.monitor_id?.toString() === selectedEvent.monitor_id?.toString() && new Date(a.start_time).getTime() === nextMs && a.status === 'available');
-        if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${formData.title || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
+        if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: formData.title, status: formData.title.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0] } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: partnerPaymentData } });
     }
     applyAll(updatesToApply);
   };
@@ -726,12 +747,44 @@ export default function EditSlotModal({
 
                 <div className="mb-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du contact et passagers</label>
-                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Julien, Christophe, Alexandre..." />
+                  {(() => {
+                    const selP = partners.find(p => p.id.toString() === selectedPartnerId);
+                    const nameHidden = selP && selP.booking_fields?.name === false;
+                    return nameHidden ? (
+                      <div className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm text-slate-400 opacity-50">
+                        Client {selP.name}
+                      </div>
+                    ) : (
+                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Julien, Christophe, Alexandre..." />
+                    );
+                  })()}
                   <span className="text-[9px] text-slate-400 ml-2 mt-1 block leading-tight">
                     💡 <b>Astuce :</b> Le 1er nom est le contact. Séparez par des virgules.<br />
                     <i>Ex (3 places) : "léo, Alex, Paul, Léa" ➔ léo ne vole pas, Alex, Paul et Léa volent.</i>
                   </span>
                 </div>
+                {partners.length > 0 && (
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Partenaire</label>
+                    <div className="relative">
+                      <select
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold pl-10"
+                        value={selectedPartnerId}
+                        onChange={e => setSelectedPartnerId(e.target.value)}
+                      >
+                        <option value="">— Aucun partenaire —</option>
+                        {partners.map(p => (
+                          <option key={p.id} value={p.id.toString()}>{p.name} ({p.code})</option>
+                        ))}
+                      </select>
+                      {selectedPartnerId && (() => {
+                        const p = partners.find(x => x.id.toString() === selectedPartnerId);
+                        return p ? <span className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-slate-200 shadow-sm pointer-events-none" style={{ backgroundColor: p.color_code }} /> : null;
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type de Vol</label>
                   <select className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold" value={formData.flight_type_id} onChange={e => setFormData({ ...formData, flight_type_id: e.target.value })}>

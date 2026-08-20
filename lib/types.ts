@@ -180,6 +180,11 @@ export interface PaymentData {
   code?: string;         // Code bon cadeau ou promo
   code_type?: 'gift_card' | 'promo';
   options?: string[];    // Noms des options ajoutées sur place
+  // Partenaire
+  partner?: boolean;
+  partner_id?: number;
+  partner_name?: string;
+  partner_color?: string;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────
