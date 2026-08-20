@@ -404,12 +404,12 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
         setIsGridExpanded(true);
         // Scroll vertical retour au début des créneaux après un swipe de jour
         setTimeout(() => {
-          const el = bodyScrollRef.current;
+          const el = datesBarRef.current || bodyScrollRef.current;
           if (!el) return;
           if (isEmbed) {
-            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - 80 }, '*');
+            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - 20 }, '*');
           } else {
-            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
           }
         }, 50);
         return;
