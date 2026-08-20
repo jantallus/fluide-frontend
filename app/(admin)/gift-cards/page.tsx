@@ -51,8 +51,7 @@ export default function VouchersPage() {
       if (filterStatus === 'inactive' && c.status === 'valid') return false;
       if (filterType === 'gift_card' && c.type !== 'gift_card') return false;
       if (filterType === 'promo' && c.type !== 'promo') return false;
-      if (filterType === 'promo_campaign' && (c.type !== 'promo' || c.is_partner)) return false;
-      if (filterType === 'promo_partner' && (c.type !== 'promo' || !c.is_partner)) return false;
+      if (filterType === 'promo' && c.type !== 'promo') return false;
       return true;
     })
     .sort((a, b) => {
@@ -110,9 +109,7 @@ export default function VouchersPage() {
             <select className="bg-white border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 shadow-sm outline-none w-full md:w-auto" value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="all">🎟️ Tous les types</option>
               <option value="gift_card">🎁 Bons Cadeaux</option>
-              <option value="promo">✂️ Tous les Codes Promos</option>
-              <option value="promo_campaign">📢 Codes Promos Classiques</option>
-              <option value="promo_partner">🤝 Codes Partenaires</option>
+              <option value="promo">✂️ Codes Promos</option>
             </select>
             <select className="bg-white border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 shadow-sm outline-none w-full md:w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
               <option value="all">🌟 Tous les statuts</option>
