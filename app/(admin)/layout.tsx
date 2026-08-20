@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
-import { LayoutDashboard, Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut } from 'lucide-react';
+import { Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut } from 'lucide-react';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
@@ -76,7 +76,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // 2. Configuration du menu avec filtrage par RÔLE
   const allMenuItems = [
-    { name: 'Tableau de bord', icon: LayoutDashboard, path: '/dashboard', roles: ['admin'] },
     { name: 'Calendrier', icon: Calendar, path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
     {
       name: 'Prestations',

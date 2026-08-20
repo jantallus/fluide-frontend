@@ -39,7 +39,7 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(userToStore));
 
         if (userToStore.role === 'admin') {
-          router.push('/dashboard');
+          router.push('/planning');
         } else if (userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
         } else {
