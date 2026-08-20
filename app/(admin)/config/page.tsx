@@ -1,23 +1,20 @@
 "use client";
 import React, { useState } from 'react';
 import { useConfigData } from '@/hooks/useConfigData';
-import { TemplateModal } from '@/components/config/TemplateModal';
 import { RotationModal } from '@/components/config/RotationModal';
 import { Pencil, Trash2 } from 'lucide-react';
-import type { GiftCardShopTemplate, SlotDefinition } from '@/lib/types';
+import type { SlotDefinition } from '@/lib/types';
 
 export default function ConfigPage() {
   const {
     definitions, settings, setSettings, loading,
-    seasons, templates, flights, loadData,
+    seasons, flights, loadData,
     deleteDef, renamePlan, deletePlan,
     handleAddSeason, handleSeasonChange, handleDeleteSeason, saveSeasonsToDB,
-    saveEmailSetting, deleteTemplate,
+    saveEmailSetting,
   } = useConfigData();
 
   const [activePlan, setActivePlan] = useState('Standard');
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [templateToEdit, setTemplateToEdit] = useState<GiftCardShopTemplate | null>(null);
   const [showRotationModal, setShowRotationModal] = useState(false);
   const [rotationToEdit, setRotationToEdit] = useState<SlotDefinition | null>(null);
   const [showNewPlanInput, setShowNewPlanInput] = useState(false);
@@ -51,41 +48,6 @@ export default function ConfigPage() {
             Configuration <span className="text-indigo-500">Fluide</span>
           </h1>
         </header>
-
-        {/* BOUTIQUE BONS CADEAUX */}
-        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">🛍️ Boutique Bons Cadeaux</h2>
-            <button onClick={() => { setTemplateToEdit(null); setShowTemplateModal(true); }} className="bg-amber-500 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform">
-              + Créer un Modèle
-            </button>
-          </div>
-          <div className="space-y-4">
-            {templates.length === 0 && <p className="text-center text-slate-400 font-bold italic py-6">Aucun modèle créé pour la boutique.</p>}
-            {templates.map(tpl => (
-              <div key={tpl.id} className="flex flex-col md:flex-row justify-between items-center bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                <div>
-                  <h3 className="font-black text-slate-900">{tpl.title}</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-1">
-                    {tpl.flight_name ? `🎯 Valable pour : ${tpl.flight_name}` : '💶 Avoir Libre'} • Validité : {tpl.validity_months} mois
-                  </p>
-                </div>
-                <div className="flex items-center gap-6 mt-4 md:mt-0">
-                  <div className="text-right">
-                    <p className="text-xl font-black text-amber-500">{tpl.price_cents / 100}€</p>
-                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${tpl.is_published ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
-                      {tpl.is_published ? 'En Ligne' : 'Brouillon'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <button onClick={() => { setTemplateToEdit(tpl); setShowTemplateModal(true); }} className="text-[10px] font-black uppercase text-indigo-500 hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors"><Pencil size={11} className="inline mr-1" />Modifier</button>
-                    <button onClick={() => deleteTemplate(tpl.id)} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors"><Trash2 size={11} className="inline mr-1" />Supprimer</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* PÉRIODES D'OUVERTURE */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
@@ -283,15 +245,6 @@ export default function ConfigPage() {
           </div>
         </section>
       </div>
-
-      {showTemplateModal && (
-        <TemplateModal
-          templateToEdit={templateToEdit}
-          flights={flights}
-          onClose={() => setShowTemplateModal(false)}
-          onSaved={loadData}
-        />
-      )}
 
       {showRotationModal && (
         <RotationModal
