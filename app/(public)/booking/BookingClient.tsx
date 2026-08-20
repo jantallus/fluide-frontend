@@ -402,16 +402,17 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       if (isSwipingRef.current) {
         isSwipingRef.current = false; // On désarme le verrou
         setIsGridExpanded(true);
-        // Scroll vertical retour au début des créneaux après un swipe de jour
+        // Scroll vertical retour au premier créneau visible (sous navbar + barre sticky des jours)
         setTimeout(() => {
-          const el = datesBarRef.current || bodyScrollRef.current;
+          const el = bodyScrollRef.current;
           if (!el) return;
+          const stickyBarHeight = 80 + (datesBarRef.current?.offsetHeight ?? 60);
           if (isEmbed) {
-            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - 20 }, '*');
+            window.parent.postMessage({ type: 'fluide-scroll-to', offsetY: el.offsetTop - stickyBarHeight }, '*');
           } else {
-            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
+            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - stickyBarHeight, behavior: 'smooth' });
           }
-        }, 50);
+        }, 100);
         return;
       }
 
