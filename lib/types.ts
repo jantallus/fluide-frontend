@@ -317,6 +317,26 @@ export interface Setting {
   value: string;
 }
 
+// ── Partenaires ───────────────────────────────────────────────────────────────
+
+export interface PartnerBookingFields {
+  name: boolean;
+  phone: boolean;
+  email: boolean;
+  flight_type: boolean;
+  weight: boolean;
+  notes: boolean;
+}
+
+export interface Partner {
+  id: number;
+  name: string;
+  code: string;
+  color_code: string;
+  booking_fields: PartnerBookingFields;
+  is_active: boolean;
+}
+
 export type SettingsMap = Record<string, string>;
 
 // ── API générique ─────────────────────────────────────────────────────────────

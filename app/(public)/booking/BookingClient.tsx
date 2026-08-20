@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import type { FlightType, GiftCard, PublicSlot } from '@/lib/types';
+import type { FlightType, GiftCard, Partner, PublicSlot } from '@/lib/types';
 import { useBookingData } from '@/hooks/useBookingData';
 import { useAvailabilities } from '@/hooks/useAvailabilities';
 
@@ -246,6 +246,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<GiftCard | null>(null);
+  const [appliedPartner, setAppliedPartner] = useState<Partner | null>(null);
   const [voucherError, setVoucherError] = useState('');
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [contact, setContact] = useState({ firstName: '', lastName: '', phone: '', email: '', isPassenger: false, notes: '' });
@@ -722,9 +723,10 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
   const isWinterOffSeason = pickedMonth >= 4 && pickedMonth <= 10;
   const isSummerOffSeason = pickedMonth <= 3 || pickedMonth >= 10;
 
-  const { originalPrice, discountAmount, finalPrice } = calculateBookingPrice(
-    cart, flights, passengers, complementsList, appliedVoucher
-  );
+  const rawPrices = calculateBookingPrice(cart, flights, passengers, complementsList, appliedVoucher);
+  const { originalPrice } = rawPrices;
+  const discountAmount = appliedPartner ? originalPrice : rawPrices.discountAmount;
+  const finalPrice = appliedPartner ? 0 : rawPrices.finalPrice;
 
   useEffect(() => {
     if (totalItems === 0) setCartOpen(false);
@@ -764,17 +766,27 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     }
   });
 
-  const isFormValid = contact.firstName && contact.lastName && contact.phone && contact.email &&
-                      passengers.length > 0 && passengers.every(p => p.firstName && p.weightChecked);
+  const pf = appliedPartner?.booking_fields;
+  const needsName   = !pf || pf.name   !== false;
+  const needsPhone  = !pf || pf.phone  !== false;
+  const needsEmail  = !pf || pf.email  !== false;
+  const needsWeight = !pf || pf.weight !== false;
+
+  const isFormValid =
+    (!needsName  || (contact.firstName && contact.lastName)) &&
+    (!needsPhone || contact.phone) &&
+    (!needsEmail || contact.email) &&
+    passengers.length > 0 &&
+    passengers.every(p => (!needsName || p.firstName) && (!needsWeight || p.weightChecked));
 
   const missingFields: string[] = step === 3 ? [
-    !contact.firstName ? 'Prénom du contact' : null,
-    !contact.lastName  ? 'Nom du contact'    : null,
-    !contact.phone     ? 'Téléphone'         : null,
-    !contact.email     ? 'Email'             : null,
+    needsName  && !contact.firstName ? 'Prénom du contact' : null,
+    needsName  && !contact.lastName  ? 'Nom du contact'    : null,
+    needsPhone && !contact.phone     ? 'Téléphone'         : null,
+    needsEmail && !contact.email     ? 'Email'             : null,
     ...passengers.flatMap((p, i) => [
-      !p.firstName    ? `Prénom passager ${i + 1}` : null,
-      !p.weightChecked ? `Confirmation de poids passager ${i + 1}` : null,
+      needsName   && !p.firstName    ? `Prénom passager ${i + 1}` : null,
+      needsWeight && !p.weightChecked ? `Confirmation de poids passager ${i + 1}` : null,
     ]),
   ].filter((v): v is string => !!v) : [];
 
@@ -783,8 +795,19 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     setIsApplyingVoucher(true);
     setVoucherError('');
     try {
+      // Try partner code first
+      const partnerRes = await fetch(`/api/proxy/public/partners/check/${voucherInput.trim()}`);
+      if (partnerRes.ok) {
+        const partnerData = await partnerRes.json();
+        setAppliedPartner(partnerData);
+        setAppliedVoucher(null);
+        setVoucherInput('');
+        return;
+      }
+
+      // Fall through to gift card / promo code
       const res = await fetch(`/api/proxy/gift-cards/check/${voucherInput.trim()}`);
-      
+
       if (!res.ok) {
         const errData = await res.json();
         setVoucherError(errData.message || "Code invalide ou expiré");
@@ -801,10 +824,9 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
           }
         }
 
-        // 🎯 ON S'ARRÊTE LÀ ! Le fait de changer cet état va "réveiller" le useEffect plus haut
-        // qui se chargera de cocher la case tout seul comme un grand !
+        setAppliedPartner(null);
         setAppliedVoucher(data);
-        setVoucherInput(''); 
+        setVoucherInput('');
       }
     } catch (err) {
       setVoucherError("Erreur de connexion.");
@@ -827,33 +849,42 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
     setHasAttemptedSubmit(true);
     if (!isFormValid || isCheckingOut) return;
 
-    const result = contactSchema.safeParse(contact);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach(issue => {
-        const field = issue.path[0] as string;
-        if (!fieldErrors[field]) fieldErrors[field] = issue.message;
-      });
-      setContactErrors(fieldErrors);
-      return;
+    // When a partner is active, only validate the required fields
+    if (appliedPartner) {
+      setContactErrors({});
+    } else {
+      const result = contactSchema.safeParse(contact);
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.issues.forEach(issue => {
+          const field = issue.path[0] as string;
+          if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+        });
+        setContactErrors(fieldErrors);
+        return;
+      }
+      setContactErrors({});
     }
-    setContactErrors({});
     setIsCheckingOut(true);
 
+    // Build the contact to submit — replace empty partner fields with safe placeholders
+    const partnerLabel = appliedPartner ? `Client ${appliedPartner.name}` : '';
+    const submitContact = {
+      ...contact,
+      firstName: needsName ? contact.firstName : partnerLabel,
+      lastName:  needsName ? contact.lastName  : '',
+      phone:     needsPhone ? contact.phone    : '',
+      email:     needsEmail ? contact.email    : 'partenaire@noreply.com',
+    };
+
     try {
-      // 🎯 NOUVEAU : Formatage intelligent des prénoms pour les groupes
+      // Formatage intelligent des prénoms pour les groupes
       const passengersToSubmit = passengers.map((p, index) => {
-        let finalName = p.firstName.trim();
+        let finalName = needsName ? p.firstName.trim() : partnerLabel;
 
-        // Si c'est un groupe (plus d'un passager)
-        if (passengers.length > 1) {
-          // On vérifie si ce passager est le contact principal (soit c'est le passager 1 coché, soit ils ont exactement le même prénom)
+        if (needsName && passengers.length > 1) {
           const isContact = contact.isPassenger && (index === 0 || finalName.toLowerCase() === contact.firstName.trim().toLowerCase());
-
-          if (!isContact) {
-            // Si ce n'est pas le contact, on ajoute le nom du "chef de groupe" entre parenthèses !
-            finalName = `${finalName} (${contact.firstName.trim()})`;
-          }
+          if (!isContact) finalName = `${finalName} (${contact.firstName.trim()})`;
         }
 
         // Filtrer les compléments offerts par l'activité (ex: photos incluses dans le vol loupiot)
@@ -876,10 +907,11 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
       const res = await fetch(`/api/proxy/public/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          contact, 
-          passengers: passengersToSubmit, // 🚀 On envoie les noms formatés !
-          voucher_code: appliedVoucher ? appliedVoucher.code : null
+        body: JSON.stringify({
+          contact: submitContact,
+          passengers: passengersToSubmit,
+          voucher_code: appliedVoucher ? appliedVoucher.code : null,
+          partner_code: appliedPartner ? appliedPartner.code : null,
         })
       });
 
@@ -1652,7 +1684,24 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                   Saisissez-le ici. La réduction s'appliquera immédiatement sur votre total avant le paiement.
                 </p>
 
-                {appliedVoucher ? (
+                {appliedPartner ? (
+                  <div className="bg-white border-2 border-emerald-500 rounded-[10px] p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
+                    <div>
+                      <p className="font-bold text-emerald-900 uppercase tracking-widest text-sm">
+                        🤝 Partenaire {appliedPartner.name} appliqué
+                      </p>
+                      <p className="text-emerald-700 font-bold mt-1">
+                        Code : <span className="uppercase">{appliedPartner.code}</span> · Inscription gratuite
+                      </p>
+                    </div>
+                    <div className="text-left md:text-right w-full md:w-auto">
+                      <p className="text-3xl font-bold text-emerald-600">Gratuit</p>
+                      <button onClick={() => setAppliedPartner(null)} className="text-[10px] font-bold uppercase text-rose-500 mt-2 hover:underline">
+                        Retirer le code
+                      </button>
+                    </div>
+                  </div>
+                ) : appliedVoucher ? (
                   <div className="bg-white border-2 border-emerald-500 rounded-[10px] p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 shadow-sm">
                     <div>
                       <p className="font-bold text-emerald-900 uppercase tracking-widest text-sm">
@@ -1703,46 +1752,58 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Prénom</label>
+                  <div className={!needsName ? 'opacity-40 pointer-events-none' : ''}>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">
+                      Prénom{!needsName && <span className="ml-2 text-xs font-normal text-slate-400">(non requis par le partenaire)</span>}
+                    </label>
                     <input
                       type="text"
+                      disabled={!needsName}
                       className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.firstName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
-                      placeholder="Jean"
+                      placeholder={needsName ? 'Jean' : '—'}
                       value={contact.firstName}
                       onChange={e => { setContact({...contact, firstName: e.target.value}); if (contactErrors.firstName) validateField('firstName', e.target.value); }}
                     />
                     {contactErrors.firstName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.firstName}</p>}
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Nom</label>
+                  <div className={!needsName ? 'opacity-40 pointer-events-none' : ''}>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">
+                      Nom{!needsName && <span className="ml-2 text-xs font-normal text-slate-400">(non requis)</span>}
+                    </label>
                     <input
                       type="text"
+                      disabled={!needsName}
                       className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.lastName ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
-                      placeholder="Dupont"
+                      placeholder={needsName ? 'Dupont' : '—'}
                       value={contact.lastName}
                       onChange={e => { setContact({...contact, lastName: e.target.value}); if (contactErrors.lastName) validateField('lastName', e.target.value); }}
                     />
                     {contactErrors.lastName && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.lastName}</p>}
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Téléphone (le jour du vol)</label>
+                  <div className={!needsPhone ? 'opacity-40 pointer-events-none' : ''}>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">
+                      Téléphone (le jour du vol){!needsPhone && <span className="ml-2 text-xs font-normal text-slate-400">(non requis)</span>}
+                    </label>
                     <input
                       type="tel"
+                      disabled={!needsPhone}
                       className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.phone ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
-                      placeholder="06 12 34 56 78"
+                      placeholder={needsPhone ? '06 12 34 56 78' : '—'}
                       value={contact.phone}
                       onChange={e => { setContact({...contact, phone: e.target.value}); if (contactErrors.phone) validateField('phone', e.target.value); }}
                       onBlur={e => { if (e.target.value) validateField('phone', e.target.value); }}
                     />
                     {contactErrors.phone && <p className="text-rose-500 text-[11px] font-bold mt-1 ml-2">{contactErrors.phone}</p>}
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Email</label>
+                  <div className={!needsEmail ? 'opacity-40 pointer-events-none' : ''}>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">
+                      Email{!needsEmail && <span className="ml-2 text-xs font-normal text-slate-400">(non requis)</span>}
+                    </label>
                     <input
                       type="email"
+                      disabled={!needsEmail}
                       className={`w-full bg-slate-50 border-2 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800 ${contactErrors.email ? 'border-rose-400 bg-rose-50' : 'border-slate-100'}`}
-                      placeholder="jean@email.com"
+                      placeholder={needsEmail ? 'jean@email.com' : '—'}
                       value={contact.email}
                       onChange={e => { setContact({...contact, email: e.target.value}); if (contactErrors.email) validateField('email', e.target.value); }}
                       onBlur={e => { if (e.target.value) validateField('email', e.target.value); }}
@@ -1786,21 +1847,31 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                         </span>
                       </div>
 
-                      <div className="mb-4">
-                        <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Prénom de la personne qui vole</label>
-                        <input
-                          type="text"
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800" 
-                          placeholder="Prénom du passager" 
-                          value={p.firstName}
-                          onChange={e => {
-                            const newP = [...passengers];
-                            newP[index].firstName = e.target.value;
-                            setPassengers(newP);
-                          }}
-                        />
-                      </div>
+                      {needsName ? (
+                        <div className="mb-4">
+                          <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">Prénom de la personne qui vole</label>
+                          <input
+                            type="text"
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold focus:border-[#312783] outline-none text-slate-800"
+                            placeholder="Prénom du passager"
+                            value={p.firstName}
+                            onChange={e => {
+                              const newP = [...passengers];
+                              newP[index].firstName = e.target.value;
+                              setPassengers(newP);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mb-4 opacity-40">
+                          <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1D1D1B', display: 'block', marginBottom: '6px' }} className="ml-2">
+                            Prénom <span className="text-xs font-normal text-slate-400">(non requis — sera enregistré comme « Client {appliedPartner?.name} »)</span>
+                          </label>
+                          <div className="w-full bg-slate-50 border-2 border-slate-100 rounded-[10px] p-4 font-bold text-slate-400">Client {appliedPartner?.name}</div>
+                        </div>
+                      )}
 
+                      {needsWeight ? (
                       <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-[10px] border transition-colors mb-4 ${p.weightChecked ? 'bg-emerald-50 border-emerald-200' : hasAttemptedSubmit ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
                         <input
                           type="checkbox"
@@ -1821,6 +1892,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                           </span>
                         </div>
                       </label>
+                      ) : null}
 
                       {complementsList.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-slate-100">
@@ -2072,7 +2144,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                       className="flex items-center gap-1.5 px-3 py-2 rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap"
                       style={{ backgroundColor: isFormValid ? '#E6007E' : '#94a3b8', color: 'white', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                     >
-                      {isCheckingOut ? 'Validation...' : (isFormValid ? 'Payer la réservation →' : 'Voir le récapitulatif →')}
+                      {isCheckingOut ? 'Validation...' : (isFormValid ? (finalPrice === 0 ? '✨ Valider (Gratuit) →' : 'Payer la réservation →') : 'Voir le récapitulatif →')}
                     </button>
                   )}
                   {/* Bouton FAB — position relative pour centrer l'étiquette prix */}
