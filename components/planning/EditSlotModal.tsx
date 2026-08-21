@@ -421,12 +421,12 @@ export default function EditSlotModal({
     setPaymentType(type);
     if (type === 'esp') {
       setEncaisseurId(selectedEvent?.monitor_id?.toString() || '');
-    } else if (type === 'online') {
-      // Paiement Stripe : auto-attribué au moniteur désigné caisse
+    } else if (type === 'online' || type === 'bon_cadeau') {
+      // Stripe / bon cadeau Fluide : toujours CB via Stripe, encaisseur auto
       const caisse = fullMonitors.find(m => m.receives_online_payments);
       setEncaisseurId(caisse ? caisse.id.toString() : '');
     } else {
-      // CB, ANCV, CHQ, Bon cadeau, NP : sélection manuelle
+      // CB, ANCV, ANCV Connect, CHQ, NP : sélection manuelle
       setEncaisseurId('');
     }
   };
@@ -955,9 +955,10 @@ export default function EditSlotModal({
                     {paymentType && paymentType !== 'np' && (
                       <div>
                         <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
-                        {paymentType === 'esp' ? (
-                          <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600">
-                            {monitors.find(m => m.id.toString() === encaisseurId)?.title || monitors.find(m => m.id.toString() === selectedEvent?.monitor_id?.toString())?.title || 'Pilote du vol'}
+                        {(paymentType === 'esp' || paymentType === 'online' || paymentType === 'bon_cadeau') ? (
+                          <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600 flex items-center justify-between">
+                            <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || (paymentType === 'esp' ? 'Pilote du vol' : 'Caisse Fluide')}</span>
+                            <span className="text-[9px] text-slate-400 font-normal">automatique</span>
                           </div>
                         ) : (
                           <select
