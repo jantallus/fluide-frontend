@@ -216,11 +216,30 @@ export default function EditSlotModal({
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
     setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
-    setPaymentType(selectedEvent.payment_data?.payment_type || '');
-    setEncaisseurId(selectedEvent.payment_data?.encaisseur_id?.toString() || '');
+    const pd = selectedEvent.payment_data;
+    let inferredType = pd?.payment_type || '';
+    if (!inferredType && pd) {
+      if (pd.online) inferredType = 'online';
+      else if (pd.cb) inferredType = 'cb';
+      else if (pd.especes) inferredType = 'esp';
+      else if (pd.cheque) inferredType = 'chq';
+      else if (pd.ancv) inferredType = 'ancv';
+      else if (pd.voucher && pd.code_type === 'gift_card') inferredType = 'bon_cadeau';
+    }
+    setPaymentType(inferredType);
+    let inferredEncaisseur = pd?.encaisseur_id?.toString() || '';
+    if (!inferredEncaisseur) {
+      if (inferredType === 'esp') {
+        inferredEncaisseur = selectedEvent.monitor_id?.toString() || '';
+      } else if ((inferredType === 'online' || inferredType === 'bon_cadeau') && fullMonitors.length > 0) {
+        const caisse = fullMonitors.find(m => m.receives_online_payments);
+        if (caisse) inferredEncaisseur = caisse.id.toString();
+      }
+    }
+    setEncaisseurId(inferredEncaisseur);
     setIsManual(false);
     setMoveGroup(false);
-  }, [selectedEvent, currentUser]);
+  }, [selectedEvent, currentUser, fullMonitors]);
 
   // Sync taille du tableau de poids avec le nombre de passagers
   useEffect(() => {
