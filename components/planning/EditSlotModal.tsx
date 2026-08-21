@@ -501,8 +501,19 @@ export default function EditSlotModal({
       ...partnerPaymentData,
     };
     if (paymentType) finalPaymentData.payment_type = paymentType;
-    if (paymentType && paymentType !== 'np' && !isNaN(encaisseurNum) && encaisseurNum > 0) {
+    if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && !isNaN(encaisseurNum) && encaisseurNum > 0) {
       finalPaymentData.encaisseur_id = encaisseurNum;
+    }
+    if (paymentType === 'a_facturer' && selectedPartner) {
+      const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+      const priceCents = flight?.price_cents ?? 0;
+      let invoiceCents = priceCents;
+      if (selectedPartner.commission_type === 'percentage') {
+        invoiceCents = Math.round(priceCents * (1 - (selectedPartner.commission_value ?? 0) / 100));
+      } else if (selectedPartner.commission_type === 'fixed') {
+        invoiceCents = Math.max(0, priceCents - Math.round((selectedPartner.commission_value ?? 0) * 100));
+      }
+      finalPaymentData.invoice_amount_cents = invoiceCents;
     }
 
     if (!pf || pf.name !== false) {
@@ -943,16 +954,22 @@ export default function EditSlotModal({
                     >
                       <option value="">— Non renseigné —</option>
                       <option value="np">NP (Non payé)</option>
-                      <option value="esp">Espèces</option>
-                      <option value="cb">CB</option>
-                      <option value="ancv">ANCV</option>
-                      <option value="ancv_connect">ANCV Connect</option>
-                      <option value="chq">Chèque</option>
-                      <option value="bon_cadeau">Bon cadeau</option>
-                      <option value="online">En ligne</option>
+                      {selectedPartnerId ? (
+                        <option value="a_facturer">À facturer au partenaire</option>
+                      ) : (
+                        <>
+                          <option value="esp">Espèces</option>
+                          <option value="cb">CB</option>
+                          <option value="ancv">ANCV</option>
+                          <option value="ancv_connect">ANCV Connect</option>
+                          <option value="chq">Chèque</option>
+                          <option value="bon_cadeau">Bon cadeau</option>
+                          <option value="online">En ligne</option>
+                        </>
+                      )}
                     </select>
 
-                    {paymentType && paymentType !== 'np' && (
+                    {paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && (
                       <div>
                         <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
                         {(paymentType === 'esp' || paymentType === 'online' || paymentType === 'bon_cadeau') ? (
@@ -974,6 +991,28 @@ export default function EditSlotModal({
                         )}
                       </div>
                     )}
+                    {paymentType === 'a_facturer' && (() => {
+                      const partner = partners.find(p => p.id.toString() === selectedPartnerId);
+                      const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
+                      const priceCents = flight?.price_cents ?? 0;
+                      let invoiceCents = priceCents;
+                      if (partner?.commission_type === 'percentage') {
+                        invoiceCents = Math.round(priceCents * (1 - (partner.commission_value ?? 0) / 100));
+                      } else if (partner?.commission_type === 'fixed') {
+                        invoiceCents = Math.max(0, priceCents - Math.round((partner.commission_value ?? 0) * 100));
+                      }
+                      return (
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 space-y-1">
+                          <p className="text-[9px] font-black uppercase text-orange-500">Montant à facturer</p>
+                          <p className="text-lg font-black text-orange-800">{(invoiceCents / 100).toFixed(2)} €</p>
+                          {partner?.commission_type !== 'none' && (
+                            <p className="text-[10px] text-orange-600">
+                              {(priceCents / 100).toFixed(2)} € − {partner?.commission_type === 'percentage' ? `${partner.commission_value} %` : `${partner?.commission_value} €`} commission
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

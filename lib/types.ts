@@ -173,7 +173,7 @@ export interface GiftCardTemplate {
 
 // ── Paiement structuré ───────────────────────────────────────────────────────
 
-export type PaymentType = 'np' | 'esp' | 'cb' | 'ancv' | 'ancv_connect' | 'chq' | 'bon_cadeau' | 'online';
+export type PaymentType = 'np' | 'esp' | 'cb' | 'ancv' | 'ancv_connect' | 'chq' | 'bon_cadeau' | 'online' | 'a_facturer';
 
 export interface PaymentData {
   online?: boolean;      // payé via Stripe CB
@@ -194,6 +194,7 @@ export interface PaymentData {
   partner_name?: string;
   partner_color?: string;
   google_synced?: boolean;
+  invoice_amount_cents?: number;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────
@@ -349,6 +350,8 @@ export interface Partner {
   color_code: string;
   booking_fields: PartnerBookingFields;
   is_active: boolean;
+  commission_type?: 'none' | 'percentage' | 'fixed';
+  commission_value?: number;
 }
 
 export type SettingsMap = Record<string, string>;

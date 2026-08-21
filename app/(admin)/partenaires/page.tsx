@@ -20,6 +20,8 @@ interface Partner {
   color_code: string;
   booking_fields: BookingFields;
   is_active: boolean;
+  commission_type: 'none' | 'percentage' | 'fixed';
+  commission_value: number;
 }
 
 const COLORS = [
@@ -62,6 +64,8 @@ const emptyPartner = (): Omit<Partner, 'id'> => ({
   name: '', code: '', color_code: '#6366f1',
   booking_fields: { name: true, phone: true, email: true, flight_type: true, weight: false, notes: false },
   is_active: true,
+  commission_type: 'none',
+  commission_value: 0,
 });
 
 export default function PartenairesPage() {
@@ -94,7 +98,7 @@ export default function PartenairesPage() {
 
   const openEdit = (p: Partner) => {
     setEditing(p);
-    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active });
+    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active, commission_type: p.commission_type || 'none', commission_value: p.commission_value ?? 0 });
     setMode(getMode(p.booking_fields));
     setShowModal(true);
   };
@@ -189,6 +193,16 @@ export default function PartenairesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Formulaire</p>
                   <p className="text-xs font-bold text-slate-600 truncate">{fieldSummary(p.booking_fields)}</p>
+                </div>
+
+                {/* Commission */}
+                <div className="shrink-0 text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Commission</p>
+                  <p className="text-xs font-bold text-orange-600">
+                    {p.commission_type === 'none' ? <span className="text-slate-400">—</span>
+                      : p.commission_type === 'percentage' ? `−${p.commission_value} %`
+                      : `−${p.commission_value} €/vol`}
+                  </p>
                 </div>
 
                 {/* Actions */}
@@ -309,6 +323,40 @@ export default function PartenairesPage() {
                         </div>
                       </label>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Commission */}
+              <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 space-y-3">
+                <p className="text-[10px] font-black uppercase text-orange-600 tracking-widest">💰 Commission sur facturation</p>
+                <p className="text-[11px] text-slate-500">Déduite du prix du vol pour calculer le montant à facturer au partenaire.</p>
+                <div>
+                  <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Type</label>
+                  <select
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-sm font-bold bg-white"
+                    value={form.commission_type}
+                    onChange={e => setForm(f => ({ ...f, commission_type: e.target.value as 'none' | 'percentage' | 'fixed' }))}
+                  >
+                    <option value="none">Aucune commission (prix plein)</option>
+                    <option value="percentage">Pourcentage du prix du vol (%)</option>
+                    <option value="fixed">Montant fixe par vol (€)</option>
+                  </select>
+                </div>
+                {form.commission_type !== 'none' && (
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">
+                      {form.commission_type === 'percentage' ? 'Taux (%)' : 'Montant (€)'}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={form.commission_type === 'percentage' ? 1 : 0.01}
+                      max={form.commission_type === 'percentage' ? 100 : 100000}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm font-bold bg-white"
+                      value={form.commission_value}
+                      onChange={e => setForm(f => ({ ...f, commission_value: parseFloat(e.target.value) || 0 }))}
+                    />
                   </div>
                 )}
               </div>

@@ -14,6 +14,7 @@ const PT: Record<string, { label: string; icon: string; cls: string }> = {
   chq:          { label: 'Chèque',       icon: '📝', cls: 'bg-violet-50 border-violet-200 text-violet-800' },
   bon_cadeau:   { label: 'Bon cadeau',   icon: '🎁', cls: 'bg-pink-50 border-pink-200 text-pink-800' },
   online:       { label: 'En ligne',     icon: '🌐', cls: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
+  a_facturer:   { label: 'À facturer',   icon: '📄', cls: 'bg-orange-50 border-orange-200 text-orange-800' },
 };
 
 export function PaymentBadge({ data, encaisseurName }: PaymentBadgeProps) {
@@ -21,9 +22,10 @@ export function PaymentBadge({ data, encaisseurName }: PaymentBadgeProps) {
   if (data?.payment_type) {
     const cfg = PT[data.payment_type];
     if (cfg) {
+      const invoiceAmount = data.invoice_amount_cents != null ? ` · ${(data.invoice_amount_cents / 100).toFixed(0)} €` : '';
       return (
         <span className={`px-3 py-1.5 rounded-xl font-bold text-[9px] uppercase tracking-wider border inline-flex items-center gap-1 shadow-sm ${cfg.cls}`}>
-          <span>{cfg.icon} {cfg.label}</span>
+          <span>{cfg.icon} {cfg.label}{invoiceAmount}</span>
           {encaisseurName && <span className="opacity-60">· {encaisseurName}</span>}
         </span>
       );
