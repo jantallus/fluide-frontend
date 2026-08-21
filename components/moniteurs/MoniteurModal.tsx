@@ -181,7 +181,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
                 />
                 <div>
                   <p className="text-xs font-black uppercase text-slate-700">Reçoit les paiements en ligne</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">CB, ANCV, Bons cadeaux et paiements Stripe sont attribués à ce prestataire</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Les paiements Stripe (réservations en ligne) sont attribués à ce prestataire</p>
                 </div>
               </label>
 

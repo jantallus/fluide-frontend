@@ -421,10 +421,12 @@ export default function EditSlotModal({
     setPaymentType(type);
     if (type === 'esp') {
       setEncaisseurId(selectedEvent?.monitor_id?.toString() || '');
-    } else if (type === 'online' || type === 'bon_cadeau') {
+    } else if (type === 'online') {
+      // Paiement Stripe : auto-attribué au moniteur désigné caisse
       const caisse = fullMonitors.find(m => m.receives_online_payments);
       setEncaisseurId(caisse ? caisse.id.toString() : '');
     } else {
+      // CB, ANCV, CHQ, Bon cadeau, NP : sélection manuelle
       setEncaisseurId('');
     }
   };
