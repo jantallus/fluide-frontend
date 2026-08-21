@@ -1,10 +1,9 @@
 'use client';
 import React from 'react';
 import { ChevronUp, ChevronDown, Trash2, X, UserCheck, Pencil, Check } from 'lucide-react';
-import type { Client, User, Complement, GiftCard, ClientFlight } from '@/lib/types';
+import type { Client, User, ClientFlight } from '@/lib/types';
 import type { QuickEditState } from '@/hooks/useQuickEdit';
 import { PaymentBadge } from './PaymentBadge';
-import { PaymentEditor } from './PaymentEditor';
 
 interface ClientWithSort extends Client {
   sortKey: number;
@@ -19,8 +18,6 @@ interface ClientTableProps {
   clientsList: ClientWithSort[];
   allClients: Client[];
   monitors: User[];
-  complements: Complement[];
-  giftCards: GiftCard[];
   selectedIds: number[];
   setSelectedIds: React.Dispatch<React.SetStateAction<number[]>>;
   expandedClient: number | null;
@@ -32,13 +29,12 @@ interface ClientTableProps {
 export function ClientTable({
   title, icon, bgColor, textColor, highlight = false,
   clientsList, allClients, monitors,
-  complements, giftCards,
   selectedIds, setSelectedIds,
   expandedClient, setExpandedClient,
   onDeleteFlight,
   edit,
 }: ClientTableProps) {
-  const { editingSlotId, editType, tempMonitorId, setTempMonitorId, tempBillingName, setTempBillingName, openPaymentEdit, openMonitorEdit, openBillingEdit, closeEdit, saveQuickEdit } = edit;
+  const { editingSlotId, editType, tempMonitorId, setTempMonitorId, tempBillingName, setTempBillingName, openMonitorEdit, openBillingEdit, closeEdit, saveQuickEdit } = edit;
 
   const renderMonitorSelector = (f: ClientFlight, clientId: number) => (
     <>
@@ -142,6 +138,22 @@ export function ClientTable({
                   <tr>
                     <td colSpan={5} className="bg-slate-50/50 p-6">
                       <div className="grid grid-cols-1 gap-4">
+                        {(() => {
+                          const total = (c.flights || []).reduce((s, f) => s + (f.price_cents || 0), 0);
+                          const paid = (c.flights || []).filter(f => f.payment_data?.payment_type && f.payment_data.payment_type !== 'np').length;
+                          const unpaid = (c.flights || []).filter(f => !f.payment_data?.payment_type).length;
+                          if ((c.flights?.length || 0) <= 1) return null;
+                          return (
+                            <div className="flex items-center justify-between px-4 py-2 bg-slate-100 rounded-2xl border border-slate-200">
+                              <span className="text-[10px] font-black uppercase text-slate-500">
+                                {c.flights?.length} vol{(c.flights?.length || 0) > 1 ? 's' : ''}
+                                {unpaid > 0 && <span className="ml-2 text-rose-500">· {unpaid} à encaisser</span>}
+                                {paid > 0 && <span className="ml-2 text-emerald-600">· {paid} encaissé{paid > 1 ? 's' : ''}</span>}
+                              </span>
+                              <span className="font-black text-slate-800 text-sm">{(total / 100).toFixed(0)} € total</span>
+                            </div>
+                          );
+                        })()}
                         {c.flights?.map(f => (
                           <div key={f.id} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between relative">
                             <div className="flex items-center gap-6">
@@ -153,15 +165,19 @@ export function ClientTable({
                               <div>
                                 <p className="font-black text-slate-800 uppercase text-[11px] mb-1">{f.flight_name}</p>
                                 <button
-                                  onClick={e => { e.stopPropagation(); if (!f.payment_data) openMonitorEdit(f); }}
-                                  className={`text-[9px] font-bold px-2 py-1 rounded-md border ${!f.payment_data ? 'bg-sky-50 text-sky-600 border-sky-100' : 'bg-slate-50 text-slate-400 border-transparent cursor-not-allowed'}`}
+                                  onClick={e => { e.stopPropagation(); openMonitorEdit(f); }}
+                                  className="text-[9px] font-bold px-2 py-1 rounded-md border bg-sky-50 text-sky-600 border-sky-100 hover:bg-sky-100 transition-colors"
                                 >
                                   <UserCheck size={10} className="inline mr-1" />{f.monitor_name || 'Assigner'}
                                 </button>
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              {/* Nom facturation */}
+                              {f.price_cents != null && (
+                                <span className="text-sm font-black text-slate-700 whitespace-nowrap">
+                                  {(f.price_cents / 100).toFixed(0)} €
+                                </span>
+                              )}
                               <div
                                 className="flex items-center gap-1 cursor-pointer group"
                                 onClick={e => { e.stopPropagation(); openBillingEdit(f, c.billing_name); }}
@@ -172,15 +188,15 @@ export function ClientTable({
                                 </span>
                                 <Pencil size={10} className="text-slate-300 group-hover:text-sky-500 transition-colors" />
                               </div>
-                              <div
-                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                                onClick={e => { e.stopPropagation(); openPaymentEdit(f); }}
-                              >
-                                <PaymentBadge data={f.payment_data} />
-                              </div>
+                              <PaymentBadge
+                                data={f.payment_data}
+                                encaisseurName={f.payment_data?.encaisseur_id
+                                  ? monitors.find(m => m.id.toString() === f.payment_data?.encaisseur_id?.toString())?.first_name
+                                  : undefined}
+                              />
                               <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="p-2 text-rose-400"><Trash2 size={16} /></button>
                             </div>
-                            {editingSlotId === f.id && (
+                            {editingSlotId === f.id && editType !== 'payment' && (
                               <div
                                 className="absolute right-0 top-full mt-2 bg-white shadow-2xl border border-slate-200 p-4 rounded-2xl z-[100] flex items-center gap-3 animate-in fade-in"
                                 onClick={e => e.stopPropagation()}
@@ -200,10 +216,7 @@ export function ClientTable({
                                     </div>
                                     <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-sky-500 text-white p-2 rounded-lg"><Check size={14} /></button>
                                   </>
-                                ) : editType === 'monitor'
-                                  ? renderMonitorSelector(f, c.id)
-                                  : <PaymentEditor flight={f} clientId={c.id} complements={complements} giftCards={giftCards} edit={edit} />
-                                }
+                                ) : renderMonitorSelector(f, c.id)}
                                 <button onClick={closeEdit} className="ml-2 text-slate-400"><X size={14} /></button>
                               </div>
                             )}
@@ -274,32 +287,36 @@ export function ClientTable({
                       </div>
                       <button onClick={e => { e.stopPropagation(); onDeleteFlight(f.id, c.id); }} className="text-rose-300"><Trash2 size={16} /></button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      {/* Nom facturation mobile */}
+                    <div className="flex items-center justify-between gap-2">
                       <div
                         className="flex items-center gap-1 cursor-pointer"
                         onClick={e => { e.stopPropagation(); openBillingEdit(f, c.billing_name); }}
                       >
                         <span className="text-[9px] font-black uppercase text-slate-400">
-                          🧾 {f.billing_name || c.billing_name || 'Facturation —'}
+                          🧾 {f.billing_name || c.billing_name || '—'}
                         </span>
                         <Pencil size={9} className="text-slate-300" />
                       </div>
-                      <div
-                        className="cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={e => { e.stopPropagation(); openPaymentEdit(f); }}
-                      >
-                        <PaymentBadge data={f.payment_data} />
+                      <div className="flex items-center gap-2">
+                        {f.price_cents != null && (
+                          <span className="text-xs font-black text-slate-700">{(f.price_cents / 100).toFixed(0)} €</span>
+                        )}
+                        <PaymentBadge
+                          data={f.payment_data}
+                          encaisseurName={f.payment_data?.encaisseur_id
+                            ? monitors.find(m => m.id.toString() === f.payment_data?.encaisseur_id?.toString())?.first_name
+                            : undefined}
+                        />
                       </div>
                     </div>
-                    {editingSlotId === f.id && (
+                    {editingSlotId === f.id && editType !== 'payment' && (
                       <div
                         className="relative mt-3 bg-white border border-slate-200 z-10 flex flex-col p-3 rounded-2xl shadow-xl animate-in fade-in slide-in-from-top-2"
                         onClick={e => e.stopPropagation()}
                       >
                         <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
                           <p className="text-[10px] font-black uppercase text-sky-500">
-                            {editType === 'billing' ? '🧾 Facturation' : editType === 'monitor' ? '👨‍✈️ Assigner un pilote' : '💳 Encaissement'}
+                            {editType === 'billing' ? '🧾 Facturation' : '👨‍✈️ Assigner un pilote'}
                           </p>
                           <button onClick={closeEdit} className="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-xs hover:bg-rose-100 hover:text-rose-500 transition-colors"><X size={14} /></button>
                         </div>
@@ -315,12 +332,10 @@ export function ClientTable({
                             />
                             <button onClick={() => saveQuickEdit(f.id, c.id)} className="bg-sky-500 text-white px-3 py-2 rounded-lg font-black text-xs">OK</button>
                           </div>
-                        ) : editType === 'monitor' ? (
+                        ) : (
                           <div className="flex gap-1">
                             {renderMonitorSelector(f, c.id)}
                           </div>
-                        ) : (
-                          <PaymentEditor flight={f} clientId={c.id} complements={complements} giftCards={giftCards} edit={edit} />
                         )}
                       </div>
                     )}

@@ -288,7 +288,6 @@ export default function ClientsPage() {
         <ClientTable
           title="Clients du jour" icon="📅" bgColor="bg-sky-100" textColor="text-sky-600" highlight
           clientsList={todayClients} allClients={clients} monitors={monitors}
-          complements={complements} giftCards={giftCards}
           selectedIds={selectedIds} setSelectedIds={setSelectedIds}
           expandedClient={expandedClient} setExpandedClient={setExpandedClient}
           onDeleteFlight={deleteFlight} edit={edit}
@@ -296,7 +295,6 @@ export default function ClientsPage() {
         <ClientTable
           title="Vols à venir" icon="⏳" bgColor="bg-amber-100" textColor="text-amber-500"
           clientsList={upcomingClients} allClients={clients} monitors={monitors}
-          complements={complements} giftCards={giftCards}
           selectedIds={selectedIds} setSelectedIds={setSelectedIds}
           expandedClient={expandedClient} setExpandedClient={setExpandedClient}
           onDeleteFlight={deleteFlight} edit={edit}
@@ -304,7 +302,6 @@ export default function ClientsPage() {
         <ClientTable
           title="Vols terminés" icon="✅" bgColor="bg-slate-200" textColor="text-slate-500"
           clientsList={pastClients} allClients={clients} monitors={monitors}
-          complements={complements} giftCards={giftCards}
           selectedIds={selectedIds} setSelectedIds={setSelectedIds}
           expandedClient={expandedClient} setExpandedClient={setExpandedClient}
           onDeleteFlight={deleteFlight} edit={edit}
