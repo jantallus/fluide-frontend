@@ -59,11 +59,22 @@ export default function EditSlotModal({
   const [passengerWeights, setPassengerWeights] = useState<string[]>(['']);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
+  const [paymentType, setPaymentType] = useState('');
+  const [encaisseurId, setEncaisseurId] = useState('');
+  const [fullMonitors, setFullMonitors] = useState<Array<{ id: string; first_name: string; receives_online_payments: boolean }>>([]);
 
-  // ── Fetch partenaires ────────────────────────────────────────────────────────
+  // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
   useEffect(() => {
     apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then(setPartners).catch(() => {});
-  }, []);
+    if (currentUser?.role === 'admin') {
+      apiFetch('/api/users')
+        .then(r => r.ok ? r.json() : [])
+        .then((data: Array<{ id: string; first_name: string; is_active_monitor: boolean; receives_online_payments: boolean }>) =>
+          setFullMonitors(data.filter(u => u.is_active_monitor))
+        )
+        .catch(() => {});
+    }
+  }, [currentUser]);
 
   // ── Parsing message collé ─────────────────────────────────────────────────
   const parseMessage = () => {
@@ -205,6 +216,8 @@ export default function EditSlotModal({
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
     setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
+    setPaymentType(selectedEvent.payment_data?.payment_type || '');
+    setEncaisseurId(selectedEvent.payment_data?.encaisseur_id?.toString() || '');
     setIsManual(false);
     setMoveGroup(false);
   }, [selectedEvent, currentUser]);
@@ -404,6 +417,18 @@ export default function EditSlotModal({
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleMainChange = (delta: number) => { setGroupSize(prev => Math.max(1, prev + delta)); setIsManual(false); };
 
+  const handlePaymentTypeChange = (type: string) => {
+    setPaymentType(type);
+    if (type === 'esp') {
+      setEncaisseurId(selectedEvent?.monitor_id?.toString() || '');
+    } else if (type === 'online' || type === 'bon_cadeau') {
+      const caisse = fullMonitors.find(m => m.receives_online_payments);
+      setEncaisseurId(caisse ? caisse.id.toString() : '');
+    } else {
+      setEncaisseurId('');
+    }
+  };
+
   const handleSubChange = (time: string, delta: number) => {
     setManualCounts(prev => {
       const newCounts = { ...prev };
@@ -467,6 +492,16 @@ export default function EditSlotModal({
     const partnerPaymentData = selectedPartner
       ? { partner: true, partner_id: selectedPartner.id, partner_name: selectedPartner.name, code: selectedPartner.code, partner_color: selectedPartner.color_code }
       : {};
+    const existingPd = (selectedEvent?.payment_data || {}) as Record<string, unknown>;
+    const encaisseurNum = parseInt(encaisseurId);
+    const finalPaymentData: Record<string, unknown> = {
+      ...existingPd,
+      ...partnerPaymentData,
+    };
+    if (paymentType) finalPaymentData.payment_type = paymentType;
+    if (paymentType && paymentType !== 'np' && !isNaN(encaisseurNum) && encaisseurNum > 0) {
+      finalPaymentData.encaisseur_id = encaisseurNum;
+    }
 
     if (!pf || pf.name !== false) {
       if (!effectiveTitle?.trim()) { toast.error('❌ Le nom du contact est obligatoire pour une réservation.'); return; }
@@ -488,7 +523,7 @@ export default function EditSlotModal({
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
         else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (effectiveTitle || ''); }
-        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: partnerPaymentData } });
+        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: finalPaymentData } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(baseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -499,7 +534,7 @@ export default function EditSlotModal({
         }
       });
     } else if (slotsNeeded > 1) {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: partnerPaymentData } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
       for (let i = 1; i < slotsNeeded; i++) {
         const nextMs = startMs + i * slotDuration * 60000;
@@ -507,7 +542,7 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: partnerPaymentData } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
     }
     applyAll(updatesToApply);
   };
@@ -895,6 +930,49 @@ export default function EditSlotModal({
                     <input type="email" className="w-full bg-slate-50 border-2 border-slate-100 focus:border-sky-300 outline-none rounded-2xl p-3 font-bold text-sm transition-colors text-center" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Email (Optionnel)" />
                   </div>
                 </div>
+
+                {currentUser?.role === 'admin' && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 space-y-3">
+                    <label className="text-[10px] font-black uppercase text-slate-400 block">Mode d'encaissement</label>
+                    <select
+                      value={paymentType}
+                      onChange={e => handlePaymentTypeChange(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                    >
+                      <option value="">— Non renseigné —</option>
+                      <option value="np">NP (Non payé)</option>
+                      <option value="esp">Espèces</option>
+                      <option value="cb">CB</option>
+                      <option value="ancv">ANCV</option>
+                      <option value="ancv_connect">ANCV Connect</option>
+                      <option value="chq">Chèque</option>
+                      <option value="bon_cadeau">Bon cadeau</option>
+                      <option value="online">En ligne</option>
+                    </select>
+
+                    {paymentType && paymentType !== 'np' && (
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
+                        {paymentType === 'esp' ? (
+                          <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600">
+                            {monitors.find(m => m.id.toString() === encaisseurId)?.title || monitors.find(m => m.id.toString() === selectedEvent?.monitor_id?.toString())?.title || 'Pilote du vol'}
+                          </div>
+                        ) : (
+                          <select
+                            value={encaisseurId}
+                            onChange={e => setEncaisseurId(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                          >
+                            <option value="">— Choisir —</option>
+                            {monitors.map(m => (
+                              <option key={m.id} value={m.id.toString()}>{m.title}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {(formData.booking_options || formData.client_message) && (
                   <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">

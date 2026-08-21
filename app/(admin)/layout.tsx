@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
-import { Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut, Handshake } from 'lucide-react';
+import { Calendar, Wind, Users, User, Gift, Settings, ChevronRight, ChevronLeft, X, Menu, LogOut, Handshake, ArrowLeftRight } from 'lucide-react';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [clientCount, setClientCount] = useState(0);
@@ -87,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Moniteurs', icon: Users, path: '/moniteurs', roles: ['admin', 'permanent'] },
     { name: 'Partenaires', icon: Handshake, path: '/partenaires', roles: ['admin'] },
     { name: 'Clients', icon: User, path: '/clients', badge: clientCount, roles: ['admin'] },
+    { name: 'Régularisation', icon: ArrowLeftRight, path: '/regularisation', roles: ['admin'] },
     { name: 'Bons Cadeaux', icon: Gift, path: '/gift-cards', roles: ['admin'] },
     { name: 'Configurations', icon: Settings, path: '/config', roles: ['admin'] },
   ];

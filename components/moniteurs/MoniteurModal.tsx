@@ -7,6 +7,9 @@ import type { User, CurrentUser, Availability } from '@/lib/types';
 const EMPTY_USER = {
   first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true,
   google_sync_enabled: false,
+  receives_online_payments: false,
+  commission_type: 'none',
+  commission_value: 0,
   available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '',
 };
 
@@ -31,6 +34,9 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
         role: userToEdit.role,
         is_active_monitor: userToEdit.is_active_monitor ?? true,
         google_sync_enabled: userToEdit.google_sync_enabled ?? false,
+        receives_online_payments: userToEdit.receives_online_payments ?? false,
+        commission_type: userToEdit.commission_type || 'none',
+        commission_value: userToEdit.commission_value ?? 0,
         available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '',
       });
       apiFetch(`/api/users/${userToEdit.id}/availabilities`)
@@ -160,6 +166,55 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
                 <p className="text-[10px] text-slate-400 mt-0.5">Importe les créneaux depuis Google Calendar via le Apps Script</p>
               </div>
             </label>
+          )}
+
+          {currentUser?.role === 'admin' && (
+            <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100 space-y-4">
+              <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest px-2">💰 Encaissement & Commission</p>
+
+              <label className="flex items-center gap-3 p-3 bg-white border border-amber-200 rounded-2xl cursor-pointer hover:border-amber-400 transition-colors">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-amber-500"
+                  checked={newUser.receives_online_payments}
+                  onChange={e => setNewUser({ ...newUser, receives_online_payments: e.target.checked })}
+                />
+                <div>
+                  <p className="text-xs font-black uppercase text-slate-700">Reçoit les paiements en ligne</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">CB, ANCV, Bons cadeaux et paiements Stripe sont attribués à ce prestataire</p>
+                </div>
+              </label>
+
+              <div>
+                <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Type de commission</label>
+                <select
+                  className="w-full border border-slate-200 rounded-xl p-2 text-sm font-bold bg-white mt-1"
+                  value={newUser.commission_type}
+                  onChange={e => setNewUser({ ...newUser, commission_type: e.target.value })}
+                >
+                  <option value="none">Aucune commission</option>
+                  <option value="percentage">Pourcentage par vol (%)</option>
+                  <option value="fixed">Montant fixe par vol (€)</option>
+                </select>
+              </div>
+
+              {newUser.commission_type !== 'none' && (
+                <div>
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-1">
+                    {newUser.commission_type === 'percentage' ? 'Taux (%)' : 'Montant (€)'}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={newUser.commission_type === 'percentage' ? 1 : 0.01}
+                    max={newUser.commission_type === 'percentage' ? 100 : 100000}
+                    className="w-full border border-slate-200 rounded-xl p-2 text-sm font-bold bg-white mt-1"
+                    value={newUser.commission_value}
+                    onChange={e => setNewUser({ ...newUser, commission_value: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              )}
+            </div>
           )}
 
           <div>

@@ -11,6 +11,9 @@ export interface User {
   status?: string;
   is_active_monitor?: boolean;
   google_sync_enabled?: boolean;
+  receives_online_payments?: boolean;
+  commission_type?: 'none' | 'percentage' | 'fixed';
+  commission_value?: number;
   phone?: string;
   color?: string;
   google_calendar_id?: string;
@@ -170,6 +173,8 @@ export interface GiftCardTemplate {
 
 // ── Paiement structuré ───────────────────────────────────────────────────────
 
+export type PaymentType = 'np' | 'esp' | 'cb' | 'ancv' | 'ancv_connect' | 'chq' | 'bon_cadeau' | 'online';
+
 export interface PaymentData {
   online?: boolean;      // payé via Stripe CB
   cb?: number;           // CB en centimes (sur place ou en ligne)
@@ -180,11 +185,15 @@ export interface PaymentData {
   code?: string;         // Code bon cadeau ou promo
   code_type?: 'gift_card' | 'promo';
   options?: string[];    // Noms des options ajoutées sur place
+  // Encaissement
+  payment_type?: PaymentType;
+  encaisseur_id?: number;
   // Partenaire
   partner?: boolean;
   partner_id?: number;
   partner_name?: string;
   partner_color?: string;
+  google_synced?: boolean;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────
