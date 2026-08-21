@@ -140,8 +140,14 @@ export function ClientTable({
                       <div className="grid grid-cols-1 gap-4">
                         {(() => {
                           const total = (c.flights || []).reduce((s, f) => s + (f.price_cents || 0), 0);
-                          const paid = (c.flights || []).filter(f => f.payment_data?.payment_type && f.payment_data.payment_type !== 'np').length;
-                          const unpaid = (c.flights || []).filter(f => !f.payment_data?.payment_type).length;
+                          const isPaid = (f: ClientFlight) => {
+                            const pd = f.payment_data;
+                            if (!pd) return false;
+                            if (pd.payment_type) return pd.payment_type !== 'np';
+                            return !!(pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
+                          };
+                          const paid = (c.flights || []).filter(isPaid).length;
+                          const unpaid = (c.flights || []).filter(f => !isPaid(f)).length;
                           if ((c.flights?.length || 0) <= 1) return null;
                           return (
                             <div className="flex items-center justify-between px-4 py-2 bg-slate-100 rounded-2xl border border-slate-200">
