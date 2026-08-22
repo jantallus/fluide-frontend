@@ -973,19 +973,25 @@ export default function EditSlotModal({
                     >
                       <option value="">— Non renseigné —</option>
                       <option value="np">NP (Non payé)</option>
-                      {selectedPartnerId ? (
-                        <option value="a_facturer">À facturer au partenaire</option>
-                      ) : (
-                        <>
-                          <option value="esp">Espèces</option>
-                          <option value="cb">CB</option>
-                          <option value="ancv">ANCV</option>
-                          <option value="ancv_connect">ANCV Connect</option>
-                          <option value="chq">Chèque</option>
-                          <option value="bon_cadeau">Bon cadeau</option>
-                          <option value="online">En ligne</option>
-                        </>
-                      )}
+                      {(() => {
+                        const partner = partners.find(p => p.id.toString() === selectedPartnerId);
+                        if (selectedPartnerId && partner?.facturable !== false) {
+                          // Partenaire à facturer : il règle les vols lui-même
+                          return <option value="a_facturer">À facturer au partenaire</option>;
+                        }
+                        // Pas de partenaire, ou partenaire qui n'encaisse pas : modes de paiement classiques
+                        return (
+                          <>
+                            <option value="esp">Espèces</option>
+                            <option value="cb">CB</option>
+                            <option value="ancv">ANCV</option>
+                            <option value="ancv_connect">ANCV Connect</option>
+                            <option value="chq">Chèque</option>
+                            <option value="bon_cadeau">Bon cadeau</option>
+                            <option value="online">En ligne</option>
+                          </>
+                        );
+                      })()}
                     </select>
 
                     {paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && (

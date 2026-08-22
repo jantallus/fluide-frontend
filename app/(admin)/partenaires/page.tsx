@@ -22,6 +22,7 @@ interface Partner {
   is_active: boolean;
   commission_type: 'none' | 'percentage' | 'fixed';
   commission_value: number;
+  facturable: boolean;
 }
 
 const COLORS = [
@@ -66,6 +67,7 @@ const emptyPartner = (): Omit<Partner, 'id'> => ({
   is_active: true,
   commission_type: 'none',
   commission_value: 0,
+  facturable: true,
 });
 
 export default function PartenairesPage() {
@@ -98,7 +100,7 @@ export default function PartenairesPage() {
 
   const openEdit = (p: Partner) => {
     setEditing(p);
-    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active, commission_type: p.commission_type || 'none', commission_value: p.commission_value ?? 0 });
+    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active, commission_type: p.commission_type || 'none', commission_value: p.commission_value ?? 0, facturable: p.facturable ?? true });
     setMode(getMode(p.booking_fields));
     setShowModal(true);
   };
@@ -193,6 +195,16 @@ export default function PartenairesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Formulaire</p>
                   <p className="text-xs font-bold text-slate-600 truncate">{fieldSummary(p.booking_fields)}</p>
+                </div>
+
+                {/* Facturable */}
+                <div className="shrink-0 text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Encaissement</p>
+                  <p className="text-xs font-bold">
+                    {p.facturable
+                      ? <span className="text-orange-600">📄 À facturer</span>
+                      : <span className="text-emerald-600">💳 Direct client</span>}
+                  </p>
                 </div>
 
                 {/* Commission */}
@@ -360,6 +372,24 @@ export default function PartenairesPage() {
                   </div>
                 )}
               </div>
+
+              {/* Facturable */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  onClick={() => setForm(f => ({ ...f, facturable: !f.facturable }))}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${form.facturable ? 'bg-orange-400' : 'bg-emerald-500'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.facturable ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-slate-700">Partenaire à facturer</p>
+                  <p className="text-[11px] text-slate-400">
+                    {form.facturable
+                      ? 'Le partenaire règle les vols — on lui envoie une facture'
+                      : 'Les clients paient directement — on saisit le mode de paiement'}
+                  </p>
+                </div>
+              </label>
 
               {/* Actif */}
               <label className="flex items-center gap-3 cursor-pointer">

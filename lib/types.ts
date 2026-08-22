@@ -352,6 +352,7 @@ export interface Partner {
   is_active: boolean;
   commission_type?: 'none' | 'percentage' | 'fixed';
   commission_value?: number;
+  facturable?: boolean;
 }
 
 export type SettingsMap = Record<string, string>;
