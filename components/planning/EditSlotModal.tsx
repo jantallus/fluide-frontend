@@ -729,7 +729,26 @@ export default function EditSlotModal({
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl max-h-[95vh] overflow-y-auto custom-scrollbar">
-        <h2 className="text-xl font-black uppercase italic mb-6 text-slate-900">Gestion du Créneau</h2>
+        <h2 className="text-xl font-black uppercase italic mb-3 text-slate-900">Gestion du Créneau</h2>
+
+        {selectedEvent && IS_CLIENT_SLOT(selectedEvent) && (() => {
+          const flight = flightTypes.find(f => f.id?.toString() === selectedEvent?.flight_type_id?.toString());
+          const pd = selectedEvent?.payment_data;
+          const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
+          const isUnpaid = !pd?.payment_type && !isLegacyPaid;
+          const isNP = pd?.payment_type === 'np';
+          const needsCollection = isUnpaid || isNP;
+          return (
+            <div className="flex items-center justify-between mb-4 bg-slate-50 rounded-2xl px-4 py-2.5 border border-slate-100">
+              <span className="font-black text-slate-800 text-sm truncate max-w-[55%]">{selectedEvent?.title}</span>
+              {flight && (
+                <span className={`text-xs font-black px-2.5 py-1 rounded-xl ${needsCollection ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                  {needsCollection ? `À enc. ${(flight.price_cents / 100).toFixed(0)} €` : `${(flight.price_cents / 100).toFixed(0)} €`}
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
           {currentUser?.role === 'admin' && (
@@ -822,11 +841,11 @@ export default function EditSlotModal({
                         Client {selP.name}
                       </div>
                     ) : (
-                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Julien, Christophe, Alexandre..." />
+                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Clara Dupont  ou  Julien, Sophie, Marc..." />
                     );
                   })()}
                   <span className="text-[9px] text-slate-400 ml-2 mt-1 block leading-tight">
-                    💡 <b>Astuce :</b> Le 1er nom est le contact. Séparez par des virgules.<br />
+                    💡 <b>Prénom Nom</b> pour un passager · séparés par virgules pour un groupe<br />
                     <i>Ex (3 places) : "léo, Alex, Paul, Léa" ➔ léo ne vole pas, Alex, Paul et Léa volent.</i>
                   </span>
                 </div>

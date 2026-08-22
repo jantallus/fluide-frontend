@@ -63,7 +63,7 @@ export default function PlanningAdmin() {
   }, [currentUser, toast]);
 
   const renderEventContent = useCallback((arg: EventContentArg) => {
-    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null };
+    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null };
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
@@ -75,7 +75,20 @@ export default function PlanningAdmin() {
     }
 
     const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
-    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null].filter(Boolean).join(' · ');
+
+    const pd = ep.payment_data;
+    const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
+    const isUnpaid = !pd?.payment_type && !isLegacyPaid;
+    const isNP = pd?.payment_type === 'np';
+    let priceStr: string | null = null;
+    if (ep.price_cents) {
+      const euros = (ep.price_cents / 100).toFixed(0);
+      if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
+      else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · stripe`;
+      else priceStr = `${euros} €`;
+    }
+
+    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr].filter(Boolean).join(' · ');
 
     return (
       <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
@@ -127,7 +140,7 @@ export default function PlanningAdmin() {
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : isEmptyAndOOS ? '#f8fafc' : (a.status === 'available' ? '#ffffff' : flightColor),
         textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
-        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null },
+        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null, price_cents: flight?.price_cents || null },
       };
     });
   }, [appointments, flightTypes, parsedOpeningPeriods]);
