@@ -74,6 +74,16 @@ export default function PlanningAdmin() {
       );
     }
 
+    // Si billing_name commence par le même prénom que title et est plus long → afficher le nom complet
+    const displayName = (() => {
+      const t = ep.title || '';
+      const bn = ep.billing_name || '';
+      if (!bn || !t) return t;
+      const firstWord = t.split(/[\s,(]/)[0].toLowerCase();
+      const bnFirst = bn.split(/\s/)[0].toLowerCase();
+      return (firstWord === bnFirst && bn.length > t.length) ? bn : t;
+    })();
+
     const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
 
     const pd = ep.payment_data;
@@ -94,7 +104,7 @@ export default function PlanningAdmin() {
       <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ep.title}{badges && ` ${badges}`}
+          {displayName}{badges && ` ${badges}`}
         </span>
         {subLine && (
           <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

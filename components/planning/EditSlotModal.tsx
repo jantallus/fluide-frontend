@@ -740,7 +740,14 @@ export default function EditSlotModal({
           const needsCollection = isUnpaid || isNP;
           return (
             <div className="flex items-center justify-between mb-4 bg-slate-50 rounded-2xl px-4 py-2.5 border border-slate-100">
-              <span className="font-black text-slate-800 text-sm truncate max-w-[55%]">{selectedEvent?.title}</span>
+              <span className="font-black text-slate-800 text-sm truncate max-w-[55%]">{(() => {
+                const t = selectedEvent?.title || '';
+                const bn = selectedEvent?.billing_name || '';
+                if (!bn || !t) return t;
+                const firstWord = t.split(/[\s,(]/)[0].toLowerCase();
+                const bnFirst = bn.split(/\s/)[0].toLowerCase();
+                return (firstWord === bnFirst && bn.length > t.length) ? bn : t;
+              })()}</span>
               {flight && (
                 <span className={`text-xs font-black px-2.5 py-1 rounded-xl ${needsCollection ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
                   {needsCollection ? `À enc. ${(flight.price_cents / 100).toFixed(0)} €` : `${(flight.price_cents / 100).toFixed(0)} €`}

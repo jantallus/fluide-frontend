@@ -45,6 +45,7 @@ export interface Slot {
   weight_checked?: boolean | null;
   weightChecked?: boolean;
   payment_data?: PaymentData | null;
+  billing_name?: string | null;
   resourceId?: string;
   /** FullCalendar event.start (Date object) — populated when slot comes from calendar click */
   start?: Date | string;
