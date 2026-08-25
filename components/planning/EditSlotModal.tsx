@@ -991,77 +991,120 @@ export default function EditSlotModal({
 
                 {currentUser?.role === 'admin' && (
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 space-y-3">
-                    <label className="text-[10px] font-black uppercase text-slate-400 block">Mode d'encaissement</label>
-                    <select
-                      value={paymentType}
-                      onChange={e => handlePaymentTypeChange(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
-                    >
-                      <option value="">— Non renseigné —</option>
-                      <option value="np">NP (Non payé)</option>
-                      {(() => {
-                        const partner = partners.find(p => p.id.toString() === selectedPartnerId);
-                        if (selectedPartnerId && partner?.facturable !== false) {
-                          // Partenaire à facturer : il règle les vols lui-même
-                          return <option value="a_facturer">À facturer au partenaire</option>;
-                        }
-                        // Pas de partenaire, ou partenaire qui n'encaisse pas : modes de paiement classiques
-                        return (
-                          <>
-                            <option value="esp">Espèces</option>
-                            <option value="cb">CB</option>
-                            <option value="ancv">ANCV</option>
-                            <option value="ancv_connect">ANCV Connect</option>
-                            <option value="chq">Chèque</option>
-                            <option value="bon_cadeau">Bon cadeau</option>
-                            <option value="online">En ligne</option>
-                          </>
-                        );
-                      })()}
-                    </select>
+                    <label className="text-[10px] font-black uppercase text-slate-400 block">Encaissement</label>
+                    {(() => {
+                      const pd = selectedEvent?.payment_data;
+                      const isStripePaid = pd?.online === true;
+                      const isGiftCard = pd?.code_type === 'gift_card' && !!pd?.code;
 
-                    {paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && (
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
-                        {(paymentType === 'esp' || paymentType === 'online' || paymentType === 'bon_cadeau') ? (
-                          <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600 flex items-center justify-between">
-                            <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || (paymentType === 'esp' ? 'Pilote du vol' : 'Caisse Fluide')}</span>
-                            <span className="text-[9px] text-slate-400 font-normal">automatique</span>
+                      // Bon cadeau (avec ou sans complément Stripe)
+                      if (isGiftCard) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
+                              <p className="text-[9px] font-black uppercase text-pink-500 mb-1">🎁 Bon cadeau utilisé</p>
+                              <p className="text-sm font-black text-pink-800 font-mono tracking-widest">{pd!.code}</p>
+                              {pd!.voucher ? <p className="text-[10px] text-pink-600 mt-0.5">Valeur : {(pd!.voucher / 100).toFixed(0)} €</p> : null}
+                            </div>
+                            {pd?.online && (
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+                                <p className="text-[9px] font-black uppercase text-indigo-500">+ Complément CB en ligne (Stripe)</p>
+                                {pd.cb ? <p className="text-xs font-bold text-indigo-700">{(pd.cb / 100).toFixed(0)} €</p> : null}
+                              </div>
+                            )}
                           </div>
-                        ) : (
+                        );
+                      }
+
+                      // Paiement Stripe pur (aucun bon cadeau)
+                      if (isStripePaid) {
+                        return (
+                          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex items-center gap-3">
+                            <span className="text-xl">🌐</span>
+                            <div>
+                              <p className="text-[9px] font-black uppercase text-indigo-500">Paiement en ligne</p>
+                              <p className="text-sm font-bold text-indigo-800">CB via Stripe — encaissé automatiquement</p>
+                              {pd?.cb ? <p className="text-[10px] text-indigo-600 mt-0.5">{(pd.cb / 100).toFixed(0)} €</p> : null}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Sélecteur manuel (paiements sur place ou à renseigner)
+                      return (
+                        <>
                           <select
-                            value={encaisseurId}
-                            onChange={e => setEncaisseurId(e.target.value)}
+                            value={paymentType}
+                            onChange={e => handlePaymentTypeChange(e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
                           >
-                            <option value="">— Choisir —</option>
-                            {monitors.map(m => (
-                              <option key={m.id} value={m.id.toString()}>{m.title}</option>
-                            ))}
+                            <option value="">— Non renseigné —</option>
+                            <option value="np">NP (Non payé)</option>
+                            {(() => {
+                              const partner = partners.find(p => p.id.toString() === selectedPartnerId);
+                              if (selectedPartnerId && partner?.facturable !== false) {
+                                return <option value="a_facturer">À facturer au partenaire</option>;
+                              }
+                              return (
+                                <>
+                                  <option value="esp">Espèces</option>
+                                  <option value="cb">CB</option>
+                                  <option value="ancv">ANCV</option>
+                                  <option value="ancv_connect">ANCV Connect</option>
+                                  <option value="chq">Chèque</option>
+                                  <option value="bon_cadeau">Bon cadeau</option>
+                                  <option value="online">En ligne</option>
+                                </>
+                              );
+                            })()}
                           </select>
-                        )}
-                      </div>
-                    )}
-                    {paymentType === 'a_facturer' && (() => {
-                      const partner = partners.find(p => p.id.toString() === selectedPartnerId);
-                      const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
-                      const priceCents = flight?.price_cents ?? 0;
-                      let invoiceCents = priceCents;
-                      if (partner?.commission_type === 'percentage') {
-                        invoiceCents = Math.round(priceCents * (1 - (partner.commission_value ?? 0) / 100));
-                      } else if (partner?.commission_type === 'fixed') {
-                        invoiceCents = Math.max(0, priceCents - Math.round((partner.commission_value ?? 0) * 100));
-                      }
-                      return (
-                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 space-y-1">
-                          <p className="text-[9px] font-black uppercase text-orange-500">Montant à facturer</p>
-                          <p className="text-lg font-black text-orange-800">{(invoiceCents / 100).toFixed(2)} €</p>
-                          {partner?.commission_type !== 'none' && (
-                            <p className="text-[10px] text-orange-600">
-                              {(priceCents / 100).toFixed(2)} € − {partner?.commission_type === 'percentage' ? `${partner.commission_value} %` : `${partner?.commission_value} €`} commission
-                            </p>
+
+                          {paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && (
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
+                              {(paymentType === 'esp' || paymentType === 'online' || paymentType === 'bon_cadeau') ? (
+                                <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600 flex items-center justify-between">
+                                  <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || (paymentType === 'esp' ? 'Pilote du vol' : 'Caisse Fluide')}</span>
+                                  <span className="text-[9px] text-slate-400 font-normal">automatique</span>
+                                </div>
+                              ) : (
+                                <select
+                                  value={encaisseurId}
+                                  onChange={e => setEncaisseurId(e.target.value)}
+                                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                                >
+                                  <option value="">— Choisir —</option>
+                                  {monitors.map(m => (
+                                    <option key={m.id} value={m.id.toString()}>{m.title}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
                           )}
-                        </div>
+
+                          {paymentType === 'a_facturer' && (() => {
+                            const partner = partners.find(p => p.id.toString() === selectedPartnerId);
+                            const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
+                            const priceCents = flight?.price_cents ?? 0;
+                            let invoiceCents = priceCents;
+                            if (partner?.commission_type === 'percentage') {
+                              invoiceCents = Math.round(priceCents * (1 - (partner.commission_value ?? 0) / 100));
+                            } else if (partner?.commission_type === 'fixed') {
+                              invoiceCents = Math.max(0, priceCents - Math.round((partner.commission_value ?? 0) * 100));
+                            }
+                            return (
+                              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 space-y-1">
+                                <p className="text-[9px] font-black uppercase text-orange-500">Montant à facturer</p>
+                                <p className="text-lg font-black text-orange-800">{(invoiceCents / 100).toFixed(2)} €</p>
+                                {partner?.commission_type !== 'none' && (
+                                  <p className="text-[10px] text-orange-600">
+                                    {(priceCents / 100).toFixed(2)} € − {partner?.commission_type === 'percentage' ? `${partner.commission_value} %` : `${partner?.commission_value} €`} commission
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </>
                       );
                     })()}
                   </div>
