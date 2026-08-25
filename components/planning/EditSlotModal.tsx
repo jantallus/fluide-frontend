@@ -226,7 +226,7 @@ export default function EditSlotModal({
       else if (pd.ancv) inferredType = 'ancv';
       else if (pd.voucher && pd.code_type === 'gift_card') inferredType = 'bon_cadeau';
     }
-    setPaymentType(inferredType);
+    setPaymentType(inferredType === 'np' ? '' : inferredType);
     let inferredEncaisseur = pd?.encaisseur_id?.toString() || '';
     if (!inferredEncaisseur) {
       if (inferredType === 'esp') {
@@ -1038,8 +1038,7 @@ export default function EditSlotModal({
                             onChange={e => handlePaymentTypeChange(e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
                           >
-                            <option value="">— Non renseigné —</option>
-                            <option value="np">NP (Non payé)</option>
+                            <option value="">— Non renseigné (NP) —</option>
                             {(() => {
                               const partner = partners.find(p => p.id.toString() === selectedPartnerId);
                               if (selectedPartnerId && partner?.facturable !== false) {
@@ -1053,7 +1052,6 @@ export default function EditSlotModal({
                                   <option value="ancv_connect">ANCV Connect</option>
                                   <option value="chq">Chèque</option>
                                   <option value="bon_cadeau">Bon cadeau</option>
-                                  <option value="online">En ligne</option>
                                 </>
                               );
                             })()}
