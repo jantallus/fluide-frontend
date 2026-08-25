@@ -227,18 +227,29 @@ export default function EditSlotModal({
     }
     setPaymentType(inferredType === 'np' ? '' : inferredType);
     let inferredEncaisseur = pd?.encaisseur_id?.toString() || '';
-    if (!inferredEncaisseur) {
-      if (inferredType === 'esp') {
-        inferredEncaisseur = selectedEvent.monitor_id?.toString() || '';
-      } else if ((inferredType === 'online' || inferredType === 'bon_cadeau') && fullMonitors.length > 0) {
-        const caisse = fullMonitors.find(m => m.receives_online_payments);
-        if (caisse) inferredEncaisseur = caisse.id.toString();
-      }
+    if (!inferredEncaisseur && inferredType === 'esp') {
+      inferredEncaisseur = selectedEvent.monitor_id?.toString() || '';
     }
     setEncaisseurId(inferredEncaisseur);
     setIsManual(false);
     setMoveGroup(false);
-  }, [selectedEvent, currentUser, fullMonitors]);
+  }, [selectedEvent, currentUser]);
+
+  // Auto-fill encaisseur for online/bon_cadeau once fullMonitors loads — runs
+  // in a separate effect so fullMonitors changes never reset user selections.
+  useEffect(() => {
+    if (!selectedEvent || fullMonitors.length === 0) return;
+    const pd = selectedEvent.payment_data;
+    let inferredType = pd?.payment_type || '';
+    if (!inferredType && pd) {
+      if (pd.online) inferredType = 'online';
+      else if (pd.voucher && pd.code_type === 'gift_card') inferredType = 'bon_cadeau';
+    }
+    if (inferredType === 'online' || inferredType === 'bon_cadeau') {
+      const caisse = fullMonitors.find(m => m.receives_online_payments);
+      if (caisse) setEncaisseurId(caisse.id.toString());
+    }
+  }, [selectedEvent, fullMonitors]);
 
   // Sync taille du tableau de poids avec le nombre de passagers
   useEffect(() => {
