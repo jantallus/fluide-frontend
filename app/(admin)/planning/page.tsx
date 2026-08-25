@@ -98,7 +98,12 @@ export default function PlanningAdmin() {
       else priceStr = `${euros} €`;
     }
 
-    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr].filter(Boolean).join(' · ');
+    const MANUAL_TYPES = ['chq', 'cb', 'ancv', 'ancv_connect'];
+    const encaisseurName = (pd?.encaisseur_id && pd?.payment_type && MANUAL_TYPES.includes(pd.payment_type))
+      ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
+      : null;
+
+    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
 
     return (
       <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
@@ -113,7 +118,7 @@ export default function PlanningAdmin() {
         )}
       </div>
     );
-  }, []);
+  }, [monitors]);
 
   const parsedOpeningPeriods = useMemo(() =>
     openingPeriods.map(p => {

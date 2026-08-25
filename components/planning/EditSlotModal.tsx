@@ -181,7 +181,6 @@ export default function EditSlotModal({
       phone: parsed.phone || f.phone,
       email: parsed.email || f.email,
     }));
-    if (parsed.names.length > 1) setGroupSize(parsed.names.length - 1); // 1er nom = contact, reste = passagers
     if (parsed.weights.length > 0) {
       setPassengerWeights(prev => Array.from({ length: Math.max(prev.length, parsed.weights.length) }, (_, i) => parsed.weights[i] || prev[i] || ''));
     }
@@ -822,16 +821,24 @@ export default function EditSlotModal({
                           )}
                           {parsed.phone && <p className="text-xs text-slate-700"><span className="font-black text-slate-400 uppercase text-[9px]">Tél </span>{parsed.phone}</p>}
                           {parsed.email && <p className="text-xs text-slate-700"><span className="font-black text-slate-400 uppercase text-[9px]">Email </span>{parsed.email}</p>}
-                          {parsed.names.length > 1 && (
-                            <p className="text-[10px] text-emerald-600 font-bold">→ {parsed.names.length - 1} passager(s) détecté(s) (1er nom = contact)</p>
-                          )}
                           <button
                             onClick={applyParsed}
                             className="w-full mt-1 py-1.5 rounded-xl text-[11px] font-black uppercase text-white"
                             style={{ backgroundColor: '#E6007E' }}
                           >
-                            Remplir le formulaire
+                            {parsed.names.length <= 1 ? 'Remplir le formulaire' : '1 passager · Remplir le formulaire'}
                           </button>
+                          {parsed.names.length >= 2 && (
+                            <button
+                              onClick={() => {
+                                applyParsed();
+                                setGroupSize(parsed.names.length);
+                              }}
+                              className="w-full py-1.5 rounded-xl text-[11px] font-black uppercase text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+                            >
+                              ✈️ {parsed.names.length} passagers · Créer {parsed.names.length} créneaux
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
