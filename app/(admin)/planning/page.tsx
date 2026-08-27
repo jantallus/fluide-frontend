@@ -87,6 +87,18 @@ export default function PlanningAdmin() {
       return (firstWord === bnFirst && bn.length > t.length) ? bn : t;
     })();
 
+    // Pour les vols partenaire : enlever "(Client PartnerName)" et "Client PartnerName"
+    // La couleur identifie déjà le partenaire — inutile de le répéter dans le titre
+    const partnerDisplayName = (() => {
+      if (!isPartner || !pd?.partner_name) return displayName;
+      const pn = (pd.partner_name as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const stripped = displayName
+        .replace(new RegExp(`\\s*\\(Client\\s+${pn}\\)`, 'gi'), '')
+        .replace(new RegExp(`^Client\\s+${pn}$`, 'gi'), '')
+        .trim();
+      return stripped || displayName;
+    })();
+
     const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
 
     const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
@@ -105,10 +117,10 @@ export default function PlanningAdmin() {
       ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
       : null;
 
-    // Pour les vols partenaire : nom + poids dans la ligne principale (la couleur identifie déjà le partenaire)
+    // Pour les vols partenaire : nom court + poids dans la ligne principale (la couleur identifie déjà le partenaire)
     // Pour les vols standards : nom seul en principal, détails en sous-ligne
-    const mainLabel = isPartner && ep.weight
-      ? `${displayName} · ${ep.weight} kg`
+    const mainLabel = isPartner
+      ? `${partnerDisplayName}${ep.weight ? ` · ${ep.weight} kg` : ''}`
       : displayName;
 
     const subLine = isPartner
