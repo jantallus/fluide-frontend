@@ -598,7 +598,7 @@ export default function EditSlotModal({
     slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
 
     const updatesToApply: SlotUpdate[] = [];
-    if (groupSize > 1 || isManual) {
+    if ((groupSize > 1 || isManual) && !groupLocked) {
       if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) { toast.error('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.'); return; }
       displayDistribution.slotsToUse.forEach((baseSlot, index) => {
         const namesList = effectiveTitle.split(',').map((n: string) => n.trim()).filter((n: string) => n);
