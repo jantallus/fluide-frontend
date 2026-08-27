@@ -293,13 +293,15 @@ export default function EditSlotModal({
   }, [selectedEvent, fullMonitors]);
 
   // Sync taille du tableau de poids avec le nombre de passagers
+  // Pour un groupe verrouillé, on édite un seul créneau — pas besoin d'inputs multiples
   useEffect(() => {
+    if (groupLocked) return;
     setPassengerWeights(prev => {
       const next = [...prev];
       while (next.length < groupSize) next.push('');
       return next.slice(0, groupSize);
     });
-  }, [groupSize]);
+  }, [groupSize, groupLocked]);
 
   // ── useMemos ───────────────────────────────────────────────────────────────
   const parsedOpeningPeriods = useMemo(() =>
