@@ -45,7 +45,9 @@ export default function PlanningAdmin() {
       return;
     }
     const event = info.event;
-    if (event.extendedProps.title?.startsWith('↪️ Suite')) {
+    const eventTitle = event.extendedProps.title as string | undefined;
+    if (eventTitle?.includes('☕') || eventTitle?.toUpperCase().includes('PAUSE')) return;
+    if (eventTitle?.startsWith('↪️ Suite')) {
       toast.warning("Pour modifier, déplacer ou supprimer ce vol, cliquez sur son premier créneau (celui contenant le nom du client).");
       return;
     }
@@ -99,6 +101,7 @@ export default function PlanningAdmin() {
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : isEmptyAndOOS ? '#f8fafc' : (a.status === 'available' ? '#ffffff' : flightColor),
         textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
+        interactive: !isPause,
         extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null, price_cents: flight?.price_cents || null },
       };
     });
