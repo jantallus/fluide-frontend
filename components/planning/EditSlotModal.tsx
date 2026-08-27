@@ -50,6 +50,7 @@ export default function EditSlotModal({
   const [blockUntilMs, setBlockUntilMs] = useState<number>(0);
   const [groupSize, setGroupSize] = useState(1);
   const [groupLocked, setGroupLocked] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [manualCounts, setManualCounts] = useState<Record<string, number>>({});
   const [isManual, setIsManual] = useState(false);
   const [moveConfig, setMoveConfig] = useState({ date: '', time: '', monitorId: 'random' });
@@ -251,6 +252,7 @@ export default function EditSlotModal({
     }
     setGroupSize(detectedGroupSize);
     setGroupLocked(detectedGroupSize > 1);
+    setIsEditing(selectedEvent.status !== 'booked');
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
     setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
@@ -833,6 +835,73 @@ export default function EditSlotModal({
                 <p className="text-xs text-slate-500 px-4 font-medium mb-6">Ce créneau est en dehors de vos périodes d'ouverture.</p>
                 <button onClick={handleRelease} className="bg-slate-200 text-slate-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">🗑️ {(selectedEvent?.title || selectedEvent?.notes) ? 'Effacer la note' : 'Supprimer le créneau'}</button>
               </div>
+            ) : !isEditing && selectedEvent?.status === 'booked' ? (
+              /* ── Fiche lecture (mode consultation) ── */
+              (() => {
+                const ev = selectedEvent!;
+                const pd = ev.payment_data;
+                const partner = partners.find(p => p.id.toString() === (pd?.partner_id?.toString() ?? ''));
+                const flight = flightTypes.find(f => f.id?.toString() === ev.flight_type_id?.toString());
+                const payTypeLabel: Record<string, string> = { esp: 'Espèces', cb: 'CB', chq: 'Chèque', ancv: 'ANCV', ancv_connect: 'ANCV Connect', bon_cadeau: 'Bon cadeau', online: 'En ligne', a_facturer: 'À facturer', np: 'Non payé' };
+                const encaisseur = pd?.encaisseur_id ? fullMonitors.find(m => m.id?.toString() === pd!.encaisseur_id!.toString()) : null;
+                const displayTitle = (() => {
+                  const t = ev.title || ''; const bn = ev.billing_name || '';
+                  if (!bn || !t) return t;
+                  return t.split(/[\s,(]/)[0].toLowerCase() === bn.split(/\s/)[0].toLowerCase() && bn.length > t.length ? bn : t;
+                })();
+                const row = (label: string, value: React.ReactNode) => (
+                  <div key={label}>
+                    <p className="text-[9px] font-black uppercase text-slate-400 mb-0.5">{label}</p>
+                    <p className="text-sm font-bold text-slate-800">{value}</p>
+                  </div>
+                );
+                return (
+                  <div className="space-y-3">
+                    <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-3">
+                      {displayTitle && row('Passager(s)', displayTitle)}
+                      {partner && (
+                        <div>
+                          <p className="text-[9px] font-black uppercase text-slate-400 mb-0.5">Partenaire</p>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: partner.color_code }} />
+                            <p className="text-sm font-bold text-slate-800">{partner.name}</p>
+                          </div>
+                        </div>
+                      )}
+                      {flight && row('Vol', `${flight.name} · ${(flight.price_cents / 100).toFixed(0)} €`)}
+                      {groupSize > 1 && row('Groupe', `${groupSize} passagers`)}
+                      {ev.weight && row('Poids', `${ev.weight} kg`)}
+                    </div>
+                    {(pd?.payment_type || pd?.online) && (
+                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-2">
+                        <p className="text-[9px] font-black uppercase text-slate-400">Encaissement</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {pd?.online && !pd?.code ? 'En ligne (Stripe)' : pd?.code_type === 'gift_card' && pd?.code ? `🎁 Bon cadeau ${pd.code}` : (payTypeLabel[pd?.payment_type ?? ''] ?? pd?.payment_type)}
+                          {encaisseur && ` · ✓ ${encaisseur.first_name}`}
+                        </p>
+                      </div>
+                    )}
+                    {(ev.phone || ev.email) && (
+                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-1">
+                        {ev.phone && <p className="text-sm font-bold text-slate-700">📞 {ev.phone}</p>}
+                        {ev.email && <p className="text-sm font-bold text-slate-700">✉️ {ev.email}</p>}
+                      </div>
+                    )}
+                    {ev.booking_options && (
+                      <div className="bg-sky-50 rounded-2xl p-3 border border-sky-100 flex items-center gap-3">
+                        <span className="text-lg">📸</span>
+                        <p className="text-sm font-bold text-sky-900">{ev.booking_options}</p>
+                      </div>
+                    )}
+                    {ev.client_message && (
+                      <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 flex items-start gap-3">
+                        <span className="text-lg">💬</span>
+                        <p className="text-sm text-slate-700 italic">"{ev.client_message}"</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <>
                 {/* ── Zone de collage message ── */}
@@ -963,14 +1032,16 @@ export default function EditSlotModal({
                   <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe (Total)</label>
                     {groupLocked ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 opacity-50 select-none">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center cursor-not-allowed">-</div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-4 opacity-50 select-none pointer-events-none">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center">-</div>
                           <span className="text-2xl font-black text-slate-400 w-8 text-center">{groupSize}</span>
-                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center cursor-not-allowed">+</div>
-                          <span className="text-sm font-bold text-slate-400 ml-2">{groupSize > 1 ? `${groupSize} passagers dans ce groupe` : 'Passager(s) au total'}</span>
+                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center">+</div>
+                          <span className="text-sm font-bold text-slate-400 ml-2">{groupSize} passager{groupSize > 1 ? 's' : ''} dans ce groupe</span>
                         </div>
-                        <button onClick={() => setGroupLocked(false)} className="text-[10px] uppercase font-bold text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all whitespace-nowrap">+ Ajouter des passagers</button>
+                        <button onClick={() => setGroupLocked(false)} className="w-full text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 py-2 rounded-lg border border-indigo-100 transition-all">
+                          + Ajouter des passagers
+                        </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-4">
@@ -980,7 +1051,7 @@ export default function EditSlotModal({
                         <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
                       </div>
                     )}
-                    {(groupSize > 1 || isManual) && displayDistribution && (
+                    {!groupLocked && (groupSize > 1 || isManual) && displayDistribution && (
                       <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
                         {displayDistribution.canFit ? (
                           <>
@@ -1242,8 +1313,13 @@ export default function EditSlotModal({
           {/* ── Boutons save/release ── */}
           {(activeTab === 'client' || activeTab === 'note') && (
             <div className="pt-4 space-y-3 border-t border-slate-100">
-              {!(activeTab === 'client' && isClientLocked) && !isLockedForMe && (
+              {activeTab === 'client' && !isEditing && selectedEvent?.status === 'booked' && !isClientLocked ? (
+                <button onClick={() => setIsEditing(true)} className="w-full bg-slate-800 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-slate-700 transition-colors">✏️ Modifier la fiche</button>
+              ) : !(activeTab === 'client' && isClientLocked) && !isLockedForMe && (
                 <>
+                  {activeTab === 'client' && isEditing && selectedEvent?.status === 'booked' && (
+                    <button onClick={() => setIsEditing(false)} className="w-full bg-slate-100 text-slate-500 py-2.5 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-colors">↩ Annuler les modifications</button>
+                  )}
                   <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">Enregistrer la modification</button>
                   {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
                     activeTab === 'note' ? (
@@ -1272,7 +1348,7 @@ export default function EditSlotModal({
                   )}
                 </>
               )}
-              <button onClick={onClose} className="w-full text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600 pt-2">Fermer sans sauvegarder</button>
+              <button onClick={onClose} className="w-full text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600 pt-2">{(!isEditing && selectedEvent?.status === 'booked') ? 'Fermer' : 'Fermer sans sauvegarder'}</button>
             </div>
           )}
 
