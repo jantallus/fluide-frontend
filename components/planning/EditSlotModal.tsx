@@ -564,7 +564,9 @@ export default function EditSlotModal({
     const partnerPaymentData = selectedPartner
       ? { partner: true, partner_id: selectedPartner.id, partner_name: selectedPartner.name, code: selectedPartner.code, partner_color: selectedPartner.color_code }
       : {};
-    const existingPd = (selectedEvent?.payment_data || {}) as Record<string, unknown>;
+    const existingPd = selectedEvent?.status === 'booked'
+      ? ((selectedEvent.payment_data || {}) as Record<string, unknown>)
+      : {};
     const finalPaymentData: Record<string, unknown> = {
       ...existingPd,
       ...partnerPaymentData,
