@@ -882,9 +882,24 @@ export default function EditSlotModal({
                       </div>
                     )}
                     {(ev.phone || ev.email) && (
-                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-1">
-                        {ev.phone && <p className="text-sm font-bold text-slate-700">📞 {ev.phone}</p>}
-                        {ev.email && <p className="text-sm font-bold text-slate-700">✉️ {ev.email}</p>}
+                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-3">
+                        {ev.phone && (
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-slate-400">Téléphone</p>
+                            <p className="text-sm font-bold text-slate-700 mb-2">{ev.phone}</p>
+                            <div className="flex gap-2">
+                              <a href={`tel:${ev.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center text-[14px] bg-emerald-100 text-emerald-700 py-2 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm">📞</a>
+                              <a href={`sms:${ev.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm">💬 SMS</a>
+                            </div>
+                          </div>
+                        )}
+                        {ev.email && (
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-slate-400">Email</p>
+                            <p className="text-sm font-bold text-slate-700 mb-2">{ev.email}</p>
+                            <a href={`mailto:${ev.email}`} className="w-full flex items-center justify-center gap-2 text-[10px] bg-sky-100 text-sky-700 py-2 rounded-xl font-black uppercase hover:bg-sky-200 transition-colors shadow-sm">✉️ Écrire</a>
+                          </div>
+                        )}
                       </div>
                     )}
                     {ev.booking_options && (
