@@ -74,7 +74,10 @@ export default function PlanningAdmin() {
       );
     }
 
-    // Si billing_name commence par le même prénom que title et est plus long → afficher le nom complet
+    const pd = ep.payment_data;
+    const isPartner = !!(pd?.partner);
+
+    // Nom affiché : préférer billing_name quand plus complet (même prénom, plus long)
     const displayName = (() => {
       const t = ep.title || '';
       const bn = ep.billing_name || '';
@@ -86,7 +89,6 @@ export default function PlanningAdmin() {
 
     const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
 
-    const pd = ep.payment_data;
     const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
     const isUnpaid = !pd?.payment_type && !isLegacyPaid;
     const isNP = pd?.payment_type === 'np';
@@ -103,13 +105,21 @@ export default function PlanningAdmin() {
       ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
       : null;
 
-    const subLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
+    // Pour les vols partenaire : nom + poids dans la ligne principale (la couleur identifie déjà le partenaire)
+    // Pour les vols standards : nom seul en principal, détails en sous-ligne
+    const mainLabel = isPartner && ep.weight
+      ? `${displayName} · ${ep.weight} kg`
+      : displayName;
+
+    const subLine = isPartner
+      ? [priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ')
+      : [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
 
     return (
       <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {displayName}{badges && ` ${badges}`}
+          {mainLabel}{badges && ` ${badges}`}
         </span>
         {subLine && (
           <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
