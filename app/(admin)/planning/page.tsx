@@ -198,11 +198,13 @@ export default function PlanningAdmin() {
 
     const TYPE_SHORT: Record<string, string> = {
       esp: 'Esp', cb: 'CB', ancv: 'ANCV', ancv_connect: 'ANCV+',
-      chq: 'Chq', bon_cadeau: 'Bon', a_facturer: 'Fact.',
+      chq: 'Chq', a_facturer: 'Fact.',
     };
+    const isGiftCard = pd?.code_type === 'gift_card' && !!pd?.code;
     if (ep.price_cents) {
       const euros = (ep.price_cents / 100).toFixed(0);
       if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
+      else if (isGiftCard) priceStr = `🎁 ${pd!.code}${pd?.online ? ' + Stripe' : ''}`;
       else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · Stripe`;
       else if (pd?.payment_type && TYPE_SHORT[pd.payment_type]) priceStr = `${TYPE_SHORT[pd.payment_type]} · ${euros} €`;
       else priceStr = `${euros} €`;

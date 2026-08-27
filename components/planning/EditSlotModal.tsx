@@ -1239,7 +1239,6 @@ export default function EditSlotModal({
                                   <option value="ancv">ANCV</option>
                                   <option value="ancv_connect">ANCV Connect</option>
                                   <option value="chq">Chèque</option>
-                                  <option value="bon_cadeau">Bon cadeau</option>
                                 </>
                               );
                             })()}
