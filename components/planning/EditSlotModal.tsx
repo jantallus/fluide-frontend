@@ -1248,9 +1248,9 @@ export default function EditSlotModal({
                           {paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && (
                             <div>
                               <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
-                              {(paymentType === 'esp' || paymentType === 'online' || paymentType === 'bon_cadeau') ? (
+                              {(paymentType === 'online' || paymentType === 'bon_cadeau') ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600 flex items-center justify-between">
-                                  <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || (paymentType === 'esp' ? 'Pilote du vol' : 'Caisse Fluide')}</span>
+                                  <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || 'Caisse Fluide'}</span>
                                   <span className="text-[9px] text-slate-400 font-normal">automatique</span>
                                 </div>
                               ) : (
