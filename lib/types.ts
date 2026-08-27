@@ -188,7 +188,7 @@ export interface PaymentData {
   options?: string[];    // Noms des options ajoutées sur place
   // Encaissement
   payment_type?: PaymentType;
-  encaisseur_id?: number;
+  encaisseur_id?: number | string;
   // Partenaire
   partner?: boolean;
   partner_id?: number;

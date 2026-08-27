@@ -520,16 +520,9 @@ export default function EditSlotModal({
     }));
     onClose();
     try {
-      const results = await Promise.all(updatesToApply.map(async u => {
-        console.log(`[SAVE] slot ${u.id} payment_data envoyé:`, JSON.stringify(u.data.payment_data));
-        const res = await apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) });
-        const json = await res.clone().json().catch(() => ({}));
-        console.log(`[SAVE] slot ${u.id} réponse API (status ${res.status}):`, JSON.stringify((json as Record<string, unknown>).payment_data));
-        return res;
-      }));
-      void results;
+      await Promise.all(updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) })));
       await loadAppointments();
-    } catch (e) { console.error('Erreur de sauvegarde:', e); }
+    } catch { console.error('Erreur de sauvegarde silencieuse'); }
   };
 
   const handleSaveNote = async () => {
@@ -572,15 +565,13 @@ export default function EditSlotModal({
       ? { partner: true, partner_id: selectedPartner.id, partner_name: selectedPartner.name, code: selectedPartner.code, partner_color: selectedPartner.color_code }
       : {};
     const existingPd = (selectedEvent?.payment_data || {}) as Record<string, unknown>;
-    const encaisseurNum = parseInt(encaisseurId);
-    console.log('[DEBUG encaisseur] paymentType:', paymentType, '| encaisseurId:', encaisseurId, '| encaisseurNum:', encaisseurNum, '| selectedPartnerId:', selectedPartnerId);
     const finalPaymentData: Record<string, unknown> = {
       ...existingPd,
       ...partnerPaymentData,
     };
     if (paymentType) finalPaymentData.payment_type = paymentType;
-    if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && !isNaN(encaisseurNum) && encaisseurNum > 0) {
-      finalPaymentData.encaisseur_id = encaisseurNum;
+    if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
+      finalPaymentData.encaisseur_id = encaisseurId;
     }
     if (paymentType === 'a_facturer' && selectedPartner) {
       const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
