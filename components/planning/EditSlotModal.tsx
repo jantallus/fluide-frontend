@@ -86,14 +86,18 @@ export default function EditSlotModal({
     const email = emailMatch ? emailMatch[0] : '';
 
     // Si le texte contient des poids, on les utilise comme séparateurs de personnes
-    // Ex: "Couturier Maxence 85kg Maud 56kg" → ["Couturier Maxence", "Maud"]
+    // Ex: "Louise Carlier 40kg\nJustine Godard 56kg" → ["Louise Carlier", "Justine Godard"]
     const weightSplit = text.replace(phoneMatch?.[0] ?? '\x00', '').split(/\d+\s*(?:kg|kgs?|kilos?)\b/gi);
     const namesByWeight: string[] = [];
     if (weightSplit.length > 1) {
       const cap2 = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       weightSplit.forEach(seg => {
-        const words = seg.trim().split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]+$/.test(w));
-        if (words.length > 0) namesByWeight.push(cap2(words.join(' ')));
+        // Prendre seulement la dernière ligne du segment (le nom est juste avant le poids)
+        // Évite d'inclure le texte d'introduction du premier segment
+        const lines = seg.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const lastLine = lines.length > 0 ? lines[lines.length - 1] : seg.trim();
+        const words = lastLine.split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ'\-]+$/.test(w));
+        if (words.length >= 1 && words.length <= 4) namesByWeight.push(cap2(words.join(' ')));
       });
     }
 
@@ -111,18 +115,30 @@ export default function EditSlotModal({
     const found: string[] = [];
     let m: RegExpExecArray | null;
 
+    // Priorité absolue : format "Prénom Nom Xkg" par ligne → on court-circuite les autres stratégies
+    // pour éviter que "pour les vols de samedi" soit capturé comme un faux nom de groupe
+    if (namesByWeight.length >= 2) {
+      namesByWeight.forEach(n => found.push(n));
+    }
+
     // 1. Étiquettes explicites : "Nom : Dupont", "Prénom : Jean"
-    const labelRe = new RegExp(`(?:nom|prénom|prenom|contact|client)\\s*[:\\-]\\s*(${FN})`, 'gi');
-    while ((m = labelRe.exec(clean)) !== null) found.push(cap(m[1]));
+    if (found.length === 0) {
+      const labelRe = new RegExp(`(?:nom|prénom|prenom|contact|client)\\s*[:\\-]\\s*(${FN})`, 'gi');
+      while ((m = labelRe.exec(clean)) !== null) found.push(cap(m[1]));
+    }
 
     // 2. Formules françaises : "je m'appelle X", "c'est X", "je suis X"
-    const introRe = new RegExp(`(?:je\\s+m['']appelle|c['']est|je\\s+suis|mon\\s+nom\\s+est|je\\s+me\\s+nomme)\\s+(${FN})`, 'gi');
-    while ((m = introRe.exec(clean)) !== null) found.push(cap(m[1]));
+    if (found.length === 0) {
+      const introRe = new RegExp(`(?:je\\s+m['']appelle|c['']est|je\\s+suis|mon\\s+nom\\s+est|je\\s+me\\s+nomme)\\s+(${FN})`, 'gi');
+      while ((m = introRe.exec(clean)) !== null) found.push(cap(m[1]));
+    }
 
     // 3. "pour/avec X, Y et Z"
-    const groupRe = /(?:pour|avec|réserver\s+pour|réservation\s+(?:de\s+)?)\s*((?:[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)?)(?:\s*,\s*[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)*(?:\s+et\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)?)/gi;
-    while ((m = groupRe.exec(clean)) !== null) {
-      m[1].split(/,|\s+et\s+/i).map(p => cap(p.trim())).filter(p => p.length > 1).forEach(p => found.push(p));
+    if (found.length === 0) {
+      const groupRe = /(?:pour|avec|réserver\s+pour|réservation\s+(?:de\s+)?)\s*((?:[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)?)(?:\s*,\s*[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)*(?:\s+et\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*(?:\s+[A-ZÀ-ÿa-z][A-ZÀ-ÿa-zà-ÿ'\-]*)*)?)/gi;
+      while ((m = groupRe.exec(clean)) !== null) {
+        m[1].split(/,|\s+et\s+/i).map(p => cap(p.trim())).filter(p => p.length > 1).forEach(p => found.push(p));
+      }
     }
 
     // 4. Lignes courtes purement nominales (1-4 mots, que des lettres)
