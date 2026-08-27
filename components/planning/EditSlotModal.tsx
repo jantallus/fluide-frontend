@@ -843,7 +843,10 @@ export default function EditSlotModal({
                 const partner = partners.find(p => p.id.toString() === (pd?.partner_id?.toString() ?? ''));
                 const flight = flightTypes.find(f => f.id?.toString() === ev.flight_type_id?.toString());
                 const payTypeLabel: Record<string, string> = { esp: 'Espèces', cb: 'CB', chq: 'Chèque', ancv: 'ANCV', ancv_connect: 'ANCV Connect', bon_cadeau: 'Bon cadeau', online: 'En ligne', a_facturer: 'À facturer', np: 'Non payé' };
-                const encaisseur = pd?.encaisseur_id ? fullMonitors.find(m => m.id?.toString() === pd!.encaisseur_id!.toString()) : null;
+                const encaisseurIdStr = pd?.encaisseur_id?.toString() ?? '';
+                const encaisseurFull = encaisseurIdStr ? fullMonitors.find(m => m.id?.toString() === encaisseurIdStr) : null;
+                const encaisseurFallback = encaisseurIdStr ? monitors.find(m => m.id === encaisseurIdStr) : null;
+                const encaisseurName = encaisseurFull?.first_name ?? encaisseurFallback?.title ?? null;
                 const displayTitle = (() => {
                   const t = ev.title || ''; const bn = ev.billing_name || '';
                   if (!bn || !t) return t;
@@ -877,7 +880,7 @@ export default function EditSlotModal({
                         <p className="text-[9px] font-black uppercase text-slate-400">Encaissement</p>
                         <p className="text-sm font-bold text-slate-800">
                           {pd?.online && !pd?.code ? 'En ligne (Stripe)' : pd?.code_type === 'gift_card' && pd?.code ? `🎁 Bon cadeau ${pd.code}` : (payTypeLabel[pd?.payment_type ?? ''] ?? pd?.payment_type)}
-                          {encaisseur && ` · ✓ ${encaisseur.first_name}`}
+                          {encaisseurName && ` · ✓ ${encaisseurName}`}
                         </p>
                       </div>
                     )}
