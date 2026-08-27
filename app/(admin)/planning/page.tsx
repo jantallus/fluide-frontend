@@ -172,17 +172,23 @@ export default function PlanningAdmin() {
     const isUnpaid = !pd?.payment_type && !isLegacyPaid;
     const isNP = pd?.payment_type === 'np';
     let priceStr: string | null = null;
-    if (ep.price_cents) {
-      const euros = (ep.price_cents / 100).toFixed(0);
-      if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
-      else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · stripe`;
-      else priceStr = `${euros} €`;
-    }
 
     const MANUAL_TYPES = ['chq', 'cb', 'ancv', 'ancv_connect'];
     const encaisseurName = (pd?.encaisseur_id && pd?.payment_type && MANUAL_TYPES.includes(pd.payment_type))
       ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
       : null;
+
+    const TYPE_SHORT: Record<string, string> = {
+      esp: 'Esp', cb: 'CB', ancv: 'ANCV', ancv_connect: 'ANCV+',
+      chq: 'Chq', bon_cadeau: 'Bon', a_facturer: 'Fact.',
+    };
+    if (ep.price_cents) {
+      const euros = (ep.price_cents / 100).toFixed(0);
+      if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
+      else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · Stripe`;
+      else if (pd?.payment_type && TYPE_SHORT[pd.payment_type]) priceStr = `${TYPE_SHORT[pd.payment_type]} · ${euros} €`;
+      else priceStr = `${euros} €`;
+    }
 
     const mainLabel = isPartner
       ? `${finalDisplayName}${ep.weight ? ` · ${ep.weight} kg` : ''}`
