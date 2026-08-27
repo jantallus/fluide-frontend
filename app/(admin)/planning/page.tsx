@@ -210,25 +210,23 @@ export default function PlanningAdmin() {
       else priceStr = `${euros} €`;
     }
 
-    const mainLabel = isPartner
-      ? `${finalDisplayName}${ep.weight ? ` · ${ep.weight} kg` : ''}`
-      : finalDisplayName;
+    const infoLine = [ep.flight_name, ep.weight ? `${ep.weight} kg` : null].filter(Boolean).join(' · ');
+    const payLine = [priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
 
-    const subLine = isPartner
-      ? [priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ')
-      : [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
+    const subSpan = (text: string) => (
+      <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {text}
+      </span>
+    );
 
     return (
       <div style={{ padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {mainLabel}{badges && ` ${badges}`}
+          {finalDisplayName}{badges && ` ${badges}`}
         </span>
-        {subLine && (
-          <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {subLine}
-          </span>
-        )}
+        {infoLine && subSpan(infoLine)}
+        {payLine && subSpan(payLine)}
       </div>
     );
   }, [monitors, groupColors]);
