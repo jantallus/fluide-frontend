@@ -255,8 +255,8 @@ export default function EditSlotModal({
     setIsEditing(selectedEvent.status !== 'booked');
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
-    setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
-    const pd = selectedEvent.payment_data;
+    const pd = selectedEvent.status === 'booked' ? selectedEvent.payment_data : null;
+    setSelectedPartnerId(pd?.partner_id?.toString() ?? '');
     let inferredType = pd?.payment_type || '';
     if (!inferredType && pd) {
       if (pd.online) inferredType = 'online';
@@ -279,7 +279,7 @@ export default function EditSlotModal({
   // Auto-fill encaisseur for online/bon_cadeau once fullMonitors loads — runs
   // in a separate effect so fullMonitors changes never reset user selections.
   useEffect(() => {
-    if (!selectedEvent || fullMonitors.length === 0) return;
+    if (!selectedEvent || fullMonitors.length === 0 || selectedEvent.status !== 'booked') return;
     const pd = selectedEvent.payment_data;
     let inferredType = pd?.payment_type || '';
     if (!inferredType && pd) {
