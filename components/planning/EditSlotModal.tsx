@@ -533,7 +533,7 @@ export default function EditSlotModal({
 
     const selectedPartner = partners.find(p => p.id.toString() === selectedPartnerId);
     const pf = selectedPartner?.booking_fields;
-    const effectiveTitle = (selectedPartner && pf?.name === false)
+    const effectiveTitle = (selectedPartner && pf?.name === false && !formData.title.trim())
       ? `Client ${selectedPartner.name}`
       : formData.title;
     const partnerPaymentData = selectedPartner
@@ -876,7 +876,7 @@ export default function EditSlotModal({
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du contact et passagers</label>
                   {(() => {
                     const selP = partners.find(p => p.id.toString() === selectedPartnerId);
-                    const nameHidden = selP && selP.booking_fields?.name === false;
+                    const nameHidden = selP && selP.booking_fields?.name === false && !formData.title.trim();
                     return nameHidden ? (
                       <div className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm text-slate-400 opacity-50">
                         Client {selP.name}
