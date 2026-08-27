@@ -520,9 +520,16 @@ export default function EditSlotModal({
     }));
     onClose();
     try {
-      await Promise.all(updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) })));
+      const results = await Promise.all(updatesToApply.map(async u => {
+        console.log(`[SAVE] slot ${u.id} payment_data envoyé:`, JSON.stringify(u.data.payment_data));
+        const res = await apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) });
+        const json = await res.clone().json().catch(() => ({}));
+        console.log(`[SAVE] slot ${u.id} réponse API (status ${res.status}):`, JSON.stringify((json as Record<string, unknown>).payment_data));
+        return res;
+      }));
+      void results;
       await loadAppointments();
-    } catch { console.error('Erreur de sauvegarde silencieuse'); }
+    } catch (e) { console.error('Erreur de sauvegarde:', e); }
   };
 
   const handleSaveNote = async () => {
