@@ -62,85 +62,6 @@ export default function PlanningAdmin() {
     setShowEditModal(true);
   }, [currentUser, toast]);
 
-  const renderEventContent = useCallback((arg: EventContentArg) => {
-    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null };
-    const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
-
-    if (!isBooked) {
-      return (
-        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
-          {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
-        </div>
-      );
-    }
-
-    const pd = ep.payment_data;
-    const isPartner = !!(pd?.partner);
-
-    // Nom affiché : préférer billing_name quand plus complet (même prénom, plus long)
-    const displayName = (() => {
-      const t = ep.title || '';
-      const bn = ep.billing_name || '';
-      if (!bn || !t) return t;
-      const firstWord = t.split(/[\s,(]/)[0].toLowerCase();
-      const bnFirst = bn.split(/\s/)[0].toLowerCase();
-      return (firstWord === bnFirst && bn.length > t.length) ? bn : t;
-    })();
-
-    // Pour les vols partenaire : enlever "(Client PartnerName)" et "Client PartnerName"
-    // La couleur identifie déjà le partenaire — inutile de le répéter dans le titre
-    const partnerDisplayName = (() => {
-      if (!isPartner || !pd?.partner_name) return displayName;
-      const pn = (pd.partner_name as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const stripped = displayName
-        .replace(new RegExp(`\\s*\\(Client\\s+${pn}\\)`, 'gi'), '')
-        .replace(new RegExp(`^Client\\s+${pn}$`, 'gi'), '')
-        .trim();
-      return stripped || displayName;
-    })();
-
-    const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
-
-    const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
-    const isUnpaid = !pd?.payment_type && !isLegacyPaid;
-    const isNP = pd?.payment_type === 'np';
-    let priceStr: string | null = null;
-    if (ep.price_cents) {
-      const euros = (ep.price_cents / 100).toFixed(0);
-      if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
-      else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · stripe`;
-      else priceStr = `${euros} €`;
-    }
-
-    const MANUAL_TYPES = ['chq', 'cb', 'ancv', 'ancv_connect'];
-    const encaisseurName = (pd?.encaisseur_id && pd?.payment_type && MANUAL_TYPES.includes(pd.payment_type))
-      ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
-      : null;
-
-    // Pour les vols partenaire : nom court + poids dans la ligne principale (la couleur identifie déjà le partenaire)
-    // Pour les vols standards : nom seul en principal, détails en sous-ligne
-    const mainLabel = isPartner
-      ? `${partnerDisplayName}${ep.weight ? ` · ${ep.weight} kg` : ''}`
-      : displayName;
-
-    const subLine = isPartner
-      ? [priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ')
-      : [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
-
-    return (
-      <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
-        {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
-        <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {mainLabel}{badges && ` ${badges}`}
-        </span>
-        {subLine && (
-          <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {subLine}
-          </span>
-        )}
-      </div>
-    );
-  }, [monitors]);
 
   const parsedOpeningPeriods = useMemo(() =>
     openingPeriods.map(p => {
@@ -181,6 +102,110 @@ export default function PlanningAdmin() {
       };
     });
   }, [appointments, flightTypes, parsedOpeningPeriods]);
+
+  // Couleur unique par groupe : on scanne les titres "(Chef de groupe)" pour construire la map
+  const groupColors = useMemo(() => {
+    const palette = ['#fb923c', '#a78bfa', '#34d399', '#60a5fa', '#f472b6', '#facc15'];
+    const map = new Map<string, string>();
+    let idx = 0;
+    calendarEvents.forEach(ev => {
+      const t = ((ev.extendedProps as { title?: string }).title) || '';
+      const m = t.match(/\(([^)]+)\)$/);
+      if (m && !m[1].toLowerCase().startsWith('client ')) {
+        if (!map.has(m[1])) map.set(m[1], palette[idx++ % palette.length]);
+      }
+    });
+    return map;
+  }, [calendarEvents]);
+
+  const renderEventContent = useCallback((arg: EventContentArg) => {
+    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null };
+    const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
+
+    if (!isBooked) {
+      return (
+        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
+          {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
+        </div>
+      );
+    }
+
+    const pd = ep.payment_data;
+    const isPartner = !!(pd?.partner);
+
+    const displayName = (() => {
+      const t = ep.title || '';
+      const bn = ep.billing_name || '';
+      if (!bn || !t) return t;
+      const firstWord = t.split(/[\s,(]/)[0].toLowerCase();
+      const bnFirst = bn.split(/\s/)[0].toLowerCase();
+      return (firstWord === bnFirst && bn.length > t.length) ? bn : t;
+    })();
+
+    const partnerDisplayName = (() => {
+      if (!isPartner || !pd?.partner_name) return displayName;
+      const pn = (pd.partner_name as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const stripped = displayName
+        .replace(new RegExp(`\\s*\\(Client\\s+${pn}\\)`, 'gi'), '')
+        .replace(new RegExp(`^Client\\s+${pn}$`, 'gi'), '')
+        .trim();
+      return stripped || displayName;
+    })();
+
+    // Groupe : "(Chef)" dans le titre = membre secondaire ; nom seul dans groupColors = chef
+    const rawTitle = ep.title || '';
+    const groupMatch = rawTitle.match(/\(([^)]+)\)$/);
+    const groupLeader = (groupMatch && !groupMatch[1].toLowerCase().startsWith('client '))
+      ? groupMatch[1]
+      : (groupColors.has(rawTitle.split('(')[0].trim()) ? rawTitle.split('(')[0].trim() : null);
+    const groupColor = groupLeader ? (groupColors.get(groupLeader) ?? null) : null;
+
+    // Supprime la parenthèse du chef dans l'affichage — la bordure colorée identifie le groupe
+    const escapedLeader = groupLeader ? groupLeader.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const finalDisplayName = groupLeader
+      ? partnerDisplayName.replace(new RegExp(`\\s*\\(${escapedLeader}\\)$`), '').trim() || partnerDisplayName
+      : partnerDisplayName;
+
+    const badges = [ep.phone && '📞', ep.booking_options && '📸', ep.client_message && '💬', ep.notes?.trim() && '📝'].filter(Boolean).join('');
+
+    const isLegacyPaid = pd && (pd.cb || pd.especes || pd.cheque || pd.ancv || pd.online || pd.voucher);
+    const isUnpaid = !pd?.payment_type && !isLegacyPaid;
+    const isNP = pd?.payment_type === 'np';
+    let priceStr: string | null = null;
+    if (ep.price_cents) {
+      const euros = (ep.price_cents / 100).toFixed(0);
+      if (isUnpaid || isNP) priceStr = `À enc. ${euros} €`;
+      else if (pd?.payment_type === 'online' || pd?.online) priceStr = `${euros} € · stripe`;
+      else priceStr = `${euros} €`;
+    }
+
+    const MANUAL_TYPES = ['chq', 'cb', 'ancv', 'ancv_connect'];
+    const encaisseurName = (pd?.encaisseur_id && pd?.payment_type && MANUAL_TYPES.includes(pd.payment_type))
+      ? (monitors as { id: string; title: string }[]).find(m => m.id === String(pd!.encaisseur_id))?.title?.split(' ')[0] ?? null
+      : null;
+
+    const mainLabel = isPartner
+      ? `${finalDisplayName}${ep.weight ? ` · ${ep.weight} kg` : ''}`
+      : finalDisplayName;
+
+    const subLine = isPartner
+      ? [priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ')
+      : [ep.flight_name, ep.weight ? `${ep.weight} kg` : null, priceStr, encaisseurName ? `✓ ${encaisseurName}` : null].filter(Boolean).join(' · ');
+
+    return (
+      <div style={{ padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+        {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+        <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {mainLabel}{badges && ` ${badges}`}
+        </span>
+        {subLine && (
+          <span style={{ fontSize: '9px', lineHeight: '1.2', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {subLine}
+          </span>
+        )}
+      </div>
+    );
+  }, [monitors, groupColors]);
 
   const memoizedCalendar = useMemo(() => (
     <FullCalendar
