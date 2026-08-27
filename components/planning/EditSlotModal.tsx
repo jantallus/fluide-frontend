@@ -633,7 +633,9 @@ export default function EditSlotModal({
       updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
     }
 
-    // Appliquer le payment_data aux autres slots du groupe selon la portée choisie
+    applyAll(updatesToApply);
+
+    // Appliquer le payment_data aux autres slots du groupe via /quick (ne touche pas aux autres champs)
     if (groupLocked && groupRootSlots.length > 1 && paymentScope !== 'slot') {
       const currentStartMs = new Date(selectedEvent.start as Date | string).getTime();
       const currentMonitorId = selectedEvent.monitor_id?.toString();
@@ -644,18 +646,18 @@ export default function EditSlotModal({
         if (paymentScope === 'pilot') return s.monitor_id?.toString() === currentMonitorId;
         return false;
       });
-      scopedSlots.forEach(slot => {
-        const slotExistingPd = (slot.payment_data || {}) as Record<string, unknown>;
-        const slotPd: Record<string, unknown> = { ...slotExistingPd, ...partnerPaymentData };
-        if (paymentType) slotPd.payment_type = paymentType;
-        if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
-          slotPd.encaisseur_id = encaisseurId;
-        }
-        updatesToApply.push({ id: slot.id, data: { payment_data: slotPd } });
-      });
+      if (scopedSlots.length > 0) {
+        Promise.all(scopedSlots.map(slot => {
+          const slotExistingPd = (slot.payment_data || {}) as Record<string, unknown>;
+          const slotPd: Record<string, unknown> = { ...slotExistingPd, ...partnerPaymentData };
+          if (paymentType) slotPd.payment_type = paymentType;
+          if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
+            slotPd.encaisseur_id = encaisseurId;
+          }
+          return apiFetch(`/api/slots/${slot.id}/quick`, { method: 'PATCH', body: JSON.stringify({ payment_data: slotPd }) });
+        })).then(() => loadAppointments()).catch(() => {});
+      }
     }
-
-    applyAll(updatesToApply);
   };
 
   const handleRelease = async () => {
