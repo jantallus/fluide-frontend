@@ -49,6 +49,7 @@ export default function EditSlotModal({
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [blockUntilMs, setBlockUntilMs] = useState<number>(0);
   const [groupSize, setGroupSize] = useState(1);
+  const [groupLocked, setGroupLocked] = useState(false);
   const [manualCounts, setManualCounts] = useState<Record<string, number>>({});
   const [isManual, setIsManual] = useState(false);
   const [moveConfig, setMoveConfig] = useState({ date: '', time: '', monitorId: 'random' });
@@ -227,7 +228,29 @@ export default function EditSlotModal({
     setBlockType('none');
     setSelectedMonitors([]);
     setBlockUntilMs(selectedEvent.end_time ? new Date(selectedEvent.end_time).getTime() : 0);
-    setGroupSize(1);
+    // Détecter la taille du groupe existant via les titres "(Chef de groupe)"
+    const rawTitle = selectedEvent.title || '';
+    const parenthetical = rawTitle.match(/\(([^)]+)\)$/);
+    const leaderName = (parenthetical && !parenthetical[1].toLowerCase().startsWith('client '))
+      ? parenthetical[1]
+      : null;
+    let detectedGroupSize = 1;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const sameDaySlots = appointments.filter(a => {
+      if (a.status !== 'booked') return false;
+      return new Date(a.start_time).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === dStr;
+    });
+    if (leaderName) {
+      const esc = leaderName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const members = sameDaySlots.filter(a => a.title === leaderName || new RegExp(`\\(${esc}\\)$`).test(a.title || ''));
+      if (members.length > 0) detectedGroupSize = members.length;
+    } else if (rawTitle && selectedEvent.status === 'booked') {
+      const esc = rawTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const followers = sameDaySlots.filter(a => new RegExp(`\\(${esc}\\)$`).test(a.title || ''));
+      if (followers.length > 0) detectedGroupSize = followers.length + 1;
+    }
+    setGroupSize(detectedGroupSize);
+    setGroupLocked(detectedGroupSize > 1);
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     setManualCounts({});
     setSelectedPartnerId(selectedEvent.payment_data?.partner_id?.toString() ?? '');
@@ -939,12 +962,24 @@ export default function EditSlotModal({
                 {formData.flight_type_id && (
                   <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-3">Taille du groupe (Total)</label>
-                    <div className="flex items-center gap-4">
-                      <button onClick={() => handleMainChange(-1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
-                      <span className="text-2xl font-black text-slate-900 w-8 text-center">{groupSize}</span>
-                      <button onClick={() => handleMainChange(1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
-                      <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
-                    </div>
+                    {groupLocked ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 opacity-50 select-none">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center cursor-not-allowed">-</div>
+                          <span className="text-2xl font-black text-slate-400 w-8 text-center">{groupSize}</span>
+                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center cursor-not-allowed">+</div>
+                          <span className="text-sm font-bold text-slate-400 ml-2">{groupSize > 1 ? `${groupSize} passagers dans ce groupe` : 'Passager(s) au total'}</span>
+                        </div>
+                        <button onClick={() => setGroupLocked(false)} className="text-[10px] uppercase font-bold text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all whitespace-nowrap">+ Ajouter des passagers</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => handleMainChange(-1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
+                        <span className="text-2xl font-black text-slate-900 w-8 text-center">{groupSize}</span>
+                        <button onClick={() => handleMainChange(1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
+                        <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
+                      </div>
+                    )}
                     {(groupSize > 1 || isManual) && displayDistribution && (
                       <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
                         {displayDistribution.canFit ? (
