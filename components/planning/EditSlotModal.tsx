@@ -541,7 +541,6 @@ export default function EditSlotModal({
       : {};
     const existingPd = (selectedEvent?.payment_data || {}) as Record<string, unknown>;
     const encaisseurNum = parseInt(encaisseurId);
-    console.log('[Save] paymentType:', paymentType, '| encaisseurId:', encaisseurId, '| encaisseurNum:', encaisseurNum);
     const finalPaymentData: Record<string, unknown> = {
       ...existingPd,
       ...partnerPaymentData,
