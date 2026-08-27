@@ -35,6 +35,7 @@ export default function PlanningAdmin() {
   const [slotDuration, setSlotDuration] = useState<number>(0);
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [viewRange, setViewRange] = useState<{ start: Date; end: Date } | null>(null);
 
 
   const handleEventClick = useCallback((info: EventClickArg) => {
@@ -102,6 +103,23 @@ export default function PlanningAdmin() {
       };
     });
   }, [appointments, flightTypes, parsedOpeningPeriods]);
+
+  // Moniteurs visibles : uniquement ceux qui ont au moins un créneau dans la plage affichée
+  const visibleMonitors = useMemo(() => {
+    if (!viewRange || appointments.length === 0) return monitors;
+    const viewStart = viewRange.start.getTime();
+    const viewEnd = viewRange.end.getTime();
+    const idsWithSlots = new Set(
+      appointments
+        .filter(a => {
+          const t = new Date(a.start_time).getTime();
+          return t >= viewStart && t < viewEnd;
+        })
+        .map(a => a.monitor_id?.toString())
+    );
+    const filtered = monitors.filter(m => idsWithSlots.has(m.id.toString()));
+    return filtered.length > 0 ? filtered : monitors;
+  }, [monitors, appointments, viewRange]);
 
   // Couleur unique par groupe : on scanne les titres "(Chef de groupe)" pour construire la map
   const groupColors = useMemo(() => {
@@ -219,9 +237,10 @@ export default function PlanningAdmin() {
       schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
       plugins={[resourceTimeGridPlugin, interactionPlugin, scrollgridPlugin]}
       initialView="resourceTimeGridDay"
-      resources={monitors}
+      resources={visibleMonitors}
       datesSet={(arg) => {
         setCurrentDate(arg.startStr.split('T')[0]);
+        setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
         const start = new Date(arg.view.activeStart);
         start.setDate(start.getDate() - 15);
         const end = new Date(arg.view.activeEnd);
@@ -246,7 +265,7 @@ export default function PlanningAdmin() {
       eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
       dayMinWidth={130}
     />
-  ), [calendarEvents, monitors, timeBounds, handleEventClick, loadAppointments, renderEventContent]);
+  ), [calendarEvents, visibleMonitors, timeBounds, handleEventClick, loadAppointments, renderEventContent]);
 
   return (
     <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
