@@ -36,7 +36,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
         google_sync_enabled: userToEdit.google_sync_enabled ?? false,
         receives_online_payments: userToEdit.receives_online_payments ?? false,
         commission_type: userToEdit.commission_type || 'none',
-        commission_value: userToEdit.commission_value ?? 0,
+        commission_value: parseFloat(String(userToEdit.commission_value ?? 0)) || 0,
         available_start_date: '', available_end_date: '', daily_start_time: '', daily_end_time: '',
       });
       apiFetch(`/api/users/${userToEdit.id}/availabilities`)
