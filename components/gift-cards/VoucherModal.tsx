@@ -4,6 +4,8 @@ import type { GiftCard, FlightType, Complement } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
+interface Monitor { id: string; first_name: string; }
+
 const EMPTY_VOUCHER = {
   type: 'gift_card',
   custom_code: '',
@@ -11,6 +13,7 @@ const EMPTY_VOUCHER = {
   beneficiary_name: '',
   gift_value: '',
   flight_type_id: '',
+  monitor_id: '',
   discount_type: 'fixed',
   discount_value: '',
   discount_scope: 'both',
@@ -37,6 +40,11 @@ export function VoucherModal({ cardToEdit, flights, complements, onClose, onSave
   const [giftCardMode, setGiftCardMode] = useState<'prestation' | 'value'>('prestation');
   const [selectedPrestation, setSelectedPrestation] = useState('');
   const [newVoucher, setNewVoucher] = useState({ ...EMPTY_VOUCHER });
+  const [monitors, setMonitors] = useState<Monitor[]>([]);
+
+  useEffect(() => {
+    apiFetch('/api/monitors').then(r => r.ok ? r.json() : []).then(setMonitors).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!cardToEdit) {
@@ -55,6 +63,7 @@ export function VoucherModal({ cardToEdit, flights, complements, onClose, onSave
       beneficiary_name: card.beneficiary_name || '',
       gift_value: card.price_paid_cents ? (card.price_paid_cents / 100).toString() : '',
       flight_type_id: card.flight_type_id?.toString() || '',
+      monitor_id: card.monitor_id || '',
       discount_type: card.discount_type || 'fixed',
       discount_value: card.discount_value ? card.discount_value.toString() : '',
       discount_scope: card.discount_scope || 'both',
@@ -107,6 +116,7 @@ export function VoucherModal({ cardToEdit, flights, complements, onClose, onSave
         is_partner: false,
         partner_billing_type: 'fixed',
         partner_amount_cents: null,
+        monitor_id: newVoucher.monitor_id || null,
       };
     } else {
       if (!newVoucher.discount_value) {
@@ -226,6 +236,18 @@ export function VoucherModal({ cardToEdit, flights, complements, onClose, onSave
               <div className="mt-4">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Acheteur</label>
                 <input type="text" placeholder="Nom de la personne qui offre" className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none" value={v.buyer_name} onChange={e => set({ buyer_name: e.target.value })} />
+              </div>
+
+              <div className="mt-4">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Pilote attributaire <span className="normal-case text-slate-300">(encaissement automatique à l'utilisation)</span></label>
+                <select
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold bg-slate-50 outline-none focus:border-indigo-500"
+                  value={v.monitor_id}
+                  onChange={e => set({ monitor_id: e.target.value })}
+                >
+                  <option value="">— Aucun pilote attribué —</option>
+                  {monitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
+                </select>
               </div>
             </>
           )}

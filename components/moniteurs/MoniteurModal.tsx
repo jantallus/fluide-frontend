@@ -181,7 +181,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
                 />
                 <div>
                   <p className="text-xs font-black uppercase text-slate-700">Reçoit les paiements en ligne</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Les paiements Stripe (réservations en ligne) sont attribués à ce prestataire</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Les paiements Stripe (réservations en ligne) sont attribués à ce prestataire. <span className="text-amber-500 font-bold">Un seul pilote possible — activer ici désactive automatiquement les autres.</span></p>
                 </div>
               </label>
 

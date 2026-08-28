@@ -158,6 +158,8 @@ export interface GiftCard {
   custom_line_3?: string;
   pdf_background_url?: string;
   included_options?: number[];
+  monitor_id?: string | null;
+  monitor_name?: string | null;
 }
 
 export interface GiftCardTemplate {
