@@ -85,6 +85,49 @@ export default function RegularisationPage() {
     }
   }, [from, to]);
 
+  // ── Calcul Tricount inter-pilotes ─────────────────────────────────────────
+  const tricountSettlement = data ? (() => {
+    // Pour chaque pilote : volé = CA de leurs vols (avec encaisseur renseigné)
+    //                      encaissé = CA des vols dont ils sont encaisseur
+    const flew: Record<string, number> = {};
+    const collected: Record<string, number> = {};
+    data.forEach(mon => { flew[mon.id] = 0; collected[mon.id] = 0; });
+
+    data.forEach(mon => {
+      mon.flights.forEach(f => {
+        if (!f.encaisseur_id) return; // vol sans encaisseur : hors calcul
+        flew[mon.id] = (flew[mon.id] || 0) + f.price_euros;
+        const eid = String(f.encaisseur_id);
+        if (collected[eid] !== undefined) collected[eid] += f.price_euros;
+      });
+    });
+
+    // diff > 0 : pilote a encaissé plus que ses vols → doit de l'argent
+    // diff < 0 : pilote a encaissé moins → lui doit de l'argent
+    const balances = data.map(mon => ({
+      id: mon.id, name: mon.first_name,
+      flew: flew[mon.id] || 0,
+      collected: collected[mon.id] || 0,
+      diff: (collected[mon.id] || 0) - (flew[mon.id] || 0),
+    })).filter(b => Math.abs(b.diff) > 0.005);
+
+    // Algorithme Tricount : minimise le nombre de virements
+    const debtors  = balances.filter(b => b.diff > 0).map(b => ({ ...b, rem: b.diff }));
+    const creditors = balances.filter(b => b.diff < 0).map(b => ({ ...b, rem: -b.diff }));
+    const transactions: { from: string; to: string; amount: number }[] = [];
+    let di = 0, ci = 0;
+    while (di < debtors.length && ci < creditors.length) {
+      const amount = Math.min(debtors[di].rem, creditors[ci].rem);
+      if (amount > 0.005) transactions.push({ from: debtors[di].name, to: creditors[ci].name, amount });
+      debtors[di].rem  -= amount;
+      creditors[ci].rem -= amount;
+      if (debtors[di].rem  < 0.005) di++;
+      if (creditors[ci].rem < 0.005) ci++;
+    }
+
+    return { balances, transactions };
+  })() : null;
+
   const grandTotal = data ? data.reduce((acc, m) => {
     acc.flights += m.totals.flights;
     acc.revenue += m.totals.total_revenue;
@@ -143,6 +186,63 @@ export default function RegularisationPage() {
                   {c.sub && <p className="text-[10px] text-slate-400 mt-0.5">{c.sub}</p>}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Section Tricount ── */}
+          {tricountSettlement && tricountSettlement.balances.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b border-slate-100">
+                <h2 className="font-black uppercase tracking-tight text-slate-900 text-sm">⚖️ Régularisation entre pilotes</h2>
+                <p className="text-[10px] text-slate-400 mt-0.5">Différence entre les vols effectués et les encaissements réalisés par chaque pilote</p>
+              </div>
+
+              {/* Tableau des soldes */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black">
+                      <th className="px-4 py-2 text-left">Pilote</th>
+                      <th className="px-4 py-2 text-right">Vols effectués</th>
+                      <th className="px-4 py-2 text-right">Encaissements</th>
+                      <th className="px-4 py-2 text-right">Différence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tricountSettlement.balances.map(b => (
+                      <tr key={b.id} className="border-t border-slate-50">
+                        <td className="px-4 py-2 font-black text-slate-800 uppercase">{b.name}</td>
+                        <td className="px-4 py-2 text-right text-slate-600 font-bold">{fmt(b.flew)}</td>
+                        <td className="px-4 py-2 text-right text-slate-600 font-bold">{fmt(b.collected)}</td>
+                        <td className={`px-4 py-2 text-right font-black ${b.diff > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {b.diff > 0 ? `+${fmt(b.diff)} encaissé en trop` : `${fmt(b.diff)} encaissé en moins`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Virements à effectuer */}
+              {tricountSettlement.transactions.length > 0 && (
+                <div className="border-t border-slate-100 p-4">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3">Virements à effectuer</p>
+                  <div className="space-y-2">
+                    {tricountSettlement.transactions.map((t, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                        <span className="font-black text-rose-700 uppercase text-sm">{t.from}</span>
+                        <span className="text-slate-400 text-lg">→</span>
+                        <span className="font-black text-emerald-700 uppercase text-sm">{t.to}</span>
+                        <span className="ml-auto font-black text-slate-900 text-base">{fmt(t.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tricountSettlement.transactions.length === 0 && (
+                <div className="p-4 text-center text-emerald-600 font-bold text-sm">✅ Tout est équilibré — aucun virement nécessaire</div>
+              )}
             </div>
           )}
 
