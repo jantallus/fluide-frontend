@@ -34,6 +34,9 @@ const IS_CLIENT_SLOT = (slot: Slot) =>
   !['NOTE', '☕ PAUSE', 'NON DISPO'].some((t: string) => slot.title?.includes(t)) &&
   !slot.title?.includes('❌');
 
+const IS_PAUSE_SLOT = (slot: Slot) =>
+  !!(slot.title?.toUpperCase().includes('PAUSE') || slot.title?.includes('☕'));
+
 export default function EditSlotModal({
   selectedEvent, currentUser, slotDuration,
   appointments, setAppointments, flightTypes, monitors, slotDefs, openingPeriods,
@@ -539,7 +542,7 @@ export default function EditSlotModal({
       const isNonBlockingNote = !formData.title?.includes('NON DISPO');
       targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
-      slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
+      slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs && !IS_PAUSE_SLOT(a));
       if (!isNonBlockingNote) {
         if (slotsToUpdate.some(slot => IS_CLIENT_SLOT(slot))) { toast.error('❌ Impossible de bloquer : Un ou plusieurs clients sont déjà réservés.'); return; }
       }
@@ -705,7 +708,7 @@ export default function EditSlotModal({
     if (!await confirm(confirmMsg)) return;
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
     const startMs = new Date(selectedEvent.start as Date | string).getTime();
-    const slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
+    const slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs && !IS_PAUSE_SLOT(a));
     const updatesToApply: SlotUpdate[] = [];
     slotsToUpdate.forEach(slot => {
       if (IS_CLIENT_SLOT(slot)) {
