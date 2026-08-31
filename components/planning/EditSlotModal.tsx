@@ -1087,7 +1087,7 @@ export default function EditSlotModal({
                           <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-black text-xl flex items-center justify-center">+</div>
                           <span className="text-sm font-bold text-slate-400 ml-2">{groupSize} passager{groupSize > 1 ? 's' : ''} dans ce groupe</span>
                         </div>
-                        <button onClick={() => setGroupLocked(false)} className="w-full text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 py-2 rounded-lg border border-indigo-100 transition-all">
+                        <button onClick={() => { setGroupLocked(false); setGroupSize(1); }} className="w-full text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 py-2 rounded-lg border border-indigo-100 transition-all">
                           + Ajouter des passagers
                         </button>
                       </div>
@@ -1096,7 +1096,11 @@ export default function EditSlotModal({
                         <button onClick={() => handleMainChange(-1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">-</button>
                         <span className="text-2xl font-black text-slate-900 w-8 text-center">{groupSize}</span>
                         <button onClick={() => handleMainChange(1)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-black text-xl hover:bg-slate-200 transition-colors flex items-center justify-center">+</button>
-                        <span className="text-sm font-bold text-slate-500 ml-2">Passager(s) au total</span>
+                        <span className="text-sm font-bold text-slate-500 ml-2">
+                          {groupRootSlots.length > 0
+                            ? <>à ajouter <span className="text-slate-400 font-normal">({groupRootSlots.length} déjà inscrit{groupRootSlots.length > 1 ? 's' : ''})</span></>
+                            : 'Passager(s) au total'}
+                        </span>
                       </div>
                     )}
                     {!groupLocked && (groupSize > 1 || isManual) && displayDistribution && (
