@@ -1344,10 +1344,14 @@ export default function EditSlotModal({
               </div>
             ) : (
               <>
-                <div className="flex gap-2 mb-4">
-                  <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NOTE' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}>📝 Note simple (Reste libre)</button>
-                  <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NON DISPO' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}>❌ Bloquer (Non dispo)</button>
-                </div>
+                {!isClientSlotLocal && (
+                  <div className="flex gap-2 mb-4">
+                    <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NOTE' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}>📝 Note simple (Reste libre)</button>
+                    {selectedEvent?.title !== 'NON DISPO' && (
+                      <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NON DISPO' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}>❌ Bloquer (Non dispo)</button>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Note interne au pilote</label>
                   <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold h-24" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Infos météo, retard..." />
