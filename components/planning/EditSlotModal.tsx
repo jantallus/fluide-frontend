@@ -1103,7 +1103,7 @@ export default function EditSlotModal({
                         </span>
                       </div>
                     )}
-                    {!groupLocked && (groupSize > 1 || isManual) && displayDistribution && (
+                    {!groupLocked && (groupSize > 1 || isManual || groupRootSlots.length > 0) && displayDistribution && (
                       <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
                         {displayDistribution.canFit ? (
                           <>
