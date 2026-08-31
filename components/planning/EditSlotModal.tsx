@@ -536,7 +536,7 @@ export default function EditSlotModal({
     let slotsToUpdate: Slot[] = [];
 
     if (activeTab === 'note') {
-      const isNonBlockingNote = formData.title !== 'NON DISPO';
+      const isNonBlockingNote = !formData.title?.includes('NON DISPO');
       targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
       slotsToUpdate = appointments.filter(a => targetMonitors.includes(a.monitor_id?.toString()) && new Date(a.start_time).getTime() >= startMs && new Date(a.start_time).getTime() < blockUntilMs);
