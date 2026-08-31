@@ -1347,7 +1347,7 @@ export default function EditSlotModal({
                 {!isClientSlotLocal && (
                   <div className="flex gap-2 mb-4">
                     <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NOTE' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title !== 'NON DISPO' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-200')}`}>📝 Note simple (Reste libre)</button>
-                    {selectedEvent?.title !== 'NON DISPO' && (
+                    {!selectedEvent?.title?.includes('NON DISPO') && (
                       <button disabled={isOutOfSeason} onClick={() => setFormData({ ...formData, title: 'NON DISPO' })} className={`flex-1 p-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${isOutOfSeason ? 'opacity-50 cursor-not-allowed' : (formData.title === 'NON DISPO' ? 'bg-rose-100 border-rose-400 text-rose-800 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-rose-200')}`}>❌ Bloquer (Non dispo)</button>
                     )}
                   </div>
