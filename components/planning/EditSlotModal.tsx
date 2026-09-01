@@ -625,7 +625,7 @@ export default function EditSlotModal({
       }
     }
 
-    const complementNames = !isStripePd && selectedComplementIds.length > 0
+    const complementNames = !isStripePd
       ? selectedComplementIds.map(id => availableComplements.find(c => c.id === id)?.name).filter(Boolean).join(', ')
       : formData.booking_options;
     const effectiveFormData = { ...formData, booking_options: complementNames || '' };
@@ -642,7 +642,7 @@ export default function EditSlotModal({
     slotsNeeded = (selectedFlight?.allow_multi_slots && slotDuration > 0 && flightDuration > slotDuration) ? Math.ceil(flightDuration / slotDuration) : 1;
 
     const updatesToApply: SlotUpdate[] = [];
-    if ((groupSize > 1 || isManual || groupRootSlots.length > 0) && !groupLocked) {
+    if ((groupSize > 1 || isManual || groupRootSlots.length > 1) && !groupLocked) {
       if (!displayDistribution.canFit || displayDistribution.slotsToUse.length === 0) { toast.error('❌ Pas assez de créneaux disponibles ou aucune place sélectionnée.'); return; }
       displayDistribution.slotsToUse.forEach((baseSlot, index) => {
         const namesList = effectiveTitle.split(',').map((n: string) => n.trim()).filter((n: string) => n);
@@ -1166,7 +1166,7 @@ export default function EditSlotModal({
                         </span>
                       </div>
                     )}
-                    {!groupLocked && (groupSize > 1 || isManual || groupRootSlots.length > 0) && displayDistribution && (
+                    {!groupLocked && (groupSize > 1 || isManual || groupRootSlots.length > 1) && displayDistribution && (
                       <div className={`mt-4 p-3 rounded-xl border-2 transition-all ${displayDistribution.canFit ? (isManual ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-rose-50 border-rose-200'}`}>
                         {displayDistribution.canFit ? (
                           <>
