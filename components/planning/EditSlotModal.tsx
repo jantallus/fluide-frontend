@@ -1413,8 +1413,9 @@ export default function EditSlotModal({
                         {(() => {
                           const isPlural = blockType === 'all' || (blockType === 'specific' && selectedMonitors.length > 1) || (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
                           const isBlock = ['NON DISPO', '☕ PAUSE'].some(t => selectedEvent?.title?.includes(t)) || selectedEvent?.title?.includes('❌');
-                          const showKeepNote = isBlock && !isPlural;
-                          const btnText = !isBlock ? (isPlural ? '🧹 Effacer les notes sélectionnées' : '🗑️ Effacer la note') : (isPlural ? '🧹 Libérer les créneaux sélectionnés' : '🗑️ Libérer + effacer note');
+                          const hasNote = !!(selectedEvent?.notes || formData.notes);
+                          const showKeepNote = isBlock && !isPlural && hasNote;
+                          const btnText = !isBlock ? (isPlural ? '🧹 Effacer les notes sélectionnées' : '🗑️ Effacer la note') : (isPlural ? '🧹 Libérer les créneaux sélectionnés' : showKeepNote ? '🗑️ Libérer + effacer note' : '🗑️ Libérer le créneau');
                           return (
                             <div className={showKeepNote ? 'flex gap-2' : ''}>
                               <button onClick={handleBulkRelease} className={`${showKeepNote ? 'flex-1' : 'w-full'} font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${isPlural ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'}`}>{btnText}</button>
