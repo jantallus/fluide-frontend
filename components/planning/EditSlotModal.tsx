@@ -720,6 +720,11 @@ export default function EditSlotModal({
     applyAll(updatesToApply);
   };
 
+  const handleReleaseKeepNote = async () => {
+    if (!selectedEvent || !await confirm('🔓 Libérer ce créneau en conservant la note ?')) return;
+    applyAll([{ id: selectedEvent.id, data: { title: formData.notes ? 'NOTE' : '', notes: formData.notes || '', status: 'available', phone: '', email: '', flight_type_id: null, weight: null, weightChecked: false, booking_options: '', client_message: '' } }]);
+  };
+
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
@@ -1408,8 +1413,14 @@ export default function EditSlotModal({
                         {(() => {
                           const isPlural = blockType === 'all' || (blockType === 'specific' && selectedMonitors.length > 1) || (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
                           const isBlock = ['NON DISPO', '☕ PAUSE'].some(t => selectedEvent?.title?.includes(t)) || selectedEvent?.title?.includes('❌');
-                          const btnText = !isBlock ? (isPlural ? '🧹 Effacer les notes sélectionnées' : '🗑️ Effacer la note') : (isPlural ? '🧹 Libérer les créneaux sélectionnés' : '🗑️ Libérer le créneau');
-                          return <button onClick={handleBulkRelease} className={`w-full font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${isPlural ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'}`}>{btnText}</button>;
+                          const showKeepNote = isBlock && !isPlural;
+                          const btnText = !isBlock ? (isPlural ? '🧹 Effacer les notes sélectionnées' : '🗑️ Effacer la note') : (isPlural ? '🧹 Libérer les créneaux sélectionnés' : '🗑️ Libérer + effacer note');
+                          return (
+                            <div className={showKeepNote ? 'flex gap-2' : ''}>
+                              <button onClick={handleBulkRelease} className={`${showKeepNote ? 'flex-1' : 'w-full'} font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm ${isPlural ? 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white text-[10px]' : 'bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 text-[10px]'}`}>{btnText}</button>
+                              {showKeepNote && <button onClick={handleReleaseKeepNote} className="flex-1 font-black uppercase italic tracking-widest transition-all rounded-xl py-3 shadow-sm bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 text-[10px]">🔓 Libérer + garder note</button>}
+                            </div>
+                          );
                         })()}
                       </div>
                     ) : (
