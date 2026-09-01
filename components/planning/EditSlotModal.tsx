@@ -693,7 +693,13 @@ export default function EditSlotModal({
           if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
             slotPd.encaisseur_id = encaisseurId;
           }
-          return apiFetch(`/api/slots/${slot.id}/quick`, { method: 'PATCH', body: JSON.stringify({ payment_data: slotPd }) });
+          // Propager prix override et compléments
+          if ('price_override_cents' in finalPaymentData) slotPd.price_override_cents = finalPaymentData.price_override_cents;
+          else delete slotPd.price_override_cents;
+          if (finalPaymentData.complement_total_cents != null) slotPd.complement_total_cents = finalPaymentData.complement_total_cents;
+          if (Array.isArray(finalPaymentData.selected_complements)) slotPd.selected_complements = finalPaymentData.selected_complements;
+          const slotBookingOptions = complementNames || undefined;
+          return apiFetch(`/api/slots/${slot.id}/quick`, { method: 'PATCH', body: JSON.stringify({ payment_data: slotPd, ...(slotBookingOptions !== undefined ? { booking_options: slotBookingOptions } : {}) }) });
         })).then(() => loadAppointments()).catch(() => {});
       }
     }

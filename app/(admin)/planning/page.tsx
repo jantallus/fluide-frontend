@@ -102,7 +102,7 @@ export default function PlanningAdmin() {
         textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
         interactive: !isPause,
-        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null, price_cents: flight?.price_cents || null },
+        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
     });
   }, [appointments, flightTypes, parsedOpeningPeriods]);
