@@ -864,7 +864,10 @@ export default function EditSlotModal({
                 <span className="text-4xl block mb-2">🔒</span>
                 <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Créneau Verrouillé</p>
                 <p className="text-xs text-slate-500 px-4 font-medium mb-6">Ce créneau est bloqué ou en pause. Pour y ajouter un client, libérez-le d'abord.</p>
-                <button onClick={handleRelease} className="bg-rose-100 text-rose-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">🗑️ Libérer ce créneau</button>
+                <div className={`flex gap-2 ${selectedEvent?.notes ? 'flex-col sm:flex-row' : ''} justify-center`}>
+                  <button onClick={handleRelease} className="bg-rose-100 text-rose-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">{selectedEvent?.notes ? '🗑️ Libérer + effacer note' : '🗑️ Libérer ce créneau'}</button>
+                  {selectedEvent?.notes && <button onClick={handleReleaseKeepNote} className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-sm">🔓 Libérer + garder note</button>}
+                </div>
               </div>
             ) : isOutOfSeason ? (
               <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
