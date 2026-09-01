@@ -10,6 +10,8 @@ interface Flight {
   price_euros: number;
   payment_type: string | null;
   encaisseur_id: string | number | null;
+  stripe_fee_cents: number | null;
+  stripe_net_cents: number | null;
 }
 
 interface MonitorData {
@@ -230,6 +232,7 @@ export default function RegularisationPage() {
                             <th className="px-4 py-2 text-left">Client</th>
                             <th className="px-4 py-2 text-left">Vol</th>
                             <th className="px-4 py-2 text-right">Prix</th>
+                            <th className="px-4 py-2 text-right">Net Stripe</th>
                             <th className="px-4 py-2 text-center">Mode</th>
                             <th className="px-4 py-2 text-left">Encaissé par</th>
                           </tr>
@@ -240,12 +243,20 @@ export default function RegularisationPage() {
                             const clr = f.payment_type ? (PAYMENT_COLORS[f.payment_type] ?? 'bg-slate-100 text-slate-500') : 'bg-slate-50 text-slate-400';
                             const encaisseur = pilotName(f.encaisseur_id);
                             const isSelf = encaisseur === mon.first_name;
+                            const hasStripe = f.stripe_net_cents !== null && f.stripe_net_cents !== undefined;
                             return (
                               <tr key={f.id} className="border-t border-slate-50 hover:bg-slate-50/50">
                                 <td className="px-4 py-2 text-slate-500 whitespace-nowrap">{fmtDate(f.date)}</td>
                                 <td className="px-4 py-2 font-bold text-slate-700 whitespace-nowrap">{f.title}</td>
                                 <td className="px-4 py-2 text-slate-500 whitespace-nowrap">{f.flight_name || '—'}</td>
                                 <td className="px-4 py-2 text-right font-bold text-slate-800 whitespace-nowrap">{fmt(f.price_euros)}</td>
+                                <td className="px-4 py-2 text-right whitespace-nowrap">
+                                  {hasStripe ? (
+                                    <span className="font-bold text-indigo-700">{fmt(f.stripe_net_cents! / 100)}</span>
+                                  ) : (
+                                    <span className="text-slate-300">—</span>
+                                  )}
+                                </td>
                                 <td className="px-4 py-2 text-center">
                                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${clr}`}>{lbl}</span>
                                 </td>
@@ -261,6 +272,13 @@ export default function RegularisationPage() {
                           <tr className="border-t-2 border-slate-200 font-black text-xs bg-slate-50">
                             <td colSpan={3} className="px-4 py-3 text-slate-500">Total</td>
                             <td className="px-4 py-3 text-right text-slate-900">{fmt(totalMon)}</td>
+                            <td className="px-4 py-3 text-right text-indigo-700">
+                              {(() => {
+                                const netTotal = mon.flights.reduce((s, f) => f.stripe_net_cents != null ? s + f.stripe_net_cents / 100 : s, 0);
+                                const hasAny = mon.flights.some(f => f.stripe_net_cents != null);
+                                return hasAny ? fmt(netTotal) : <span className="text-slate-300 font-normal">—</span>;
+                              })()}
+                            </td>
                             <td colSpan={2} />
                           </tr>
                         </tfoot>
