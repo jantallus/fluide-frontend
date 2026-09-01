@@ -1429,9 +1429,12 @@ export default function EditSlotModal({
                         {(() => {
                           const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
                           const hasNote = !!selectedEvent?.notes && selectedEvent?.notes !== 'Extension auto';
+                          const isBlockedSlot = !!(selectedEvent?.title?.toUpperCase().includes('NON DISPO'));
+                          const showKeepNote = isBlockedSlot && hasNote;
                           return (
                             <>
-                              <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">{isNoteOnly ? '🗑️ Effacer la note' : (hasNote ? '🗑️ Libérer (Garder note)' : '🗑️ Libérer ce créneau')}</button>
+                              <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">{isNoteOnly ? '🗑️ Effacer la note' : (showKeepNote ? '🗑️ Libérer + effacer note' : '🗑️ Libérer ce créneau')}</button>
+                              {showKeepNote && <button onClick={handleReleaseKeepNote} className="flex-1 font-black uppercase italic text-[9px] tracking-widest transition-all rounded-xl py-2 shadow-sm bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50">🔓 Libérer + garder note</button>}
                               {groupRootSlots.length > 1 && (<button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">🧹 Libérer groupe ({groupRootSlots.length})</button>)}
                             </>
                           );
