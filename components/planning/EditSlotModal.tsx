@@ -709,7 +709,12 @@ export default function EditSlotModal({
   const handleBulkRelease = async () => {
     if (!selectedEvent) return;
     const isPlural = blockType === 'all' || (blockType === 'specific' && selectedMonitors.length > 1) || (upcomingBlockingSlots.length > 0 && blockUntilMs > new Date(upcomingBlockingSlots[0].end_time).getTime());
-    const confirmMsg = isPlural ? '🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection ?\n\n(Les réservations clients existantes seront conservées).' : '🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).';
+    const isBlockedSingle = !isPlural && !!(selectedEvent?.title?.toUpperCase().includes('NON DISPO'));
+    const confirmMsg = isPlural
+      ? '🧹 Voulez-vous vraiment effacer les notes et blocages sur TOUTE la sélection ?\n\n(Les réservations clients existantes seront conservées).'
+      : isBlockedSingle
+        ? (selectedEvent?.notes ? '🗑️ Action irréversible. Libérer ce créneau ?\n\n(La note associée sera effacée.)' : '🗑️ Action irréversible. Libérer ce créneau ?')
+        : '🗑️ Voulez-vous vraiment effacer la note / le blocage de ce créneau ?\n\n(Si un client est présent, il sera conservé).';
     if (!await confirm(confirmMsg)) return;
     const targetMonitors = blockType === 'all' ? monitors.map(m => m.id.toString()) : blockType === 'specific' ? selectedMonitors : [selectedEvent.monitor_id?.toString()];
     const startMs = new Date(selectedEvent.start as Date | string).getTime();
