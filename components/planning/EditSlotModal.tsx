@@ -665,7 +665,12 @@ export default function EditSlotModal({
 
   const handleRelease = async () => {
     const isNoteOnly = selectedEvent?.status === 'available' && selectedEvent?.title === 'NOTE';
-    const confirmMsg = isNoteOnly ? '🗑️ Voulez-vous vraiment effacer cette note ?' : '🗑️ Action irréversible. Libérer ce créneau ?\n\n(Les notes éventuelles seront conservées)';
+    const isBlockedWithNote = !!(selectedEvent?.title?.toUpperCase().includes('NON DISPO') && selectedEvent?.notes);
+    const confirmMsg = isNoteOnly
+      ? '🗑️ Voulez-vous vraiment effacer cette note ?'
+      : isBlockedWithNote
+        ? '🗑️ Action irréversible. Libérer ce créneau ?\n\n(La note associée sera effacée.)'
+        : '🗑️ Action irréversible. Libérer ce créneau ?\n\n(Les notes éventuelles seront conservées)';
     if (!selectedEvent || !await confirm(confirmMsg)) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
     const flightDur = flight?.duration_minutes || flight?.duration || 0;
