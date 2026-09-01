@@ -198,6 +198,14 @@ export interface PaymentData {
   partner_color?: string;
   google_synced?: boolean;
   invoice_amount_cents?: number;
+  // Compléments et prix overrides (réservations admin)
+  selected_complements?: { id: number; name: string; price_cents: number }[];
+  complement_total_cents?: number;
+  price_override_cents?: number;
+  // Stripe
+  stripe_session_id?: string;
+  stripe_fee_cents?: number;
+  stripe_net_cents?: number;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────

@@ -68,10 +68,15 @@ export default function EditSlotModal({
   const [encaisseurId, setEncaisseurId] = useState('');
   const [paymentScope, setPaymentScope] = useState<'slot' | 'time' | 'pilot' | 'group'>('slot');
   const [fullMonitors, setFullMonitors] = useState<Array<{ id: string; first_name: string; receives_online_payments: boolean }>>([]);
+  const [availableComplements, setAvailableComplements] = useState<{ id: number; name: string; price_cents: number }[]>([]);
+  const [selectedComplementIds, setSelectedComplementIds] = useState<number[]>([]);
+  const [flightPriceOverride, setFlightPriceOverride] = useState('');
+  const [complementPriceOverride, setComplementPriceOverride] = useState('');
 
   // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
   useEffect(() => {
     apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then(setPartners).catch(() => {});
+    apiFetch('/api/complements').then(r => r.ok ? r.json() : []).then((data: { id: number; name: string; price_cents: number }[]) => { if (Array.isArray(data)) setAvailableComplements(data); }).catch(() => {});
     if (currentUser?.role === 'admin') {
       apiFetch('/api/users')
         .then(r => r.ok ? r.json() : [])
@@ -279,6 +284,9 @@ export default function EditSlotModal({
     setIsManual(false);
     setMoveGroup(false);
     setPaymentScope('slot');
+    setSelectedComplementIds(Array.isArray(pd?.selected_complements) ? (pd.selected_complements as { id: number }[]).map(c => Number(c.id)) : []);
+    setFlightPriceOverride(pd?.price_override_cents != null ? (Number(pd.price_override_cents) / 100).toFixed(2) : '');
+    setComplementPriceOverride(pd?.complement_total_cents != null ? (Number(pd.complement_total_cents) / 100).toFixed(2) : '');
   }, [selectedEvent, currentUser]);
 
   // Auto-fill encaisseur for online/bon_cadeau once fullMonitors loads — runs
@@ -594,6 +602,34 @@ export default function EditSlotModal({
       finalPaymentData.invoice_amount_cents = invoiceCents;
     }
 
+    // Compléments et prix (uniquement pour les réservations non-Stripe)
+    const isStripePd = existingPd.online === true;
+    if (!isStripePd) {
+      if (selectedComplementIds.length > 0) {
+        const comps = selectedComplementIds.map(id => availableComplements.find(c => c.id === id)).filter(Boolean) as { id: number; name: string; price_cents: number }[];
+        finalPaymentData.selected_complements = comps.map(c => ({ id: c.id, name: c.name, price_cents: c.price_cents }));
+        const autoTotal = comps.reduce((s, c) => s + c.price_cents, 0);
+        finalPaymentData.complement_total_cents = complementPriceOverride ? Math.round(parseFloat(complementPriceOverride) * 100) : autoTotal;
+      } else {
+        finalPaymentData.selected_complements = [];
+        finalPaymentData.complement_total_cents = 0;
+      }
+      const selectedFlightObj = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
+      const catalogPriceCents = selectedFlightObj?.price_cents ?? 0;
+      if (flightPriceOverride) {
+        const overrideCents = Math.round(parseFloat(flightPriceOverride) * 100);
+        if (overrideCents !== catalogPriceCents) finalPaymentData.price_override_cents = overrideCents;
+        else delete finalPaymentData.price_override_cents;
+      } else {
+        delete finalPaymentData.price_override_cents;
+      }
+    }
+
+    const complementNames = !isStripePd && selectedComplementIds.length > 0
+      ? selectedComplementIds.map(id => availableComplements.find(c => c.id === id)?.name).filter(Boolean).join(', ')
+      : formData.booking_options;
+    const effectiveFormData = { ...formData, booking_options: complementNames || '' };
+
     if (!pf || pf.name !== false) {
       if (!effectiveTitle?.trim()) { toast.error('❌ Le nom du contact est obligatoire pour une réservation.'); return; }
     }
@@ -614,7 +650,7 @@ export default function EditSlotModal({
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
         else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (effectiveTitle || ''); }
-        updatesToApply.push({ id: baseSlot.id, data: { ...formData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: finalPaymentData } });
+        updatesToApply.push({ id: baseSlot.id, data: { ...effectiveFormData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: finalPaymentData } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(baseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -625,7 +661,7 @@ export default function EditSlotModal({
         }
       });
     } else if (slotsNeeded > 1) {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: 'booked', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
       const startMs = new Date(selectedEvent.start as Date | string).getTime();
       for (let i = 1; i < slotsNeeded; i++) {
         const nextMs = startMs + i * slotDuration * 60000;
@@ -633,7 +669,7 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...formData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
+      updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
     }
 
     applyAll(updatesToApply);
@@ -1291,6 +1327,56 @@ export default function EditSlotModal({
                               )}
                             </div>
                           )}
+
+                          {/* ── Compléments (Photos, Vidéos…) ── */}
+                          {availableComplements.length > 0 && (
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Options (Photos, Vidéos…)</label>
+                              <div className="space-y-1.5">
+                                {availableComplements.map(c => (
+                                  <label key={c.id} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-50">
+                                    <input type="checkbox" className="accent-amber-500 w-4 h-4" checked={selectedComplementIds.includes(c.id)} onChange={e => setSelectedComplementIds(prev => e.target.checked ? [...prev, c.id] : prev.filter(x => x !== c.id))} />
+                                    <span className="flex-1 text-sm font-bold text-slate-700">{c.name}</span>
+                                    <span className="text-[11px] font-bold text-slate-400">{(c.price_cents / 100).toFixed(0)} €</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ── Prix (modifiable) ── */}
+                          {formData.flight_type_id && (() => {
+                            const selFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
+                            const catalogCents = selFlight?.price_cents ?? 0;
+                            const autoCompTotal = selectedComplementIds.reduce((s, id) => { const c = availableComplements.find(x => x.id === id); return s + (c?.price_cents ?? 0); }, 0);
+                            const flightCents = flightPriceOverride ? Math.round(parseFloat(flightPriceOverride) * 100) : catalogCents;
+                            const compCents = complementPriceOverride ? Math.round(parseFloat(complementPriceOverride) * 100) : autoCompTotal;
+                            const totalCents = flightCents + compCents;
+                            const isCustom = !!(flightPriceOverride || complementPriceOverride);
+                            return (
+                              <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 block">Prix à encaisser</label>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-bold text-slate-500 w-16 shrink-0">Vol</span>
+                                  <input type="number" min={0} step={0.5} placeholder={(catalogCents / 100).toFixed(0)} value={flightPriceOverride} onChange={e => setFlightPriceOverride(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
+                                  <span className="text-[11px] text-slate-400">€</span>
+                                  {flightPriceOverride && <button onClick={() => setFlightPriceOverride('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                </div>
+                                {(autoCompTotal > 0 || complementPriceOverride) && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-slate-500 w-16 shrink-0">Options</span>
+                                    <input type="number" min={0} step={0.5} placeholder={(autoCompTotal / 100).toFixed(0)} value={complementPriceOverride} onChange={e => setComplementPriceOverride(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
+                                    <span className="text-[11px] text-slate-400">€</span>
+                                    {complementPriceOverride && <button onClick={() => setComplementPriceOverride('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                                  <span className="text-[10px] font-black uppercase text-slate-400">Total</span>
+                                  <span className={`text-lg font-black ${isCustom ? 'text-amber-600' : 'text-slate-900'}`}>{(totalCents / 100).toFixed(2)} €</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {paymentType === 'a_facturer' && (() => {
                             const partner = partners.find(p => p.id.toString() === selectedPartnerId);
