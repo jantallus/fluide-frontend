@@ -286,7 +286,7 @@ export default function EditSlotModal({
     setPaymentScope('slot');
     setSelectedComplementIds(Array.isArray(pd?.selected_complements) ? (pd.selected_complements as { id: number }[]).map(c => Number(c.id)) : []);
     setFlightPriceOverride(pd?.price_override_cents != null ? (Number(pd.price_override_cents) / 100).toFixed(2) : '');
-    setComplementPriceOverride(pd?.complement_total_cents != null ? (Number(pd.complement_total_cents) / 100).toFixed(2) : '');
+    setComplementPriceOverride(pd?.complement_total_cents ? (Number(pd.complement_total_cents) / 100).toFixed(2) : '');
   }, [selectedEvent, currentUser]);
 
   // Auto-fill encaisseur for online/bon_cadeau once fullMonitors loads — runs
@@ -611,8 +611,8 @@ export default function EditSlotModal({
         const autoTotal = comps.reduce((s, c) => s + c.price_cents, 0);
         finalPaymentData.complement_total_cents = complementPriceOverride ? Math.round(parseFloat(complementPriceOverride) * 100) : autoTotal;
       } else {
-        finalPaymentData.selected_complements = [];
-        finalPaymentData.complement_total_cents = 0;
+        delete finalPaymentData.selected_complements;
+        delete finalPaymentData.complement_total_cents;
       }
       const selectedFlightObj = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
       const catalogPriceCents = selectedFlightObj?.price_cents ?? 0;
