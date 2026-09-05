@@ -1134,7 +1134,9 @@ export default function EditSlotModal({
                       const isAllowedTime = allowedSlots.length === 0 || allowedSlots.includes(slotTimeStr);
                       const isDisabled = !canFit || !isAllowedTime;
                       if (!isAllowedTime && canFit) reason = `(Interdit à ${slotTimeStr})`;
-                      return <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? 'text-slate-300 bg-slate-100' : 'text-slate-900'}>{f.name} - {f.price_cents ? f.price_cents / 100 : 0}€ {reason}</option>;
+                      const partnerFt = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId)?.allowed_flight_types?.find(ft => ft.flight_type_id === f.id) : null;
+                      const displayPrice = partnerFt?.base_price_cents != null ? partnerFt.base_price_cents : (f.price_cents ?? 0);
+                      return <option key={f.id?.toString()} value={f.id} disabled={isDisabled} className={isDisabled ? 'text-slate-300 bg-slate-100' : 'text-slate-900'}>{f.name} - {displayPrice / 100}€ {reason}</option>;
                     })}
                   </select>
                 </div>
@@ -1353,7 +1355,8 @@ export default function EditSlotModal({
                           {/* ── Prix (modifiable) ── */}
                           {formData.flight_type_id && (() => {
                             const selFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
-                            const catalogCents = selFlight?.price_cents ?? 0;
+                            const partnerFtDisp = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId)?.allowed_flight_types?.find(ft => ft.flight_type_id === selFlight?.id) : null;
+                            const catalogCents = partnerFtDisp?.base_price_cents != null ? partnerFtDisp.base_price_cents : (selFlight?.price_cents ?? 0);
                             const autoCompTotal = selectedComplementIds.reduce((s, id) => { const c = availableComplements.find(x => x.id === id); return s + (c?.price_cents ?? 0); }, 0);
                             const flightCents = flightPriceOverride ? Math.round(parseFloat(flightPriceOverride) * 100) : catalogCents;
                             const compCents = complementPriceOverride ? Math.round(parseFloat(complementPriceOverride) * 100) : autoCompTotal;
@@ -1387,7 +1390,8 @@ export default function EditSlotModal({
                           {paymentType === 'a_facturer' && (() => {
                             const partner = partners.find(p => p.id.toString() === selectedPartnerId);
                             const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
-                            const priceCents = flight?.price_cents ?? 0;
+                            const partnerFtInv = partner?.allowed_flight_types?.find(ft => ft.flight_type_id === flight?.id);
+                            const priceCents = partnerFtInv?.base_price_cents != null ? partnerFtInv.base_price_cents : (flight?.price_cents ?? 0);
                             let invoiceCents = priceCents;
                             if (partner?.commission_type === 'percentage') {
                               invoiceCents = Math.round(priceCents * (1 - (partner.commission_value ?? 0) / 100));
