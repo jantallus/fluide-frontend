@@ -1355,8 +1355,15 @@ export default function EditSlotModal({
                           {/* ── Prix (modifiable) ── */}
                           {formData.flight_type_id && (() => {
                             const selFlight = flightTypes.find(f => f.id.toString() === formData.flight_type_id);
-                            const partnerFtDisp = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId)?.allowed_flight_types?.find(ft => ft.flight_type_id === selFlight?.id) : null;
-                            const catalogCents = partnerFtDisp?.base_price_cents != null ? partnerFtDisp.base_price_cents : (selFlight?.price_cents ?? 0);
+                            const partnerDisp = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId) : null;
+                            const partnerFtDisp = partnerDisp?.allowed_flight_types?.find(ft => ft.flight_type_id === selFlight?.id) ?? null;
+                            const baseCents = partnerFtDisp?.base_price_cents != null ? partnerFtDisp.base_price_cents : (selFlight?.price_cents ?? 0);
+                            let catalogCents = baseCents;
+                            if (partnerDisp?.commission_type === 'percentage') {
+                              catalogCents = Math.round(baseCents * (1 - (partnerDisp.commission_value ?? 0) / 100));
+                            } else if (partnerDisp?.commission_type === 'fixed') {
+                              catalogCents = Math.max(0, baseCents - Math.round((partnerDisp.commission_value ?? 0) * 100));
+                            }
                             const autoCompTotal = selectedComplementIds.reduce((s, id) => { const c = availableComplements.find(x => x.id === id); return s + (c?.price_cents ?? 0); }, 0);
                             const flightCents = flightPriceOverride ? Math.round(parseFloat(flightPriceOverride) * 100) : catalogCents;
                             const compCents = complementPriceOverride ? Math.round(parseFloat(complementPriceOverride) * 100) : autoCompTotal;
