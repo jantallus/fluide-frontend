@@ -480,14 +480,33 @@ export default function EditSlotModal({
     const result: TimeGroup[] = [];
     let canFit = true;
     if (!isManual) {
-      for (const group of availableTimeGroups) {
+      // Pre-place existing booked slots from the current group (not locked)
+      const preByTime: Record<string, Slot[]> = {};
+      if (!groupLocked) {
+        groupRootSlots.forEach(s => {
+          const t = new Date(s.start_time).toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
+          if (!preByTime[t]) preByTime[t] = [];
+          preByTime[t].push(s);
+        });
+      }
+      // Merge existing + available into a unified sorted time list
+      const allTimes = [...new Set([...Object.keys(preByTime), ...availableTimeGroups.map(g => g.time)])].sort();
+      for (const time of allTimes) {
         if (remaining <= 0) break;
-        const take = Math.min(remaining, group.capacity);
-        result.push({ ...group, count: take });
-        remaining -= take;
+        const existingSlots = preByTime[time] ?? [];
+        const availGroup = availableTimeGroups.find(g => g.time === time);
+        const availSlots = availGroup?.slots ?? [];
+        const combinedSlots = [...existingSlots, ...availSlots];
+        const take = Math.min(remaining, combinedSlots.length);
+        if (take > 0) {
+          result.push({ time, capacity: combinedSlots.length, slots: combinedSlots, count: take });
+          remaining -= take;
+        }
       }
       if (remaining > 0) canFit = false;
-      if (remaining <= 0 && availableTimeGroups[result.length]) result.push({ ...availableTimeGroups[result.length], count: 0 });
+      const usedTimes = new Set(result.map(r => r.time));
+      const nextGroup = availableTimeGroups.find(g => !usedTimes.has(g.time));
+      if (remaining <= 0 && nextGroup) result.push({ ...nextGroup, count: 0 });
     } else {
       let lastNonZeroIndex = -1;
       for (let i = 0; i < availableTimeGroups.length; i++) {
@@ -502,7 +521,7 @@ export default function EditSlotModal({
     const slotsToUse: Slot[] = [];
     result.forEach(r => { for (let i = 0; i < r.count; i++) slotsToUse.push(r.slots[i]); });
     return { items: result, canFit, slotsToUse };
-  }, [availableTimeGroups, groupSize, manualCounts, isManual]);
+  }, [availableTimeGroups, groupSize, manualCounts, isManual, groupRootSlots, groupLocked]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleMainChange = (delta: number) => { setGroupSize(prev => Math.max(1, prev + delta)); setIsManual(false); };
