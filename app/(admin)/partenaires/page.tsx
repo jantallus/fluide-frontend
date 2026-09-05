@@ -13,6 +13,19 @@ interface BookingFields {
   notes: boolean;
 }
 
+interface PartnerFlightTypeConfig {
+  flight_type_id: number;
+  base_price_cents: number | null;
+}
+
+interface FlightTypeOption {
+  id: number;
+  name: string;
+  price_cents: number;
+  season?: string;
+  is_active?: boolean;
+}
+
 interface Partner {
   id: number;
   name: string;
@@ -23,6 +36,7 @@ interface Partner {
   commission_type: 'none' | 'percentage' | 'fixed';
   commission_value: number;
   facturable: boolean;
+  allowed_flight_types: PartnerFlightTypeConfig[];
 }
 
 const COLORS = [
@@ -68,23 +82,34 @@ const emptyPartner = (): Omit<Partner, 'id'> => ({
   commission_type: 'none',
   commission_value: 0,
   facturable: true,
+  allowed_flight_types: [],
 });
 
 export default function PartenairesPage() {
   const { toast, confirm } = useToast();
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [flightTypes, setFlightTypes] = useState<FlightTypeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Partner | null>(null);
   const [form, setForm] = useState(emptyPartner());
   const [mode, setMode] = useState<'minimal' | 'full' | 'custom'>('full');
   const [saving, setSaving] = useState(false);
+  // allowedFlightPrices: flight_type_id → price override string (empty = use catalog)
+  const [allowedFlightPrices, setAllowedFlightPrices] = useState<Record<number, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('/api/partners');
-      if (res.ok) setPartners(await res.json());
+      const [partnersRes, ftRes] = await Promise.all([
+        apiFetch('/api/partners'),
+        apiFetch('/api/flight-types'),
+      ]);
+      if (partnersRes.ok) setPartners(await partnersRes.json());
+      if (ftRes.ok) {
+        const data = await ftRes.json();
+        setFlightTypes(Array.isArray(data) ? data.filter((f: FlightTypeOption) => f.is_active !== false) : []);
+      }
     } finally { setLoading(false); }
   }, []);
 
@@ -95,13 +120,19 @@ export default function PartenairesPage() {
     const p = emptyPartner();
     setForm(p);
     setMode(getMode(p.booking_fields));
+    setAllowedFlightPrices({});
     setShowModal(true);
   };
 
   const openEdit = (p: Partner) => {
     setEditing(p);
-    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active, commission_type: p.commission_type || 'none', commission_value: p.commission_value ?? 0, facturable: p.facturable ?? true });
+    setForm({ name: p.name, code: p.code, color_code: p.color_code, booking_fields: { ...p.booking_fields }, is_active: p.is_active, commission_type: p.commission_type || 'none', commission_value: p.commission_value ?? 0, facturable: p.facturable ?? true, allowed_flight_types: p.allowed_flight_types || [] });
     setMode(getMode(p.booking_fields));
+    const prices: Record<number, string> = {};
+    (p.allowed_flight_types || []).forEach(ft => {
+      prices[ft.flight_type_id] = ft.base_price_cents != null ? (ft.base_price_cents / 100).toFixed(2) : '';
+    });
+    setAllowedFlightPrices(prices);
     setShowModal(true);
   };
 
@@ -121,10 +152,15 @@ export default function PartenairesPage() {
   const handleSave = async () => {
     if (!form.name.trim() || !form.code.trim()) { toast.error('Nom et code requis'); return; }
     setSaving(true);
+    const allowedFtIds = Object.keys(allowedFlightPrices).map(Number);
+    const allowed_flight_types = allowedFtIds.map(id => ({
+      flight_type_id: id,
+      base_price_cents: allowedFlightPrices[id] ? Math.round(parseFloat(allowedFlightPrices[id]) * 100) : null,
+    }));
     try {
       const method = editing ? 'PUT' : 'POST';
       const url = editing ? `/api/partners/${editing.id}` : '/api/partners';
-      const res = await apiFetch(url, { method, body: JSON.stringify(form) });
+      const res = await apiFetch(url, { method, body: JSON.stringify({ ...form, allowed_flight_types }) });
       if (res.ok) {
         toast.success(editing ? 'Partenaire mis à jour' : 'Partenaire créé');
         setShowModal(false);
@@ -371,6 +407,52 @@ export default function PartenairesPage() {
                     />
                   </div>
                 )}
+              </div>
+
+              {/* Prestations accessibles */}
+              <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                <p className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">✈️ Prestations accessibles</p>
+                <p className="text-[11px] text-slate-500">Laissez tout décoché pour autoriser toutes les prestations. Cochez pour restreindre, et saisissez un prix de base si différent du tarif catalogue.</p>
+                <div className="space-y-2">
+                  {flightTypes.map(ft => {
+                    const checked = ft.id in allowedFlightPrices;
+                    return (
+                      <div key={ft.id} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-indigo-100">
+                        <input
+                          type="checkbox"
+                          id={`ft-${ft.id}`}
+                          checked={checked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setAllowedFlightPrices(p => ({ ...p, [ft.id]: '' }));
+                            } else {
+                              setAllowedFlightPrices(p => { const n = { ...p }; delete n[ft.id]; return n; });
+                            }
+                          }}
+                          className="accent-indigo-600 w-4 h-4 shrink-0 cursor-pointer"
+                        />
+                        <label htmlFor={`ft-${ft.id}`} className="flex-1 cursor-pointer min-w-0">
+                          <span className="font-bold text-sm text-slate-700 block truncate">{ft.name}</span>
+                          <span className="text-[10px] text-slate-400">Tarif catalogue : {(ft.price_cents / 100).toFixed(2)} €</span>
+                        </label>
+                        {checked && (
+                          <div className="shrink-0 flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              placeholder={(ft.price_cents / 100).toFixed(2)}
+                              value={allowedFlightPrices[ft.id] ?? ''}
+                              onChange={e => setAllowedFlightPrices(p => ({ ...p, [ft.id]: e.target.value }))}
+                              className="w-24 border border-indigo-200 rounded-lg px-2 py-1 text-sm font-bold text-center bg-indigo-50 focus:outline-none focus:border-indigo-400"
+                            />
+                            <span className="text-xs text-slate-400">€</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Facturable */}

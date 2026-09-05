@@ -434,11 +434,16 @@ export default function EditSlotModal({
       if (matches > maxMatches) { maxMatches = matches; inferredPlan = pName; }
     }
     const activePlanTimes = planSchedules[inferredPlan] || new Set();
+    const selectedPartnerForFlight = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId) : null;
+    const partnerAllowedIds = selectedPartnerForFlight?.allowed_flight_types?.length
+      ? new Set(selectedPartnerForFlight.allowed_flight_types.map(ft => ft.flight_type_id))
+      : null;
     return flightTypes.filter(f => {
+      if (partnerAllowedIds && !partnerAllowedIds.has(f.id)) return false;
       const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
       return allowed.length === 0 || allowed.some((t: string) => activePlanTimes.has(t));
     });
-  }, [selectedEvent, slotDefs, appointments, flightTypes]);
+  }, [selectedEvent, slotDefs, appointments, flightTypes, selectedPartnerId, partners]);
 
   const availableTimeGroups = useMemo(() => {
     if (!selectedEvent || !formData.flight_type_id) return [];
@@ -592,7 +597,8 @@ export default function EditSlotModal({
     }
     if (paymentType === 'a_facturer' && selectedPartner) {
       const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
-      const priceCents = flight?.price_cents ?? 0;
+      const partnerFtConfig = selectedPartner.allowed_flight_types?.find(ft => ft.flight_type_id === flight?.id);
+      const priceCents = partnerFtConfig?.base_price_cents != null ? partnerFtConfig.base_price_cents : (flight?.price_cents ?? 0);
       let invoiceCents = priceCents;
       if (selectedPartner.commission_type === 'percentage') {
         invoiceCents = Math.round(priceCents * (1 - (selectedPartner.commission_value ?? 0) / 100));

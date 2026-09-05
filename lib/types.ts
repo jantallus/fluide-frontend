@@ -354,6 +354,11 @@ export interface PartnerBookingFields {
   notes: boolean;
 }
 
+export interface PartnerFlightType {
+  flight_type_id: number;
+  base_price_cents: number | null;
+}
+
 export interface Partner {
   id: number;
   name: string;
@@ -364,6 +369,7 @@ export interface Partner {
   commission_type?: 'none' | 'percentage' | 'fixed';
   commission_value?: number;
   facturable?: boolean;
+  allowed_flight_types?: PartnerFlightType[];
 }
 
 export type SettingsMap = Record<string, string>;
