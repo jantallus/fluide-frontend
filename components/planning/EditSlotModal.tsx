@@ -559,9 +559,14 @@ export default function EditSlotModal({
     }));
     onClose();
     try {
-      await Promise.all(updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) })));
+      const responses = await Promise.all(updatesToApply.map(u => apiFetch(`/api/slots/${u.id}`, { method: 'PATCH', body: JSON.stringify(u.data) })));
+      const failed = responses.filter(r => !r.ok);
+      if (failed.length > 0) {
+        toast.error('❌ Erreur lors de la sauvegarde. Veuillez réessayer.');
+        console.error('PATCH échoué pour', failed.length, 'slot(s)');
+      }
       await loadAppointments();
-    } catch { console.error('Erreur de sauvegarde silencieuse'); }
+    } catch { toast.error('❌ Erreur réseau lors de la sauvegarde.'); }
   };
 
   const handleSaveNote = async () => {
@@ -610,9 +615,17 @@ export default function EditSlotModal({
       ...existingPd,
       ...partnerPaymentData,
     };
-    if (paymentType) finalPaymentData.payment_type = paymentType;
-    if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
-      finalPaymentData.encaisseur_id = encaisseurId;
+    if (paymentType) {
+      finalPaymentData.payment_type = paymentType;
+      if (paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
+        finalPaymentData.encaisseur_id = encaisseurId;
+      } else if (paymentType === 'np' || paymentType === 'a_facturer') {
+        delete finalPaymentData.encaisseur_id;
+      }
+    } else {
+      // Paiement vidé (— Non renseigné —) : effacer payment_type et encaisseur_id hérités
+      delete finalPaymentData.payment_type;
+      delete finalPaymentData.encaisseur_id;
     }
     if (paymentType === 'a_facturer' && selectedPartner) {
       const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
@@ -675,7 +688,16 @@ export default function EditSlotModal({
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
         else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (effectiveTitle || ''); }
-        updatesToApply.push({ id: baseSlot.id, data: { ...effectiveFormData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: finalPaymentData } });
+        const isExistingBooked = groupRootSlots.some(s => s.id === baseSlot.id);
+        let slotPaymentData: Record<string, unknown>;
+        if (isExistingBooked) {
+          slotPaymentData = { ...finalPaymentData };
+        } else {
+          // Nouveau slot : ne pas hériter des champs Stripe/paiement du slot existant
+          slotPaymentData = { ...finalPaymentData };
+          ['online', 'cb', 'especes', 'cheque', 'ancv', 'ancv_connect', 'voucher', 'code', 'code_type', 'stripe_session_id', 'stripe_fee_cents', 'stripe_net_cents', 'google_synced'].forEach(f => delete slotPaymentData[f]);
+        }
+        updatesToApply.push({ id: baseSlot.id, data: { ...effectiveFormData, title: passengerTitle, status: 'booked', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, weightChecked: !!passengerWeights[index], payment_data: slotPaymentData } });
         if (slotsNeeded > 1) {
           const baseStartMs = new Date(baseSlot.start_time).getTime();
           for (let i = 1; i < slotsNeeded; i++) {
@@ -714,9 +736,16 @@ export default function EditSlotModal({
         Promise.all(scopedSlots.map(slot => {
           const slotExistingPd = (slot.payment_data || {}) as Record<string, unknown>;
           const slotPd: Record<string, unknown> = { ...slotExistingPd, ...partnerPaymentData };
-          if (paymentType) slotPd.payment_type = paymentType;
-          if (paymentType && paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
-            slotPd.encaisseur_id = encaisseurId;
+          if (paymentType) {
+            slotPd.payment_type = paymentType;
+            if (paymentType !== 'np' && paymentType !== 'a_facturer' && encaisseurId) {
+              slotPd.encaisseur_id = encaisseurId;
+            } else if (paymentType === 'np' || paymentType === 'a_facturer') {
+              delete slotPd.encaisseur_id;
+            }
+          } else {
+            delete slotPd.payment_type;
+            delete slotPd.encaisseur_id;
           }
           // Propager prix override et compléments
           if ('price_override_cents' in finalPaymentData) slotPd.price_override_cents = finalPaymentData.price_override_cents;
