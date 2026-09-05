@@ -1079,14 +1079,8 @@ export default function EditSlotModal({
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nom du contact et passagers</label>
                   {(() => {
                     const selP = partners.find(p => p.id.toString() === selectedPartnerId);
-                    const nameHidden = selP && selP.booking_fields?.name === false && !formData.title.trim();
-                    return nameHidden ? (
-                      <div className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm text-slate-400 opacity-50">
-                        Client {selP.name}
-                      </div>
-                    ) : (
-                      <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Clara Dupont  ou  Julien, Sophie, Marc..." />
-                    );
+                    const nameOptional = selP && selP.booking_fields?.name === false;
+                    return <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder={nameOptional ? `Nom (optionnel) — par défaut : Client ${selP!.name}` : 'Ex: Clara Dupont  ou  Julien, Sophie, Marc...'} />;
                   })()}
                   <span className="text-[9px] text-slate-400 ml-2 mt-1 block leading-tight">
                     💡 <b>Prénom Nom</b> pour un passager · séparés par virgules pour un groupe<br />
