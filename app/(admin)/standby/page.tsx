@@ -228,6 +228,14 @@ const STATUS_LABELS: Record<StandbyClient['status'], string> = {
   done: 'Effectué',
 };
 
+// Convertit une date ISO (potentiellement UTC) en YYYY-MM-DD local pour <input type="date">
+function toInputDate(s: string | null): string | null {
+  if (!s) return null;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s.slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function fmtDate(d: string | null) {
   if (!d) return '';
   const dt = new Date(d);
@@ -276,10 +284,10 @@ export default function StandbyPage() {
     setEditClient(c);
     setForm({ name: c.name||'', phone: c.phone||'', email: c.email||'', nb_passengers: c.nb_passengers,
       flight_type: c.flight_type||'', weight_info: c.weight_info||'', availability_text: c.availability_text||'',
-      availability_start: c.availability_start ? c.availability_start.slice(0, 10) : null,
-      availability_end: c.availability_end ? c.availability_end.slice(0, 10) : null,
+      availability_start: toInputDate(c.availability_start),
+      availability_end: toInputDate(c.availability_end),
       notes: c.notes||'', pilot_name: c.pilot_name,
-      booked_date: c.booked_date ? c.booked_date.slice(0, 10) : null,
+      booked_date: toInputDate(c.booked_date),
       booked_time: c.booked_time, slot_id: c.slot_id });
     setImportOpen(false);
     setParsed(null);
@@ -333,7 +341,7 @@ export default function StandbyPage() {
 
   const openSchedule = (c: StandbyClient) => {
     setScheduleModal(c);
-    setSchedForm({ pilot_name: c.pilot_name||'', booked_date: c.booked_date||'', booked_time: c.booked_time||'' });
+    setSchedForm({ pilot_name: c.pilot_name||'', booked_date: toInputDate(c.booked_date)||'', booked_time: c.booked_time||'' });
   };
 
   const saveSchedule = async () => {
