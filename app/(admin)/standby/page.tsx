@@ -1,0 +1,533 @@
+"use client";
+import React, { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/ui/ToastProvider';
+
+interface StandbyClient {
+  id: number;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  nb_passengers: number;
+  flight_type: string | null;
+  weight_info: string | null;
+  availability_text: string | null;
+  availability_start: string | null;
+  availability_end: string | null;
+  notes: string | null;
+  pilot_name: string | null;
+  booked_date: string | null;
+  booked_time: string | null;
+  slot_id: number | null;
+  status: 'pending' | 'scheduled' | 'done';
+  created_at: string;
+}
+
+const emptyClient = (): Omit<StandbyClient, 'id' | 'created_at' | 'status'> => ({
+  name: '', phone: '', email: '', nb_passengers: 1, flight_type: '',
+  weight_info: '', availability_text: '', availability_start: null, availability_end: null,
+  notes: '', pilot_name: null, booked_date: null, booked_time: null, slot_id: null,
+});
+
+function parseStandbyMessage(text: string) {
+  const emailM = text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/);
+  const phoneM = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
+  const phone = phoneM ? phoneM[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
+  const email = emailM ? emailM[0] : '';
+
+  // Nombre de passagers
+  const nbM = text.match(/(\d+)\s*(?:personne|passager|pax|adulte|place)s?/i)
+    || text.match(/(?:pour|réserver pour)\s+(\d+)/i)
+    || text.match(/(\d+)\s+vol/i);
+  const nb_passengers = nbM ? Math.min(parseInt(nbM[1]), 20) : 1;
+
+  // Type de vol
+  const flightTypes: [RegExp, string][] = [
+    [/performance|perfo/i, 'Performance'],
+    [/prestige/i, 'Prestige'],
+    [/découverte|decouverte/i, 'Découverte'],
+    [/plaisir|loisir/i, 'Plaisir'],
+    [/bi.*péda|peda|pédagogique/i, 'Bi pédagogique'],
+    [/bi.*merle|merle/i, 'Bi Merle'],
+    [/bi.*loup|loup/i, 'Bi Loup'],
+    [/bi.*cret|cret/i, 'Bi Crêt'],
+  ];
+  let flight_type = '';
+  for (const [re, label] of flightTypes) {
+    if (re.test(text)) { flight_type = label; break; }
+  }
+
+  // Poids (peut être plusieurs valeurs)
+  const weightMatches = [...text.matchAll(/(\d{2,3})\s*(?:kg|kilos?)\b/gi)];
+  const weight_info = weightMatches.length > 0
+    ? weightMatches.map(m => m[1] + ' kg').join(', ')
+    : '';
+
+  // Disponibilité : dates et plages
+  const monthNames: Record<string, number> = {
+    jan: 1, fév: 2, fev: 2, mar: 3, avr: 4, mai: 5, juin: 6,
+    juil: 7, jul: 7, aoû: 8, aou: 8, sep: 9, oct: 10, nov: 11, déc: 12, dec: 12,
+  };
+  let availability_start: string | null = null;
+  let availability_end: string | null = null;
+
+  // Format JJ/MM ou JJ/MM/AAAA
+  const dateRangeM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?\s*(?:au|[-–])\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i);
+  if (dateRangeM) {
+    const y = new Date().getFullYear();
+    availability_start = `${dateRangeM[3] || y}-${dateRangeM[2].padStart(2,'0')}-${dateRangeM[1].padStart(2,'0')}`;
+    availability_end = `${dateRangeM[6] || y}-${dateRangeM[5].padStart(2,'0')}-${dateRangeM[4].padStart(2,'0')}`;
+  } else {
+    // Recherche "X au Y mois"
+    const rangeMonthM = text.match(/(\d{1,2})\s+au\s+(\d{1,2})\s*\/?\s*([\wéèêîûôàùâ]{3,})/i);
+    if (rangeMonthM) {
+      const mon = rangeMonthM[3].toLowerCase().slice(0, 3);
+      const mNum = monthNames[mon];
+      if (mNum) {
+        const y = new Date().getFullYear();
+        const mm = String(mNum).padStart(2, '0');
+        availability_start = `${y}-${mm}-${rangeMonthM[1].padStart(2, '0')}`;
+        availability_end = `${y}-${mm}-${rangeMonthM[2].padStart(2, '0')}`;
+      }
+    } else {
+      // Date unique JJ/MM
+      const singleDateM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/);
+      if (singleDateM) {
+        const y = singleDateM[3] || new Date().getFullYear().toString();
+        availability_start = `${y}-${singleDateM[2].padStart(2,'0')}-${singleDateM[1].padStart(2,'0')}`;
+        availability_end = availability_start;
+      }
+    }
+  }
+
+  // Nom principal
+  const cap = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  let name = '';
+  const labelRe = /(?:nom|prénom|prenom|contact|client|passager)\s*[:\-]\s*([A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ '\-]{2,40})/i;
+  const labelM = text.match(labelRe);
+  if (labelM) {
+    name = cap(labelM[1]);
+  } else {
+    const introRe = /(?:je m['']appelle|c'est|je suis|mon nom est)\s+([A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ '\-]{2,40})/i;
+    const introM = text.match(introRe);
+    if (introM) name = cap(introM[1]);
+    else {
+      // Nom en majuscules (format typique email) ex "GHIER Elise"
+      const capsRe = /\b([A-ZÉÈÊÎÛÔÀÙÂ]{2,20})\s+([A-ZÀ-ÿa-zà-ÿ][a-zà-ÿ]{1,20})/;
+      const capsM = text.match(capsRe);
+      if (capsM) name = cap(capsM[2] + ' ' + capsM[1]);
+    }
+  }
+
+  // Notes : ce qui reste (tout sauf le premier paragraphe/ligne identifié)
+  const notes = text.slice(0, 500).trim();
+
+  return { name, phone, email, nb_passengers, flight_type, weight_info, availability_start, availability_end, notes };
+}
+
+const STATUS_LABELS: Record<StandbyClient['status'], string> = {
+  pending: 'En attente',
+  scheduled: 'Programmé',
+  done: 'Effectué',
+};
+
+function fmtDate(d: string | null) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+export default function StandbyPage() {
+  const [clients, setClients] = useState<StandbyClient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editClient, setEditClient] = useState<StandbyClient | null>(null);
+  const [form, setForm] = useState(emptyClient());
+  const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [parsed, setParsed] = useState<ReturnType<typeof parseStandbyMessage> | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<StandbyClient | null>(null);
+  const [schedForm, setSchedForm] = useState({ pilot_name: '', booked_date: '', booked_time: '' });
+  const [showArchive, setShowArchive] = useState(false);
+  const { toast } = useToast();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch('/api/standby');
+      if (res.ok) setClients(await res.json());
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const active = clients.filter(c => c.status !== 'done');
+  const archived = clients.filter(c => c.status === 'done');
+
+  const openCreate = () => {
+    setEditClient(null);
+    setForm(emptyClient());
+    setImportOpen(false);
+    setImportText('');
+    setParsed(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (c: StandbyClient) => {
+    setEditClient(c);
+    setForm({ name: c.name||'', phone: c.phone||'', email: c.email||'', nb_passengers: c.nb_passengers,
+      flight_type: c.flight_type||'', weight_info: c.weight_info||'', availability_text: c.availability_text||'',
+      availability_start: c.availability_start, availability_end: c.availability_end, notes: c.notes||'',
+      pilot_name: c.pilot_name, booked_date: c.booked_date, booked_time: c.booked_time, slot_id: c.slot_id });
+    setImportOpen(false);
+    setParsed(null);
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const body = { ...form, status: editClient?.status || 'pending' };
+      const res = editClient
+        ? await apiFetch(`/api/standby/${editClient.id}`, { method: 'PUT', body: JSON.stringify(body) })
+        : await apiFetch('/api/standby', { method: 'POST', body: JSON.stringify(body) });
+      if (res.ok) {
+        toast.success(editClient ? 'Fiche mise à jour' : 'Client ajouté en standby');
+        setModalOpen(false);
+        load();
+      } else { toast.error('Erreur lors de la sauvegarde'); }
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Supprimer cette fiche ?')) return;
+    const res = await apiFetch(`/api/standby/${id}`, { method: 'DELETE' });
+    if (res.ok) { toast.success('Supprimé'); load(); }
+  };
+
+  const handleStatusChange = async (c: StandbyClient, status: StandbyClient['status']) => {
+    const res = await apiFetch(`/api/standby/${c.id}`, { method: 'PUT', body: JSON.stringify({ ...c, status }) });
+    if (res.ok) { toast.success('Statut mis à jour'); load(); }
+  };
+
+  const applyParsed = () => {
+    if (!parsed) return;
+    setForm(f => ({
+      ...f,
+      name: parsed.name || f.name,
+      phone: parsed.phone || f.phone,
+      email: parsed.email || f.email,
+      nb_passengers: parsed.nb_passengers > 1 ? parsed.nb_passengers : f.nb_passengers,
+      flight_type: parsed.flight_type || f.flight_type,
+      weight_info: parsed.weight_info || f.weight_info,
+      availability_start: parsed.availability_start || f.availability_start,
+      availability_end: parsed.availability_end || f.availability_end,
+      notes: parsed.notes || f.notes,
+    }));
+    setImportOpen(false);
+    setParsed(null);
+    setImportText('');
+  };
+
+  const openSchedule = (c: StandbyClient) => {
+    setScheduleModal(c);
+    setSchedForm({ pilot_name: c.pilot_name||'', booked_date: c.booked_date||'', booked_time: c.booked_time||'' });
+  };
+
+  const saveSchedule = async () => {
+    if (!scheduleModal) return;
+    const updated = { ...scheduleModal, ...schedForm, status: 'scheduled' as const };
+    const res = await apiFetch(`/api/standby/${scheduleModal.id}`, { method: 'PUT', body: JSON.stringify(updated) });
+    if (res.ok) { toast.success('Créneau enregistré — ligne passée en orange'); setScheduleModal(null); load(); }
+  };
+
+  const rowBg = (c: StandbyClient) => {
+    if (c.status === 'done') return 'bg-emerald-50 border-l-4 border-l-emerald-400';
+    if (c.status === 'scheduled') return 'bg-orange-50 border-l-4 border-l-orange-400';
+    return 'bg-white border-l-4 border-l-slate-200';
+  };
+
+  const statusDot = (s: StandbyClient['status']) => {
+    if (s === 'done') return 'bg-emerald-400';
+    if (s === 'scheduled') return 'bg-orange-400';
+    return 'bg-slate-300';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Liste d&apos;attente</h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Contacts sans créneau défini · <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" /> En attente</span>
+            {' '}<span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Programmé</span>
+            {' '}<span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Effectué</span>
+          </p>
+        </div>
+        <button onClick={openCreate} className="bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-sm hover:bg-sky-600 transition-colors whitespace-nowrap">
+          + Ajouter
+        </button>
+      </div>
+
+      {/* Tableau actif */}
+      {loading ? (
+        <div className="text-center py-12 text-slate-400 animate-pulse">Chargement...</div>
+      ) : active.length === 0 ? (
+        <div className="text-center py-16 text-slate-300">
+          <p className="text-4xl mb-3">🪂</p>
+          <p className="font-bold text-lg">Aucun client en attente</p>
+          <p className="text-sm">Ajoutez un contact avec le bouton ci-dessus</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-3xl shadow-sm border border-slate-100">
+          <table className="w-full text-sm min-w-[700px]">
+            <thead>
+              <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                <th className="text-left p-3 pl-4">Statut</th>
+                <th className="text-left p-3">Contact</th>
+                <th className="text-left p-3">Pax</th>
+                <th className="text-left p-3">Vol</th>
+                <th className="text-left p-3">Disponibilité</th>
+                <th className="text-left p-3">Programmé</th>
+                <th className="text-left p-3">Notes</th>
+                <th className="p-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {active.map(c => (
+                <tr key={c.id} className={`${rowBg(c)} transition-colors`}>
+                  <td className="p-3 pl-4">
+                    <select
+                      value={c.status}
+                      onChange={e => handleStatusChange(c, e.target.value as StandbyClient['status'])}
+                      className="text-[10px] font-black uppercase rounded-lg px-2 py-1 border border-slate-200 bg-white cursor-pointer focus:outline-none"
+                    >
+                      <option value="pending">En attente</option>
+                      <option value="scheduled">Programmé</option>
+                      <option value="done">Effectué ✓</option>
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <p className="font-bold text-slate-800 truncate max-w-[140px]">{c.name || <span className="text-slate-300 italic">—</span>}</p>
+                    {c.phone && <p className="text-xs text-slate-400">{c.phone}</p>}
+                    {c.email && <p className="text-xs text-slate-400 truncate max-w-[140px]">{c.email}</p>}
+                  </td>
+                  <td className="p-3 font-bold text-slate-700">
+                    {c.nb_passengers > 1 ? <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full text-xs font-black">{c.nb_passengers} pers.</span> : '1'}
+                    {c.weight_info && <p className="text-[10px] text-slate-400 mt-0.5">{c.weight_info}</p>}
+                  </td>
+                  <td className="p-3">
+                    <span className="text-xs font-bold text-slate-700">{c.flight_type || <span className="text-slate-300">—</span>}</span>
+                  </td>
+                  <td className="p-3">
+                    {(c.availability_start || c.availability_text) ? (
+                      <div>
+                        {c.availability_start && (
+                          <p className="text-xs font-bold text-slate-700">
+                            {fmtDate(c.availability_start)}
+                            {c.availability_end && c.availability_end !== c.availability_start && ` → ${fmtDate(c.availability_end)}`}
+                          </p>
+                        )}
+                        {c.availability_text && <p className="text-[10px] text-slate-400 truncate max-w-[120px]">{c.availability_text}</p>}
+                      </div>
+                    ) : <span className="text-slate-300">—</span>}
+                  </td>
+                  <td className="p-3">
+                    {c.status === 'scheduled' && (c.booked_date || c.pilot_name) ? (
+                      <div>
+                        <p className="text-xs font-bold text-orange-700">{fmtDate(c.booked_date)} {c.booked_time}</p>
+                        {c.pilot_name && <p className="text-[10px] text-slate-400">{c.pilot_name}</p>}
+                      </div>
+                    ) : (
+                      <button onClick={() => openSchedule(c)} className="text-[10px] font-black text-sky-500 hover:text-sky-700 uppercase tracking-wide flex items-center gap-1">
+                        <span>📅</span> Caler
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-3 max-w-[160px]">
+                    <p className="text-[10px] text-slate-400 line-clamp-2">{c.notes}</p>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700 transition-colors" title="Modifier">✏️</button>
+                      <button onClick={() => handleDelete(c.id)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Supprimer">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Archive */}
+      {archived.length > 0 && (
+        <div>
+          <button onClick={() => setShowArchive(a => !a)} className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-400 hover:text-slate-700 tracking-widest transition-colors">
+            <span>{showArchive ? '▼' : '▶'}</span> Archive — effectués ({archived.length})
+          </button>
+          {showArchive && (
+            <div className="mt-3 overflow-x-auto rounded-3xl border border-emerald-100">
+              <table className="w-full text-sm min-w-[600px]">
+                <tbody className="divide-y divide-emerald-50">
+                  {archived.map(c => (
+                    <tr key={c.id} className="bg-emerald-50 opacity-70">
+                      <td className="p-3 pl-4"><span className="text-[10px] font-black text-emerald-600 uppercase">✓ Effectué</span></td>
+                      <td className="p-3"><p className="font-bold text-slate-700">{c.name}</p>{c.phone && <p className="text-xs text-slate-400">{c.phone}</p>}</td>
+                      <td className="p-3 text-xs text-slate-500">{c.flight_type}</td>
+                      <td className="p-3 text-xs text-slate-500">{fmtDate(c.booked_date)} {c.booked_time}</td>
+                      <td className="p-3 text-xs text-slate-400">{c.pilot_name}</td>
+                      <td className="p-3">
+                        <div className="flex gap-1">
+                          <button onClick={() => handleStatusChange(c, 'pending')} className="text-[10px] text-slate-400 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-white transition-colors">↩ Remettre</button>
+                          <button onClick={() => handleDelete(c.id)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-300 hover:text-rose-400 transition-colors">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal création / édition */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg my-8">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="font-black text-lg">{editClient ? 'Modifier la fiche' : 'Nouveau contact standby'}</h2>
+              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-xl font-black">✕</button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Import */}
+              <div>
+                <button
+                  onClick={() => { setImportOpen(o => !o); setParsed(null); setImportText(''); }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-sky-50 border border-sky-100 text-[11px] font-black uppercase text-sky-500 hover:bg-sky-100 transition-colors"
+                >
+                  <span>✨ Importer depuis un message</span>
+                  <span>{importOpen ? '▲' : '▼'}</span>
+                </button>
+                {importOpen && (
+                  <div className="mt-3 space-y-2">
+                    <textarea
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm font-medium text-slate-700 resize-none focus:outline-none focus:border-sky-200"
+                      rows={6}
+                      placeholder="Collez ici un email, SMS ou message WhatsApp..."
+                      value={importText}
+                      onChange={e => { setImportText(e.target.value); setParsed(null); }}
+                    />
+                    <button
+                      onClick={() => { if (importText.trim()) setParsed(parseStandbyMessage(importText)); }}
+                      disabled={!importText.trim()}
+                      className="w-full py-2.5 rounded-xl text-[11px] font-black uppercase text-white bg-sky-500 hover:bg-sky-600 transition-colors disabled:opacity-40"
+                    >
+                      Analyser le message
+                    </button>
+                    {parsed && (
+                      <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 space-y-1.5">
+                        <p className="text-[10px] font-black uppercase text-sky-500 mb-2">Résultat détecté</p>
+                        {parsed.name && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Nom </span>{parsed.name}</p>}
+                        {parsed.phone && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Tél </span>{parsed.phone}</p>}
+                        {parsed.email && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Email </span>{parsed.email}</p>}
+                        {parsed.nb_passengers > 1 && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Passagers </span>{parsed.nb_passengers}</p>}
+                        {parsed.flight_type && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Vol </span>{parsed.flight_type}</p>}
+                        {parsed.weight_info && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Poids </span>{parsed.weight_info}</p>}
+                        {parsed.availability_start && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Dispo </span>{fmtDate(parsed.availability_start)}{parsed.availability_end !== parsed.availability_start && ` → ${fmtDate(parsed.availability_end)}`}</p>}
+                        <button onClick={applyParsed} className="w-full mt-2 py-2 rounded-xl text-[11px] font-black uppercase text-white bg-pink-500 hover:bg-pink-600 transition-colors">
+                          Remplir le formulaire
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nom complet</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.name||''} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Prénom Nom" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Téléphone</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.phone||''} onChange={e => setForm(f => ({...f, phone: e.target.value}))} placeholder="06 12 34 56 78" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Email</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.email||''} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="email@..." type="email" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nb passagers</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.nb_passengers} onChange={e => setForm(f => ({...f, nb_passengers: parseInt(e.target.value)||1}))} type="number" min={1} max={20} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Type de vol</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.flight_type||''} onChange={e => setForm(f => ({...f, flight_type: e.target.value}))} placeholder="Plaisir, Performance..." />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Poids</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.weight_info||''} onChange={e => setForm(f => ({...f, weight_info: e.target.value}))} placeholder="75 kg, 60 kg..." />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Dispo du</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.availability_start||''} onChange={e => setForm(f => ({...f, availability_start: e.target.value||null}))} type="date" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Dispo au</label>
+                  <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={form.availability_end||''} onChange={e => setForm(f => ({...f, availability_end: e.target.value||null}))} type="date" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Message / Notes</label>
+                  <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-medium text-sm mt-1 resize-none" rows={4} value={form.notes||''} onChange={e => setForm(f => ({...f, notes: e.target.value}))} placeholder="Infos complémentaires, message original..." />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setModalOpen(false)} className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">Annuler</button>
+                <button onClick={handleSave} disabled={saving} className="flex-1 py-3 rounded-2xl bg-slate-900 text-white text-sm font-black hover:bg-sky-600 transition-colors disabled:opacity-50">
+                  {saving ? 'Sauvegarde...' : editClient ? 'Enregistrer' : 'Ajouter'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal créneau */}
+      {scheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="font-black">📅 Caler un créneau</h2>
+              <button onClick={() => setScheduleModal(null)} className="text-slate-400 hover:text-slate-700 font-black">✕</button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-sm font-bold text-slate-600">{scheduleModal.name}</p>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Pilote</label>
+                <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={schedForm.pilot_name} onChange={e => setSchedForm(s => ({...s, pilot_name: e.target.value}))} placeholder="Nom du pilote" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Date</label>
+                <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={schedForm.booked_date} onChange={e => setSchedForm(s => ({...s, booked_date: e.target.value}))} type="date" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Heure</label>
+                <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={schedForm.booked_time} onChange={e => setSchedForm(s => ({...s, booked_time: e.target.value}))} placeholder="11:05" />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setScheduleModal(null)} className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">Annuler</button>
+                <button onClick={saveSchedule} className="flex-1 py-3 rounded-2xl bg-orange-500 text-white text-sm font-black hover:bg-orange-600 transition-colors">Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
