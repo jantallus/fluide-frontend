@@ -662,7 +662,7 @@ export default function StandbyPage() {
                     nb_passengers: scheduleModal.nb_passengers || 1,
                   };
                   try { localStorage.setItem('standby_prefill', JSON.stringify(prefill)); } catch { /* ignore */ }
-                  const date = schedForm.booked_date || scheduleModal.availability_start?.slice(0, 10) || '';
+                  const date = schedForm.booked_date || toInputDate(scheduleModal.availability_start) || '';
                   router.push(`/planning${date ? `?date=${date}` : ''}`);
                 }}
                 className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors"
