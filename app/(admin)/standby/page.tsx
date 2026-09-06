@@ -80,12 +80,15 @@ function parseDate(s: string): string | null {
 }
 
 function parseStandbyMessage(text: string) {
-  const phoneM = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
-  const phone = phoneM ? phoneM[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
-
   // ── Extraction structurée en priorité (formulaire Label:Valeur) ──
   const fields = extractFormFields(text);
   const isStructured = Object.keys(fields).length >= 2;
+
+  // Téléphone : champ structuré en priorité (capte les numéros suisses, belges, etc.)
+  const phoneFromField = (fields['téléphone'] || fields['telephone'] || fields['tél'] || fields['tel'] || '').trim();
+  const phoneM = phoneFromField ? null : text.match(/(?:\+\d{1,3}\s?|\d{2,4}\s?)[\d\s.\-]{6,20}/);
+  const phoneRaw = phoneFromField || (phoneM ? phoneM[0] : '');
+  const phone = phoneRaw.replace(/[\s.\-]/g, '').replace(/^0033/, '+33');
 
   // Email : depuis champ structuré (correctement borné par le label suivant) ou regex fallback
   const emailFromField = (fields['email'] || fields['e-mail'] || '').trim();
