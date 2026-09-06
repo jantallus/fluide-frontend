@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -313,6 +314,17 @@ export default function StandbyPage() {
                     <p className="font-bold text-slate-800 truncate max-w-[140px]">{c.name || <span className="text-slate-300 italic">—</span>}</p>
                     {c.phone && <p className="text-xs text-slate-400">{c.phone}</p>}
                     {c.email && <p className="text-xs text-slate-400 truncate max-w-[140px]">{c.email}</p>}
+                    <div className="flex gap-1.5 mt-1.5">
+                      {c.phone && (
+                        <a href={`tel:${c.phone}`} title="Appeler" className="w-6 h-6 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-xs transition-colors" aria-label="Appeler">📞</a>
+                      )}
+                      {c.phone && (
+                        <a href={`sms:${c.phone}`} title="SMS" className="w-6 h-6 rounded-full bg-sky-50 hover:bg-sky-100 flex items-center justify-center text-xs transition-colors" aria-label="SMS">💬</a>
+                      )}
+                      {c.email && (
+                        <a href={`mailto:${c.email}`} title="Email" className="w-6 h-6 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-xs transition-colors" aria-label="Email">✉️</a>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3 font-bold text-slate-700">
                     {c.nb_passengers > 1 ? <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full text-xs font-black">{c.nb_passengers} pers.</span> : '1'}
@@ -341,8 +353,8 @@ export default function StandbyPage() {
                         {c.pilot_name && <p className="text-[10px] text-slate-400">{c.pilot_name}</p>}
                       </div>
                     ) : (
-                      <button onClick={() => openSchedule(c)} className="text-[10px] font-black text-sky-500 hover:text-sky-700 uppercase tracking-wide flex items-center gap-1">
-                        <span>📅</span> Caler
+                      <button onClick={() => openSchedule(c)} className="text-[10px] font-black text-sky-500 hover:text-sky-700 uppercase tracking-wide flex items-center gap-1 whitespace-nowrap">
+                        📅 Caler un créneau
                       </button>
                     )}
                   </td>
@@ -375,7 +387,15 @@ export default function StandbyPage() {
                   {archived.map(c => (
                     <tr key={c.id} className="bg-emerald-50 opacity-70">
                       <td className="p-3 pl-4"><span className="text-[10px] font-black text-emerald-600 uppercase">✓ Effectué</span></td>
-                      <td className="p-3"><p className="font-bold text-slate-700">{c.name}</p>{c.phone && <p className="text-xs text-slate-400">{c.phone}</p>}</td>
+                      <td className="p-3">
+                        <p className="font-bold text-slate-700">{c.name}</p>
+                        {c.phone && <p className="text-xs text-slate-400">{c.phone}</p>}
+                        <div className="flex gap-1.5 mt-1">
+                          {c.phone && <a href={`tel:${c.phone}`} className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px]">📞</a>}
+                          {c.phone && <a href={`sms:${c.phone}`} className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center text-[10px]">💬</a>}
+                          {c.email && <a href={`mailto:${c.email}`} className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px]">✉️</a>}
+                        </div>
+                      </td>
                       <td className="p-3 text-xs text-slate-500">{c.flight_type}</td>
                       <td className="p-3 text-xs text-slate-500">{fmtDate(c.booked_date)} {c.booked_time}</td>
                       <td className="p-3 text-xs text-slate-400">{c.pilot_name}</td>
@@ -520,7 +540,13 @@ export default function StandbyPage() {
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Heure</label>
                 <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={schedForm.booked_time} onChange={e => setSchedForm(s => ({...s, booked_time: e.target.value}))} placeholder="11:05" />
               </div>
-              <div className="flex gap-3 pt-1">
+              <Link
+                href="/planning"
+                className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors text-center block"
+              >
+                📅 Ouvrir le calendrier
+              </Link>
+              <div className="flex gap-3">
                 <button onClick={() => setScheduleModal(null)} className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">Annuler</button>
                 <button onClick={saveSchedule} className="flex-1 py-3 rounded-2xl bg-orange-500 text-white text-sm font-black hover:bg-orange-600 transition-colors">Enregistrer</button>
               </div>
