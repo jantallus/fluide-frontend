@@ -228,18 +228,19 @@ const STATUS_LABELS: Record<StandbyClient['status'], string> = {
   done: 'Effectué',
 };
 
-// Convertit une date ISO (potentiellement UTC) en YYYY-MM-DD local pour <input type="date">
+// Les colonnes DATE de pg arrivent déjà comme "YYYY-MM-DD" (setTypeParser dans db.js).
+// On tronque à 10 chars au cas où la valeur serait un ISO datetime.
 function toInputDate(s: string | null): string | null {
   if (!s) return null;
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return s.slice(0, 10);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return s.slice(0, 10);
 }
 
 function fmtDate(d: string | null) {
   if (!d) return '';
-  const dt = new Date(d);
-  return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const s = d.slice(0, 10); // "YYYY-MM-DD"
+  const [y, m, day] = s.split('-');
+  if (!y || !m || !day) return s;
+  return `${day}/${m}/${y.slice(2)}`; // "DD/MM/YY"
 }
 
 export default function StandbyPage() {
