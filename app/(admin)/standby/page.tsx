@@ -207,13 +207,19 @@ function parseStandbyMessage(text: string) {
     }
   }
 
+  // Nom passager normalisé (différent du contact)
+  const passenger_name = passengerName
+    ? cap(passengerName.split(/\s+/).slice(0, 3).join(' '))
+    : '';
+  const passengerDiffersFromContact = passenger_name && passenger_name !== name;
+
   // Notes : message brut + passager si différent du contact
   let notes = text.slice(0, 500).trim();
-  if (passengerName && name && cap(passengerName.split(/\s+/).slice(0,3).join(' ')) !== name) {
-    notes = `Passager : ${cap(passengerName)}\n` + notes;
+  if (passengerDiffersFromContact) {
+    notes = `Passager : ${passenger_name}\n` + notes;
   }
 
-  return { name, phone, email, nb_passengers, flight_type, weight_info, availability_start, availability_end, notes };
+  return { name, phone, email, nb_passengers, flight_type, weight_info, availability_start, availability_end, notes, passenger_name: passengerDiffersFromContact ? passenger_name : '' };
 }
 
 const STATUS_LABELS: Record<StandbyClient['status'], string> = {
@@ -546,7 +552,8 @@ export default function StandbyPage() {
                     {parsed && (
                       <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 space-y-1.5">
                         <p className="text-[10px] font-black uppercase text-sky-500 mb-2">Résultat détecté</p>
-                        {parsed.name && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Nom </span>{parsed.name}</p>}
+                        {parsed.name && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Contact </span>{parsed.name}</p>}
+                        {parsed.passenger_name && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Passager </span>{parsed.passenger_name}</p>}
                         {parsed.phone && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Tél </span>{parsed.phone}</p>}
                         {parsed.email && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Email </span>{parsed.email}</p>}
                         {parsed.nb_passengers > 1 && <p className="text-xs"><span className="text-[9px] font-black text-slate-400 uppercase">Passagers </span>{parsed.nb_passengers}</p>}
