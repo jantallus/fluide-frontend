@@ -30,19 +30,90 @@ const emptyClient = (): Omit<StandbyClient, 'id' | 'created_at' | 'status'> => (
   notes: '', pilot_name: null, booked_date: null, booked_time: null, slot_id: null,
 });
 
+const cap = (s: string) =>
+  s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+
+// Extrait les paires Label:Valeur d'un message de formulaire concaténé
+function extractFormFields(text: string): Record<string, string> {
+  const LABELS = [
+    'Nom du passager', 'Nom passager', 'Prénom du passager', 'Prénom passager',
+    'Poids du passager', 'Poids passager', 'Poids',
+    'Type de vol', 'TypeVol', 'Type vol',
+    'Date de début', 'Date debut', 'Date de debut', 'Date début', 'Date de fin', 'Date fin',
+    'Téléphone', 'Telephone', 'Tél', 'Tel',
+    'Email', 'E-mail',
+    'Adresse', 'Message', 'Remarques',
+    'Nom',
+  ];
+  const escaped = LABELS.map(l => l.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
+  const re = new RegExp(`(${escaped.join('|')})\\s*[:\\-]\\s*`, 'gi');
+
+  const fields: Record<string, string> = {};
+  let lastKey = '';
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (lastKey && m.index > lastIndex) {
+      fields[lastKey] = text.slice(lastIndex, m.index).trim();
+    }
+    lastKey = m[1].toLowerCase().trim();
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastKey && lastIndex < text.length) {
+    fields[lastKey] = text.slice(lastIndex).trim();
+  }
+  return fields;
+}
+
+function parseDate(s: string): string | null {
+  if (!s) return null;
+  // ISO YYYY-MM-DD
+  const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // JJ/MM/AAAA
+  const dmy4 = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmy4) return `${dmy4[3]}-${dmy4[2].padStart(2,'0')}-${dmy4[1].padStart(2,'0')}`;
+  // JJ/MM
+  const dmy = s.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (dmy) return `${new Date().getFullYear()}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+  return null;
+}
+
 function parseStandbyMessage(text: string) {
   const emailM = text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/);
   const phoneM = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
   const phone = phoneM ? phoneM[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
   const email = emailM ? emailM[0] : '';
 
-  // Nombre de passagers
-  const nbM = text.match(/(\d+)\s*(?:personne|passager|pax|adulte|place)s?/i)
-    || text.match(/(?:pour|réserver pour)\s+(\d+)/i)
-    || text.match(/(\d+)\s+vol/i);
+  // ── Tentative d'extraction structurée (formulaire Label:Valeur) ──
+  const fields = extractFormFields(text);
+  const isStructured = Object.keys(fields).length >= 2;
+
+  // Nom contact : texte avant le premier label connu (le réservant)
+  let name = '';
+  const contactName = text.split(/téléphone|telephone|tél\b|email|nom\s+du\s+passager/i)[0].trim();
+  const contactWords = contactName.split(/\s+/).filter(w => /^[A-ZÀ-ÿa-zà-ÿ''\-]+$/.test(w) && w.length > 1);
+  if (contactWords.length >= 2) {
+    name = cap(contactWords.slice(0, 3).join(' '));
+  }
+
+  // Nom passager (depuis champ structuré, s'il diffère du contact)
+  const passengerName = fields['nom du passager'] || fields['nom passager'] || fields['prénom du passager'] || fields['prénom passager'] || '';
+
+  // Si pas de contact détecté, utiliser le nom passager
+  if (!name && passengerName) name = cap(passengerName.split(/\s+/).slice(0, 3).join(' '));
+  // Si contact = passager (même texte), garder le contact
+  // Si les deux sont différents, le nom affiché = contact, le passager va dans les notes
+
+  // Nb passagers
+  const nbM = !isStructured
+    ? (text.match(/(\d+)\s*(?:personne|passager|pax|adulte|place)s?/i)
+      || text.match(/(?:pour|réserver pour)\s+(\d+)/i))
+    : null;
   const nb_passengers = nbM ? Math.min(parseInt(nbM[1]), 20) : 1;
 
   // Type de vol
+  const flightRaw = fields['type de vol'] || fields['typevol'] || fields['type vol'] || text;
   const flightTypes: [RegExp, string][] = [
     [/performance|perfo/i, 'Performance'],
     [/prestige/i, 'Prestige'],
@@ -55,16 +126,21 @@ function parseStandbyMessage(text: string) {
   ];
   let flight_type = '';
   for (const [re, label] of flightTypes) {
-    if (re.test(text)) { flight_type = label; break; }
+    if (re.test(flightRaw)) { flight_type = label; break; }
   }
 
-  // Poids (peut être plusieurs valeurs)
-  const weightMatches = [...text.matchAll(/(\d{2,3})\s*(?:kg|kilos?)\b/gi)];
-  const weight_info = weightMatches.length > 0
-    ? weightMatches.map(m => m[1] + ' kg').join(', ')
-    : '';
+  // Poids — depuis champ structuré en priorité
+  const weightRaw = fields['poids du passager'] || fields['poids passager'] || fields['poids'] || '';
+  let weight_info = '';
+  if (weightRaw) {
+    const wNum = weightRaw.match(/\d+/);
+    weight_info = wNum ? wNum[0] + ' kg' : '';
+  } else {
+    const weightMatches = [...text.matchAll(/(\d{2,3})\s*(?:kg|kilos?)\b/gi)];
+    weight_info = weightMatches.map(m => m[1] + ' kg').join(', ');
+  }
 
-  // Disponibilité : dates et plages
+  // Dates de disponibilité
   const monthNames: Record<string, number> = {
     jan: 1, fév: 2, fev: 2, mar: 3, avr: 4, mai: 5, juin: 6,
     juil: 7, jul: 7, aoû: 8, aou: 8, sep: 9, oct: 10, nov: 11, déc: 12, dec: 12,
@@ -72,56 +148,67 @@ function parseStandbyMessage(text: string) {
   let availability_start: string | null = null;
   let availability_end: string | null = null;
 
-  // Format JJ/MM ou JJ/MM/AAAA
-  const dateRangeM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?\s*(?:au|[-–])\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i);
-  if (dateRangeM) {
-    const y = new Date().getFullYear();
-    availability_start = `${dateRangeM[3] || y}-${dateRangeM[2].padStart(2,'0')}-${dateRangeM[1].padStart(2,'0')}`;
-    availability_end = `${dateRangeM[6] || y}-${dateRangeM[5].padStart(2,'0')}-${dateRangeM[4].padStart(2,'0')}`;
-  } else {
-    // Recherche "X au Y mois"
-    const rangeMonthM = text.match(/(\d{1,2})\s+au\s+(\d{1,2})\s*\/?\s*([\wéèêîûôàùâ]{3,})/i);
-    if (rangeMonthM) {
-      const mon = rangeMonthM[3].toLowerCase().slice(0, 3);
-      const mNum = monthNames[mon];
-      if (mNum) {
-        const y = new Date().getFullYear();
-        const mm = String(mNum).padStart(2, '0');
-        availability_start = `${y}-${mm}-${rangeMonthM[1].padStart(2, '0')}`;
-        availability_end = `${y}-${mm}-${rangeMonthM[2].padStart(2, '0')}`;
-      }
+  // Champs structurés en priorité
+  const startRaw = fields['date de début'] || fields['date debut'] || fields['date de debut'] || fields['date début'] || '';
+  const endRaw = fields['date de fin'] || fields['date fin'] || '';
+  if (startRaw) availability_start = parseDate(startRaw);
+  if (endRaw) availability_end = parseDate(endRaw);
+  if (availability_start && !availability_end) availability_end = availability_start;
+
+  // Fallback : recherche libre dans le texte
+  if (!availability_start) {
+    // ISO date dans le texte
+    const isoM = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoM) {
+      availability_start = `${isoM[1]}-${isoM[2]}-${isoM[3]}`;
+      availability_end = availability_start;
     } else {
-      // Date unique JJ/MM
-      const singleDateM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/);
-      if (singleDateM) {
-        const y = singleDateM[3] || new Date().getFullYear().toString();
-        availability_start = `${y}-${singleDateM[2].padStart(2,'0')}-${singleDateM[1].padStart(2,'0')}`;
-        availability_end = availability_start;
+      // Plage JJ/MM - JJ/MM
+      const dateRangeM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?\s*(?:au|[-–])\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i);
+      if (dateRangeM) {
+        const y = new Date().getFullYear();
+        availability_start = `${dateRangeM[3] || y}-${dateRangeM[2].padStart(2,'0')}-${dateRangeM[1].padStart(2,'0')}`;
+        availability_end = `${dateRangeM[6] || y}-${dateRangeM[5].padStart(2,'0')}-${dateRangeM[4].padStart(2,'0')}`;
+      } else {
+        // "X au Y mois"
+        const rangeMonthM = text.match(/(\d{1,2})\s+au\s+(\d{1,2})\s*\/?\s*([\wéèêîûôàùâ]{3,})/i);
+        if (rangeMonthM) {
+          const mon = rangeMonthM[3].toLowerCase().slice(0, 3);
+          const mNum = monthNames[mon];
+          if (mNum) {
+            const y = new Date().getFullYear();
+            const mm = String(mNum).padStart(2, '0');
+            availability_start = `${y}-${mm}-${rangeMonthM[1].padStart(2, '0')}`;
+            availability_end = `${y}-${mm}-${rangeMonthM[2].padStart(2, '0')}`;
+          }
+        } else {
+          // Date unique JJ/MM
+          const singleM = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/);
+          if (singleM) {
+            const y = singleM[3] || new Date().getFullYear().toString();
+            availability_start = `${y}-${singleM[2].padStart(2,'0')}-${singleM[1].padStart(2,'0')}`;
+            availability_end = availability_start;
+          }
+        }
       }
     }
   }
 
-  // Nom principal
-  const cap = (s: string) => s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  let name = '';
-  const labelRe = /(?:nom|prénom|prenom|contact|client|passager)\s*[:\-]\s*([A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ '\-]{2,40})/i;
-  const labelM = text.match(labelRe);
-  if (labelM) {
-    name = cap(labelM[1]);
-  } else {
-    const introRe = /(?:je m['']appelle|c'est|je suis|mon nom est)\s+([A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ '\-]{2,40})/i;
-    const introM = text.match(introRe);
+  // Nom : fallback regex si extraction structurée n'a rien trouvé
+  if (!name) {
+    const introM = text.match(/(?:je m['']appelle|c'est|je suis|mon nom est)\s+([A-ZÀ-ÿa-zà-ÿ][A-ZÀ-ÿa-zà-ÿ '\-]{2,40})/i);
     if (introM) name = cap(introM[1]);
     else {
-      // Nom en majuscules (format typique email) ex "GHIER Elise"
-      const capsRe = /\b([A-ZÉÈÊÎÛÔÀÙÂ]{2,20})\s+([A-ZÀ-ÿa-zà-ÿ][a-zà-ÿ]{1,20})/;
-      const capsM = text.match(capsRe);
+      const capsM = text.match(/\b([A-ZÉÈÊÎÛÔÀÙÂ]{2,20})\s+([A-ZÀ-ÿa-zà-ÿ][a-zà-ÿ]{1,20})/);
       if (capsM) name = cap(capsM[2] + ' ' + capsM[1]);
     }
   }
 
-  // Notes : ce qui reste (tout sauf le premier paragraphe/ligne identifié)
-  const notes = text.slice(0, 500).trim();
+  // Notes : message brut + passager si différent du contact
+  let notes = text.slice(0, 500).trim();
+  if (passengerName && name && cap(passengerName.split(/\s+/).slice(0,3).join(' ')) !== name) {
+    notes = `Passager : ${cap(passengerName)}\n` + notes;
+  }
 
   return { name, phone, email, nb_passengers, flight_type, weight_info, availability_start, availability_end, notes };
 }
