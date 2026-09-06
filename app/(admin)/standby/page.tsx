@@ -179,8 +179,11 @@ export default function StandbyPage() {
     setEditClient(c);
     setForm({ name: c.name||'', phone: c.phone||'', email: c.email||'', nb_passengers: c.nb_passengers,
       flight_type: c.flight_type||'', weight_info: c.weight_info||'', availability_text: c.availability_text||'',
-      availability_start: c.availability_start, availability_end: c.availability_end, notes: c.notes||'',
-      pilot_name: c.pilot_name, booked_date: c.booked_date, booked_time: c.booked_time, slot_id: c.slot_id });
+      availability_start: c.availability_start ? c.availability_start.slice(0, 10) : null,
+      availability_end: c.availability_end ? c.availability_end.slice(0, 10) : null,
+      notes: c.notes||'', pilot_name: c.pilot_name,
+      booked_date: c.booked_date ? c.booked_date.slice(0, 10) : null,
+      booked_time: c.booked_time, slot_id: c.slot_id });
     setImportOpen(false);
     setParsed(null);
     setModalOpen(true);
