@@ -72,6 +72,7 @@ export default function EditSlotModal({
   const [selectedComplementIds, setSelectedComplementIds] = useState<number[]>([]);
   const [flightPriceOverride, setFlightPriceOverride] = useState('');
   const [complementPriceOverride, setComplementPriceOverride] = useState('');
+  const [standbyPrefill, setStandbyPrefill] = useState<{ standby_id: number; name: string; phone: string; email: string; flight_type: string; weight_info: string; nb_passengers: number } | null>(null);
 
   // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
   useEffect(() => {
@@ -86,6 +87,15 @@ export default function EditSlotModal({
         .catch(() => {});
     }
   }, [currentUser]);
+
+  // ── Standby prefill : lu depuis localStorage quand un créneau disponible s'ouvre ──
+  useEffect(() => {
+    if (selectedEvent?.status !== 'available') { setStandbyPrefill(null); return; }
+    try {
+      const raw = localStorage.getItem('standby_prefill');
+      setStandbyPrefill(raw ? JSON.parse(raw) : null);
+    } catch { setStandbyPrefill(null); }
+  }, [selectedEvent]);
 
   // ── Parsing message collé ─────────────────────────────────────────────────
   const parseMessage = () => {
@@ -1069,6 +1079,49 @@ export default function EditSlotModal({
               })()
             ) : (
               <>
+                {/* ── Bannière standby prefill ── */}
+                {standbyPrefill && (
+                  <div className="mb-2 bg-orange-50 border border-orange-200 rounded-2xl p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase text-orange-500 tracking-wider">📋 Liste d&apos;attente</p>
+                      <p className="text-sm font-bold text-orange-800 truncate">{standbyPrefill.name}</p>
+                      {standbyPrefill.phone && <p className="text-[11px] text-orange-600">{standbyPrefill.phone}</p>}
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Pré-remplir le formulaire
+                        setFormData(f => ({
+                          ...f,
+                          title: standbyPrefill.name || f.title,
+                          phone: standbyPrefill.phone || f.phone,
+                          email: standbyPrefill.email || f.email,
+                        }));
+                        // Poids
+                        if (standbyPrefill.weight_info) {
+                          const wNum = standbyPrefill.weight_info.match(/\d+/);
+                          if (wNum) setPassengerWeights([wNum[0]]);
+                        }
+                        // Type de vol
+                        if (standbyPrefill.flight_type) {
+                          const match = flightTypes.find((ft: { id: number; name: string }) =>
+                            ft.name.toLowerCase().includes(standbyPrefill.flight_type.toLowerCase()) ||
+                            standbyPrefill.flight_type.toLowerCase().includes(ft.name.toLowerCase())
+                          );
+                          if (match) setFormData(f => ({ ...f, title: standbyPrefill.name || f.title, phone: standbyPrefill.phone || f.phone, email: standbyPrefill.email || f.email, flight_type_id: match.id.toString() }));
+                        }
+                        // Nombre de passagers
+                        if (standbyPrefill.nb_passengers > 1) setGroupSize(standbyPrefill.nb_passengers);
+                        // Effacer le prefill
+                        try { localStorage.removeItem('standby_prefill'); } catch { /* ignore */ }
+                        setStandbyPrefill(null);
+                      }}
+                      className="shrink-0 px-3 py-2 rounded-xl bg-orange-500 text-white text-[11px] font-black hover:bg-orange-600 transition-colors whitespace-nowrap"
+                    >
+                      Pré-remplir
+                    </button>
+                  </div>
+                )}
+
                 {/* ── Zone de collage message ── */}
                 <div className="mb-2">
                   <button

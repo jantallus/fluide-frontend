@@ -11,6 +11,7 @@ import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
 import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
@@ -35,6 +36,17 @@ export default function PlanningAdmin() {
   const [slotDuration, setSlotDuration] = useState<number>(0);
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const searchParams = useSearchParams();
+  const dateParam = searchParams?.get('date');
+
+  // Naviguer au jour demandé si on vient de la liste d'attente
+  useEffect(() => {
+    if (!dateParam) return;
+    const timer = setTimeout(() => {
+      try { calendarRef.current?.getApi().gotoDate(dateParam); } catch { /* ignore */ }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dateParam]);
   const [viewRange, setViewRange] = useState<{ start: Date; end: Date } | null>(null);
 
 

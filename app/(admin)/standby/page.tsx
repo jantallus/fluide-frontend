@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -242,6 +242,7 @@ export default function StandbyPage() {
   const [schedForm, setSchedForm] = useState({ pilot_name: '', booked_date: '', booked_time: '' });
   const [showArchive, setShowArchive] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -633,12 +634,26 @@ export default function StandbyPage() {
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Heure</label>
                 <input className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 font-bold text-sm mt-1" value={schedForm.booked_time} onChange={e => setSchedForm(s => ({...s, booked_time: e.target.value}))} placeholder="11:05" />
               </div>
-              <Link
-                href="/planning"
-                className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors text-center block"
+              <button
+                onClick={() => {
+                  if (!scheduleModal) return;
+                  const prefill = {
+                    standby_id: scheduleModal.id,
+                    name: scheduleModal.name || '',
+                    phone: scheduleModal.phone || '',
+                    email: scheduleModal.email || '',
+                    flight_type: scheduleModal.flight_type || '',
+                    weight_info: scheduleModal.weight_info || '',
+                    nb_passengers: scheduleModal.nb_passengers || 1,
+                  };
+                  try { localStorage.setItem('standby_prefill', JSON.stringify(prefill)); } catch { /* ignore */ }
+                  const date = schedForm.booked_date || scheduleModal.availability_start?.slice(0, 10) || '';
+                  router.push(`/planning${date ? `?date=${date}` : ''}`);
+                }}
+                className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors"
               >
                 📅 Ouvrir le calendrier
-              </Link>
+              </button>
               <div className="flex gap-3">
                 <button onClick={() => setScheduleModal(null)} className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">Annuler</button>
                 <button onClick={saveSchedule} className="flex-1 py-3 rounded-2xl bg-orange-500 text-white text-sm font-black hover:bg-orange-600 transition-colors">Enregistrer</button>
