@@ -80,14 +80,17 @@ function parseDate(s: string): string | null {
 }
 
 function parseStandbyMessage(text: string) {
-  const emailM = text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/);
   const phoneM = text.match(/(?:\+33\s?|0033\s?|0)[1-9](?:[\s.\-]?\d{2}){4}/);
   const phone = phoneM ? phoneM[0].replace(/[\s.\-]/g, '').replace(/^0033/, '+33') : '';
-  const email = emailM ? emailM[0] : '';
 
-  // ── Tentative d'extraction structurée (formulaire Label:Valeur) ──
+  // ── Extraction structurée en priorité (formulaire Label:Valeur) ──
   const fields = extractFormFields(text);
   const isStructured = Object.keys(fields).length >= 2;
+
+  // Email : depuis champ structuré (correctement borné par le label suivant) ou regex fallback
+  const emailFromField = (fields['email'] || fields['e-mail'] || '').trim();
+  const emailM = emailFromField ? null : text.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,6}(?![a-zA-Z])/);
+  const email = emailFromField || (emailM ? emailM[0] : '');
 
   // Nom contact : texte avant le premier label connu (le réservant)
   let name = '';
