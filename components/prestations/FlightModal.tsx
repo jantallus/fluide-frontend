@@ -34,9 +34,10 @@ interface Props {
   slotDefs: SlotDefinition[];
   onClose: () => void;
   onSaved: () => void;
+  tenant?: string;
 }
 
-export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props) {
+export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }: Props) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [isSaving, setIsSaving] = useState(false);
@@ -87,6 +88,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved }: Props)
       weight_min: Number(formData.weight_min),
       weight_max: Number(formData.weight_max),
       booking_delay_hours: Number(formData.booking_delay_hours),
+      ...(tenant && !editingId ? { tenant } : {}),
     };
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
     if (res.ok) { onSaved(); onClose(); }

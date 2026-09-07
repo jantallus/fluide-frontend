@@ -17,7 +17,7 @@ export function useClientsData({ q, page }: { q: string; page: number }) {
   useEffect(() => {
     Promise.all([
       apiFetch('/api/monitors'),
-      apiFetch('/api/flight-types'),
+      apiFetch('/api/flight-types?tenant=all'),
       apiFetch('/api/gift-cards'),
       apiFetch('/api/complements'),
     ]).then(([resM, resF, resG, resComp]) => {

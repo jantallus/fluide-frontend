@@ -4,7 +4,7 @@ import type { FlightType, SlotDefinition } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
-export function usePrestationsData() {
+export function usePrestationsData(tenant?: string) {
   const { toast, confirm } = useToast();
   const [flights, setFlights] = useState<FlightType[]>([]);
   const [slotDefs, setSlotDefs] = useState<SlotDefinition[]>([]);
@@ -12,9 +12,10 @@ export function usePrestationsData() {
 
   const loadData = async () => {
     setLoading(true);
+    const flightsUrl = tenant ? `/api/flight-types?tenant=${tenant}` : '/api/flight-types';
     try {
       const [flightsRes, slotsRes] = await Promise.all([
-        apiFetch('/api/flight-types'),
+        apiFetch(flightsUrl),
         apiFetch('/api/slot-definitions'),
       ]);
       if (flightsRes.ok) setFlights(await flightsRes.json());

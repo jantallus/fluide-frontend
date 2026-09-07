@@ -45,7 +45,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
     try {
       const [monRes, flightRes, settingsRes, defsRes] = await Promise.all([
         apiFetch('/api/monitors-admin'),
-        apiFetch('/api/flight-types'),
+        apiFetch('/api/flight-types?tenant=all'),
         apiFetch('/api/settings'),
         apiFetch('/api/slot-definitions'),
       ]);
