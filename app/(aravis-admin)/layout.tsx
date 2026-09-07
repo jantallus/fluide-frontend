@@ -6,11 +6,14 @@ import Image from 'next/image';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
-import { Calendar, Menu, X, LogOut, ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
+import { Calendar, Menu, X, LogOut, ChevronLeft, ChevronRight, ClipboardList, ArrowLeftRight, User, Users } from 'lucide-react';
 
 const MENU_ITEMS = [
   { name: 'Planning', icon: Calendar, path: '/aravis-admin/planning' },
-  { name: 'Demandes', icon: ClipboardList, path: '/aravis-admin/demandes', soon: true },
+  { name: 'Demandes', icon: ClipboardList, path: '/aravis-admin/demandes' },
+  { name: 'Régularisation', icon: ArrowLeftRight, path: '/aravis-admin/regularisation' },
+  { name: 'Clients', icon: User, path: '/aravis-admin/clients' },
+  { name: 'Moniteurs', icon: Users, path: '/aravis-admin/moniteurs' },
 ];
 
 export default function AravisLayout({ children }: { children: React.ReactNode }) {
