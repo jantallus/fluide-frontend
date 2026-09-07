@@ -75,6 +75,7 @@ export default function EditSlotModal({
   const [selectedComplementIds, setSelectedComplementIds] = useState<number[]>([]);
   const [flightPriceOverride, setFlightPriceOverride] = useState('');
   const [complementPriceOverride, setComplementPriceOverride] = useState('');
+  const [cbNetAmount, setCbNetAmount] = useState('');
   const [standbyPrefill, setStandbyPrefill] = useState<{ standby_id: number; name: string; phone: string; email: string; flight_type: string; weight_info: string; nb_passengers: number } | null>(null);
 
   // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
@@ -311,6 +312,7 @@ export default function EditSlotModal({
     setSelectedComplementIds(Array.isArray(pd?.selected_complements) ? (pd.selected_complements as { id: number }[]).map(c => Number(c.id)) : []);
     setFlightPriceOverride(pd?.price_override_cents != null ? (Number(pd.price_override_cents) / 100).toFixed(2) : '');
     setComplementPriceOverride(pd?.complement_total_cents ? (Number(pd.complement_total_cents) / 100).toFixed(2) : '');
+    setCbNetAmount(pd?.cb_net_cents != null ? (Number(pd.cb_net_cents) / 100).toFixed(2) : '');
   }, [selectedEvent, currentUser]);
 
   // Auto-fill encaisseur for online/bon_cadeau once fullMonitors loads — runs
@@ -687,6 +689,11 @@ export default function EditSlotModal({
         else delete finalPaymentData.price_override_cents;
       } else {
         delete finalPaymentData.price_override_cents;
+      }
+      if (paymentType === 'cb' && cbNetAmount) {
+        finalPaymentData.cb_net_cents = Math.round(parseFloat(cbNetAmount) * 100);
+      } else {
+        delete finalPaymentData.cb_net_cents;
       }
     }
 
@@ -1508,6 +1515,22 @@ export default function EditSlotModal({
                                   <span className="text-[10px] font-black uppercase text-slate-400">Total</span>
                                   <span className={`text-lg font-black ${isCustom ? 'text-amber-600' : 'text-slate-900'}`}>{(totalCents / 100).toFixed(2)} €</span>
                                 </div>
+                                {paymentType === 'cb' && (
+                                  <div className="flex items-center gap-2 pt-2 border-t border-dashed border-slate-100">
+                                    <span className="text-[11px] font-bold text-slate-500 w-16 shrink-0 leading-tight">Perçu net<br/><span className="text-slate-400 font-normal">après CB</span></span>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      step={0.01}
+                                      placeholder={(totalCents / 100).toFixed(2)}
+                                      value={cbNetAmount}
+                                      onChange={e => setCbNetAmount(e.target.value)}
+                                      className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right"
+                                    />
+                                    <span className="text-[11px] text-slate-400">€</span>
+                                    {cbNetAmount && <button onClick={() => setCbNetAmount('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
