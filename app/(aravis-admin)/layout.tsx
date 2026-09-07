@@ -88,28 +88,17 @@ export default function AravisLayout({ children }: { children: React.ReactNode }
               const isActive = pathname.startsWith(item.path);
               return (
                 <div key={item.name}>
-                  {item.soon ? (
-                    <div className={`flex items-center gap-4 p-3 rounded-xl opacity-40 cursor-not-allowed ${isCollapsed && !isMobileMenuOpen ? 'justify-center' : ''}`}>
-                      <item.icon size={18} strokeWidth={2} />
-                      {(!isCollapsed || isMobileMenuOpen) && (
-                        <span className="font-bold text-sm text-white/60">{item.name}
-                          <span className="ml-2 text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider">Bientôt</span>
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <Link
-                      href={item.path}
-                      className={`flex items-center gap-4 p-3 rounded-xl transition-all ${
-                        isActive
-                          ? 'bg-[#4A8FBE] text-white'
-                          : 'text-white/60 hover:bg-[#243860] hover:text-white'
-                      }`}
-                    >
-                      <item.icon size={18} strokeWidth={2} />
-                      {(!isCollapsed || isMobileMenuOpen) && <span className="font-bold text-sm">{item.name}</span>}
-                    </Link>
-                  )}
+                  <Link
+                    href={item.path}
+                    className={`flex items-center gap-4 p-3 rounded-xl transition-all ${
+                      isActive
+                        ? 'bg-[#4A8FBE] text-white'
+                        : 'text-white/60 hover:bg-[#243860] hover:text-white'
+                    }`}
+                  >
+                    <item.icon size={18} strokeWidth={2} />
+                    {(!isCollapsed || isMobileMenuOpen) && <span className="font-bold text-sm">{item.name}</span>}
+                  </Link>
                 </div>
               );
             })}
