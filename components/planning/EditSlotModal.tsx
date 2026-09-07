@@ -76,7 +76,13 @@ export default function EditSlotModal({
 
   // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
   useEffect(() => {
-    apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then(setPartners).catch(() => {});
+    apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then((data: Partner[]) => {
+      setPartners(data);
+      if (currentUser?.role === 'aravis') {
+        const aravisPartner = data.find((p: Partner) => p.name?.toLowerCase().includes('aravis') || p.code?.toLowerCase().includes('aravis'));
+        if (aravisPartner) setSelectedPartnerId(aravisPartner.id.toString());
+      }
+    }).catch(() => {});
     apiFetch('/api/complements').then(r => r.ok ? r.json() : []).then((data: { id: number; name: string; price_cents: number }[]) => { if (Array.isArray(data)) setAvailableComplements(data); }).catch(() => {});
     if (currentUser?.role === 'admin') {
       apiFetch('/api/users')
@@ -1199,7 +1205,7 @@ export default function EditSlotModal({
                     <i>Ex (3 places) : "léo, Alex, Paul, Léa" ➔ léo ne vole pas, Alex, Paul et Léa volent.</i>
                   </span>
                 </div>
-                {partners.length > 0 && (
+                {partners.length > 0 && currentUser?.role !== 'aravis' && (
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Partenaire</label>
                     <div className="relative">
