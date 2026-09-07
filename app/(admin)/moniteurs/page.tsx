@@ -19,7 +19,8 @@ export default function MonitorsPage() {
   };
   const handleClose = () => { setShowModal(false); setUserToEdit(null); };
 
-  const visibleUsers = users.filter(u => currentUser?.role === 'admin' || u.id === currentUser?.id);
+  const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis';
+  const visibleUsers = users.filter(u => isFullAccess || u.id === currentUser?.id);
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
@@ -27,10 +28,10 @@ export default function MonitorsPage() {
         <div>
           <p className="text-orange-500 font-black uppercase text-xs tracking-widest mb-1 md:mb-2">Gestion d'équipe</p>
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-slate-900">
-            {currentUser?.role === 'admin' ? 'Équipe ' : 'Mon '}<span className="text-orange-500">Profil</span>
+            {isFullAccess ? 'Équipe ' : 'Mon '}<span className="text-orange-500">Profil</span>
           </h1>
         </div>
-        {currentUser?.role === 'admin' && (
+        {isFullAccess && (
           <button onClick={() => openModal()} className="w-full md:w-auto bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase italic shadow-xl hover:scale-105 transition-transform text-sm md:text-base">
             + Ajouter un prestataire
           </button>
@@ -65,7 +66,7 @@ export default function MonitorsPage() {
                 <button onClick={() => openModal(u)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-sky-500 hover:bg-sky-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Modifier ce prestataire">
                   <Pencil size={18} />
                 </button>
-                {currentUser?.role === 'admin' && (
+                {isFullAccess && (
                   <button onClick={() => handleDelete(u.id, u.first_name)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-rose-500 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Supprimer définitivement">
                     <Trash2 size={18} />
                   </button>
