@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -261,6 +261,8 @@ export default function StandbyPage() {
   const [showArchive, setShowArchive] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
+  const isAravisContext = pathname?.startsWith('/aravis-admin');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -667,7 +669,8 @@ export default function StandbyPage() {
                   };
                   try { localStorage.setItem('standby_prefill', JSON.stringify(prefill)); } catch { /* ignore */ }
                   const date = schedForm.booked_date || toInputDate(scheduleModal.availability_start) || '';
-                  router.push(`/planning${date ? `?date=${date}` : ''}`);
+                  const planningBase = isAravisContext ? '/aravis-admin/planning' : '/planning';
+                  router.push(`${planningBase}${date ? `?date=${date}` : ''}`);
                 }}
                 className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors"
               >
