@@ -259,7 +259,7 @@ export default function EditSlotModal({
     const dStr = start.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
     const tStr = start.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false });
     setMoveConfig({ date: dStr, time: tStr, monitorId: selectedEvent.monitor_id || 'random' });
-    setActiveTab(currentUser?.role === 'admin' ? 'client' : 'note');
+    setActiveTab(currentUser?.role === 'admin' || currentUser?.role === 'aravis' ? 'client' : 'note');
     setBlockType('none');
     setSelectedMonitors([]);
     setBlockUntilMs(selectedEvent.end_time ? new Date(selectedEvent.end_time).getTime() : 0);
