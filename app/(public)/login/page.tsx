@@ -64,7 +64,7 @@ export default function LoginPage() {
             <span className="text-3xl">🪂</span>
           </div>
           <h1 className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter">
-            Fluide <span className="text-sky-600">Pro</span>
+            Centre de réservation <span className="text-sky-600">parapente</span>
           </h1>
           <p className="text-slate-500 font-medium">Accès moniteurs et administration</p>
         </div>
