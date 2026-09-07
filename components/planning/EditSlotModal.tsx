@@ -463,11 +463,14 @@ export default function EditSlotModal({
       ? new Set(selectedPartnerForFlight.allowed_flight_types.map(ft => ft.flight_type_id))
       : null;
     return flightTypes.filter(f => {
+      const ftTenant = f.tenant || 'fluide';
+      if (isAravisContext && ftTenant !== 'aravis') return false;
+      if (!isAravisContext && ftTenant === 'aravis') return false;
       if (partnerAllowedIds && !partnerAllowedIds.has(f.id)) return false;
       const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
       return allowed.length === 0 || allowed.some((t: string) => activePlanTimes.has(t));
     });
-  }, [selectedEvent, slotDefs, appointments, flightTypes, selectedPartnerId, partners]);
+  }, [selectedEvent, slotDefs, appointments, flightTypes, selectedPartnerId, partners, isAravisContext]);
 
   const availableTimeGroups = useMemo(() => {
     if (!selectedEvent || !formData.flight_type_id) return [];

@@ -111,6 +111,7 @@ export interface FlightType {
   activity_pedestrian?: boolean;
   activity_children?: boolean;
   activity_gopro?: boolean;
+  tenant?: string;
 }
 
 export interface Complement {
