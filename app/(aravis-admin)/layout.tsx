@@ -68,9 +68,9 @@ export default function AravisLayout({ children }: { children: React.ReactNode }
         `}>
           <div className="p-6 flex justify-between items-center border-b border-white/10 h-20">
             {(!isCollapsed || isMobileMenuOpen) ? (
-              <Image src="/aravis.png" alt="Aravis Parapente" width={120} height={40} className="object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+              <Image src="/aravis.png" alt="Aravis Parapente" width={120} height={48} className="object-contain" />
             ) : (
-              <Image src="/aravis.png" alt="Aravis Parapente" width={40} height={40} className="object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+              <Image src="/aravis.png" alt="Aravis Parapente" width={44} height={44} className="rounded-full object-cover" />
             )}
             <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden md:block hover:bg-white/10 p-2 rounded-xl transition-colors">
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
