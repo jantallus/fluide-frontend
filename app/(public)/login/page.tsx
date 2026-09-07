@@ -38,9 +38,9 @@ export default function LoginPage() {
         // Le token est dans le cookie HttpOnly posé par /api/auth/login.
         localStorage.setItem('user', JSON.stringify(userToStore));
 
-        if (userToStore.role === 'admin') {
-          router.push('/planning');
-        } else if (userToStore.role === 'monitor' || userToStore.role === 'permanent') {
+        if (userToStore.role === 'aravis') {
+          router.push('/aravis-admin/planning');
+        } else if (userToStore.role === 'admin' || userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
         } else {
           router.push('/');
