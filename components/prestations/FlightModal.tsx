@@ -189,52 +189,58 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
             </div>
           </div>
 
-          <div className="mt-2 bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
-            <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Délai limite avant le vol (en heures)</label>
-            <input type="number" className="w-full border-2 border-white rounded-2xl p-4 font-bold mt-1 outline-none focus:border-rose-300 text-slate-800 shadow-sm" value={formData.booking_delay_hours} onChange={e => set({ booking_delay_hours: Number(e.target.value) })} />
-            <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight">Exemple : 1 = Réservation impossible à partir d'une heure avant l'horaire du créneau.</p>
-          </div>
+          {tenant !== 'aravis' && (
+            <div className="mt-2 bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+              <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Délai limite avant le vol (en heures)</label>
+              <input type="number" className="w-full border-2 border-white rounded-2xl p-4 font-bold mt-1 outline-none focus:border-rose-300 text-slate-800 shadow-sm" value={formData.booking_delay_hours} onChange={e => set({ booking_delay_hours: Number(e.target.value) })} />
+              <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight">Exemple : 1 = Réservation impossible à partir d'une heure avant l'horaire du créneau.</p>
+            </div>
+          )}
 
           <label className="flex items-center gap-3 cursor-pointer bg-violet-50 p-4 rounded-2xl border border-violet-100 hover:border-violet-300 transition-colors mt-2">
             <input type="checkbox" className="w-5 h-5 accent-violet-500 rounded" checked={formData.allow_multi_slots} onChange={e => set({ allow_multi_slots: e.target.checked })} />
             <span className="font-bold text-violet-900 text-xs leading-tight">Autoriser l'étalement sur plusieurs créneaux</span>
           </label>
 
-          <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="text-[10px] font-black text-slate-400 uppercase mb-3">Activités compatibles (pictos sur la carte)</p>
-            <div className="flex flex-col gap-2">
-              {([
-                { key: 'activity_ski',        label: 'Ski',        Icon: SkiIcon },
-                { key: 'activity_snowboard',  label: 'Snowboard',  Icon: SnowboardIcon },
-                { key: 'activity_pedestrian', label: 'Piéton',     Icon: PedestrianIcon },
-                { key: 'activity_children',   label: 'Enfants',    Icon: ChildrenIcon },
-                { key: 'activity_gopro',      label: 'GoPro',      Icon: GoproIcon },
-              ] as const).map(({ key, label, Icon }) => (
-                <label key={key} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded"
-                    checked={formData[key]}
-                    onChange={e => set({ [key]: e.target.checked })}
-                  />
-                  <Icon size={20} className="text-slate-600" />
-                  <span className="font-bold text-slate-700 text-sm">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
-            <label className="flex items-center gap-3 cursor-pointer mb-2">
-              <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded" checked={formData.show_popup} onChange={e => set({ show_popup: e.target.checked })} />
-              <span className="font-bold text-sky-900 text-xs">Activer le bouton "i" (Informations détaillées)</span>
-            </label>
-            {formData.show_popup && (
-              <div className="mt-3">
-                <label className="text-[10px] font-black uppercase text-sky-600/70 ml-2">Contenu de la Popup (Point de RDV, vêtements...)</label>
-                <textarea className="w-full bg-white border-2 border-sky-100 rounded-2xl p-4 font-medium text-sm h-32 focus:border-sky-400 outline-none text-slate-700 mt-1" placeholder="Rendez-vous au télésiège..." value={formData.popup_content} onChange={e => set({ popup_content: e.target.value })} />
-                <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight ml-2">💡 Astuce : Entourez un mot avec deux étoiles pour le mettre en gras. Exemple : <span className="font-bold text-slate-600">**lunettes de soleil**</span>.</p>
+          {tenant !== 'aravis' && (
+            <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase mb-3">Activités compatibles (pictos sur la carte)</p>
+              <div className="flex flex-col gap-2">
+                {([
+                  { key: 'activity_ski',        label: 'Ski',        Icon: SkiIcon },
+                  { key: 'activity_snowboard',  label: 'Snowboard',  Icon: SnowboardIcon },
+                  { key: 'activity_pedestrian', label: 'Piéton',     Icon: PedestrianIcon },
+                  { key: 'activity_children',   label: 'Enfants',    Icon: ChildrenIcon },
+                  { key: 'activity_gopro',      label: 'GoPro',      Icon: GoproIcon },
+                ] as const).map(({ key, label, Icon }) => (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded"
+                      checked={formData[key]}
+                      onChange={e => set({ [key]: e.target.checked })}
+                    />
+                    <Icon size={20} className="text-slate-600" />
+                    <span className="font-bold text-slate-700 text-sm">{label}</span>
+                  </label>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {tenant !== 'aravis' && (
+            <div className="mt-4 p-4 bg-sky-50 rounded-2xl border border-sky-100">
+              <label className="flex items-center gap-3 cursor-pointer mb-2">
+                <input type="checkbox" className="w-5 h-5 accent-sky-500 rounded" checked={formData.show_popup} onChange={e => set({ show_popup: e.target.checked })} />
+                <span className="font-bold text-sky-900 text-xs">Activer le bouton "i" (Informations détaillées)</span>
+              </label>
+              {formData.show_popup && (
+                <div className="mt-3">
+                  <label className="text-[10px] font-black uppercase text-sky-600/70 ml-2">Contenu de la Popup (Point de RDV, vêtements...)</label>
+                  <textarea className="w-full bg-white border-2 border-sky-100 rounded-2xl p-4 font-medium text-sm h-32 focus:border-sky-400 outline-none text-slate-700 mt-1" placeholder="Rendez-vous au télésiège..." value={formData.popup_content} onChange={e => set({ popup_content: e.target.value })} />
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight ml-2">💡 Astuce : Entourez un mot avec deux étoiles pour le mettre en gras. Exemple : <span className="font-bold text-slate-600">**lunettes de soleil**</span>.</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl mt-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
