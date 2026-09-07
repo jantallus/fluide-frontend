@@ -93,7 +93,12 @@ export default function EditSlotModal({
     if (selectedEvent?.status !== 'available') { setStandbyPrefill(null); return; }
     try {
       const raw = localStorage.getItem('standby_prefill');
-      setStandbyPrefill(raw ? JSON.parse(raw) : null);
+      if (raw) {
+        localStorage.removeItem('standby_prefill');
+        setStandbyPrefill(JSON.parse(raw));
+      } else {
+        setStandbyPrefill(null);
+      }
     } catch { setStandbyPrefill(null); }
   }, [selectedEvent]);
 
