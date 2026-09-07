@@ -21,10 +21,18 @@ export async function middleware(request: NextRequest) {
     const role = payload.role as string;
     const { pathname } = request.nextUrl;
 
+    const isAravis = role === 'aravis';
+    const onAravisPath = pathname.startsWith('/aravis-admin');
+
+    // Les utilisateurs Aravis ne peuvent accéder qu'à /aravis-admin/*
+    if (isAravis && !onAravisPath) {
+      return NextResponse.redirect(new URL('/aravis-admin/planning', request.url));
+    }
+
     const isMonitor = role === 'monitor' || role === 'permanent';
     const onMonitorPath = MONITOR_PATHS.some(p => pathname.startsWith(p));
 
-    if (isMonitor && !onMonitorPath) {
+    if (isMonitor && !onMonitorPath && !onAravisPath) {
       return NextResponse.redirect(new URL('/planning', request.url));
     }
 
@@ -47,5 +55,6 @@ export const config = {
     '/gift-cards/:path*',
     '/config/:path*',
     '/stats/:path*',
+    '/aravis-admin/:path*',
   ],
 };
