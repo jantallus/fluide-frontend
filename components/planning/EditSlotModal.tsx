@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, OpeningPeriod, Partner } from '@/lib/types';
@@ -43,6 +44,8 @@ export default function EditSlotModal({
   loadAppointments, onClose,
 }: Props) {
   const { toast, confirm } = useToast();
+  const pathname = usePathname();
+  const isAravisContext = pathname?.startsWith('/aravis-admin');
   // ── State modal ────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<FormData>({
     title: '', flight_type_id: '', weightChecked: false, phone: '', email: '', notes: '', booking_options: '', client_message: '',
@@ -78,7 +81,7 @@ export default function EditSlotModal({
   useEffect(() => {
     apiFetch('/api/partners').then(r => r.ok ? r.json() : []).then((data: Partner[]) => {
       setPartners(data);
-      if (currentUser?.role === 'aravis') {
+      if (isAravisContext) {
         const aravisPartner = data.find((p: Partner) => p.name?.toLowerCase().includes('aravis') || p.code?.toLowerCase().includes('aravis'));
         if (aravisPartner) setSelectedPartnerId(aravisPartner.id.toString());
       }
@@ -1205,7 +1208,7 @@ export default function EditSlotModal({
                     <i>Ex (3 places) : "léo, Alex, Paul, Léa" ➔ léo ne vole pas, Alex, Paul et Léa volent.</i>
                   </span>
                 </div>
-                {partners.length > 0 && currentUser?.role !== 'aravis' && (
+                {partners.length > 0 && !isAravisContext && (
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Partenaire</label>
                     <div className="relative">
