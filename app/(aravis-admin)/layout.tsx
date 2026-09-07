@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import AutoLogout from '@/components/AutoLogout';
 import { ToastProvider } from '@/components/ui/ToastProvider';
@@ -67,12 +68,9 @@ export default function AravisLayout({ children }: { children: React.ReactNode }
         `}>
           <div className="p-6 flex justify-between items-center border-b border-white/10 h-20">
             {(!isCollapsed || isMobileMenuOpen) ? (
-              <div className="flex flex-col leading-none">
-                <span className="font-black italic text-xl tracking-tighter text-white">ARAVIS</span>
-                <span className="font-black italic text-xl tracking-tighter text-[#6CAED8]">PARAPENTE</span>
-              </div>
+              <Image src="/aravis.png" alt="Aravis Parapente" width={120} height={40} className="object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
             ) : (
-              <span className="text-2xl mx-auto">⛰️</span>
+              <Image src="/aravis.png" alt="Aravis Parapente" width={40} height={40} className="object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
             )}
             <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden md:block hover:bg-white/10 p-2 rounded-xl transition-colors">
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
