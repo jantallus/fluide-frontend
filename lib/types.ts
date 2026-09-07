@@ -207,6 +207,8 @@ export interface PaymentData {
   stripe_session_id?: string;
   stripe_fee_cents?: number;
   stripe_net_cents?: number;
+  // CB net (après commission fournisseur de paiement)
+  cb_net_cents?: number;
 }
 
 // ── Clients ───────────────────────────────────────────────────────────────────
