@@ -464,7 +464,10 @@ export default function EditSlotModal({
     const partnerAllowedIds = selectedPartnerForFlight?.allowed_flight_types?.length
       ? new Set(selectedPartnerForFlight.allowed_flight_types.map(ft => ft.flight_type_id))
       : null;
+    const existingFtId = selectedEvent?.flight_type_id?.toString();
     return flightTypes.filter(f => {
+      // Toujours inclure le vol déjà réservé sur ce créneau (mode édition)
+      if (existingFtId && f.id.toString() === existingFtId) return true;
       const ftTenant = f.tenant || 'fluide';
       if (isAravisContext && ftTenant !== 'aravis') return false;
       if (!isAravisContext && ftTenant === 'aravis') return false;
