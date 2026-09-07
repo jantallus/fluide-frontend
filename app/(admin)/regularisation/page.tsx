@@ -8,10 +8,12 @@ interface Flight {
   title: string;
   flight_name: string | null;
   price_euros: number;
+  effective_price_euros: number;
   payment_type: string | null;
   encaisseur_id: string | number | null;
   stripe_fee_cents: number | null;
   stripe_net_cents: number | null;
+  cb_net_cents: number | null;
 }
 
 interface MonitorData {
@@ -70,9 +72,9 @@ export default function RegularisationPage() {
 
     data.forEach(m => m.flights.forEach(f => {
       if (!f.encaisseur_id) return;
-      flew[m.id] += f.price_euros;
+      flew[m.id] += f.effective_price_euros;
       const eid = String(f.encaisseur_id);
-      if (collected[eid] !== undefined) collected[eid] += f.price_euros;
+      if (collected[eid] !== undefined) collected[eid] += f.effective_price_euros;
     }));
 
     const balances = data
@@ -100,7 +102,7 @@ export default function RegularisationPage() {
   };
 
   const totalFlights = data?.reduce((s, m) => s + m.flights.length, 0) ?? 0;
-  const totalCA = data?.reduce((s, m) => s + m.flights.reduce((ss, f) => ss + f.price_euros, 0), 0) ?? 0;
+  const totalCA = data?.reduce((s, m) => s + m.flights.reduce((ss, f) => ss + f.effective_price_euros, 0), 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -202,7 +204,7 @@ export default function RegularisationPage() {
             )}
             {data.map(mon => {
               const isOpen = expanded === mon.id;
-              const totalMon = mon.flights.reduce((s, f) => s + f.price_euros, 0);
+              const totalMon = mon.flights.reduce((s, f) => s + f.effective_price_euros, 0);
               const balance = tricount?.balances.find(b => b.id === mon.id);
 
               return (
@@ -232,7 +234,7 @@ export default function RegularisationPage() {
                             <th className="px-4 py-2 text-left">Client</th>
                             <th className="px-4 py-2 text-left">Vol</th>
                             <th className="px-4 py-2 text-right">Prix</th>
-                            <th className="px-4 py-2 text-right">Net Stripe</th>
+                            <th className="px-4 py-2 text-right">Net réel</th>
                             <th className="px-4 py-2 text-center">Mode</th>
                             <th className="px-4 py-2 text-left">Encaissé par</th>
                           </tr>
@@ -253,6 +255,8 @@ export default function RegularisationPage() {
                                 <td className="px-4 py-2 text-right whitespace-nowrap">
                                   {hasStripe ? (
                                     <span className="font-bold text-indigo-700">{fmt(f.stripe_net_cents! / 100)}</span>
+                                  ) : f.cb_net_cents != null ? (
+                                    <span className="font-bold text-blue-700">{fmt(f.cb_net_cents / 100)}</span>
                                   ) : (
                                     <span className="text-slate-300">—</span>
                                   )}
@@ -274,8 +278,12 @@ export default function RegularisationPage() {
                             <td className="px-4 py-3 text-right text-slate-900">{fmt(totalMon)}</td>
                             <td className="px-4 py-3 text-right text-indigo-700">
                               {(() => {
-                                const netTotal = mon.flights.reduce((s, f) => f.stripe_net_cents != null ? s + f.stripe_net_cents / 100 : s, 0);
-                                const hasAny = mon.flights.some(f => f.stripe_net_cents != null);
+                                const netTotal = mon.flights.reduce((s, f) => {
+                                  if (f.stripe_net_cents != null) return s + f.stripe_net_cents / 100;
+                                  if (f.cb_net_cents != null) return s + f.cb_net_cents / 100;
+                                  return s;
+                                }, 0);
+                                const hasAny = mon.flights.some(f => f.stripe_net_cents != null || f.cb_net_cents != null);
                                 return hasAny ? fmt(netTotal) : <span className="text-slate-300 font-normal">—</span>;
                               })()}
                             </td>
