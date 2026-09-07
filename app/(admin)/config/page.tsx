@@ -179,6 +179,29 @@ export default function ConfigPage() {
           </div>
         </section>
 
+        {/* SYNCHRONISATION GOOGLE AGENDA */}
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
+          <h2 className="text-xl font-black uppercase italic flex items-center gap-2 mb-2">📆 Synchronisation Google Agenda</h2>
+          <p className="text-xs text-slate-400 mb-6">Activée : chaque modification de créneau met à jour Google Agenda en temps réel (légèrement plus lent). Désactivée : navigation ultra-rapide, sans synchro.</p>
+          <div className="bg-slate-50 p-6 rounded-[30px] border border-slate-100">
+            <label className="flex items-center gap-4 cursor-pointer">
+              <div
+                onClick={() => {
+                  const newVal = settings['google_calendar_sync'] === 'true' ? 'false' : 'true';
+                  setSettings({ ...settings, google_calendar_sync: newVal });
+                  saveEmailSetting('google_calendar_sync', newVal);
+                }}
+                className={`relative w-14 h-7 rounded-full transition-colors cursor-pointer ${settings['google_calendar_sync'] === 'true' ? 'bg-sky-500' : 'bg-slate-300'}`}
+              >
+                <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings['google_calendar_sync'] === 'true' ? 'translate-x-7' : 'translate-x-0'}`} />
+              </div>
+              <span className="font-black text-sm text-slate-700">
+                {settings['google_calendar_sync'] === 'true' ? '✅ Google Sync activée' : '⏸️ Google Sync désactivée'}
+              </span>
+            </label>
+          </div>
+        </section>
+
         {/* MESSAGES AUTOMATIQUES */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
           <h2 className="text-xl font-black uppercase italic flex items-center gap-2 mb-6">💌 Messages Automatiques</h2>

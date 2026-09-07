@@ -10,7 +10,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
 import { useToast } from '@/components/ui/ToastProvider';
-import { RefreshCw, PauseCircle, Wrench, CalendarDays } from 'lucide-react';
+import { Wrench, CalendarDays } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
@@ -24,9 +24,9 @@ export default function PlanningAdmin() {
   const {
     appointments, setAppointments,
     monitors, flightTypes, openingPeriods, slotDefs,
-    availablePlans, timeBounds, isGoogleSyncEnabled,
+    availablePlans, timeBounds,
     isLoading,
-    loadAppointments, toggleGoogleSync,
+    loadAppointments,
   } = usePlanningData(getDateRange);
 
   const currentUser = useCurrentUser();
@@ -315,15 +315,6 @@ export default function PlanningAdmin() {
               }}
             />
           </div>
-          <button
-            onClick={toggleGoogleSync}
-            className={`px-4 py-2 rounded-2xl font-black uppercase text-[10px] shadow-sm transition-all border-2 ${isGoogleSyncEnabled ? 'bg-sky-50 text-sky-600 border-sky-200 hover:bg-sky-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
-          >
-            {isGoogleSyncEnabled
-              ? <><RefreshCw size={13} className="inline mr-1" />Google Sync : ON</>
-              : <><PauseCircle size={13} className="inline mr-1" />Google Sync : OFF</>
-            }
-          </button>
           <button
             onClick={() => setShowGenModal(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
