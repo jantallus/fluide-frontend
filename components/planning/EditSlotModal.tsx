@@ -1499,16 +1499,16 @@ export default function EditSlotModal({
                                 <label className="text-[10px] font-black uppercase text-slate-400 block">Prix à encaisser</label>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[11px] font-bold text-slate-500 w-16 shrink-0">Vol</span>
-                                  <input type="number" min={0} step={0.5} placeholder={(catalogCents / 100).toFixed(0)} value={flightPriceOverride} onChange={e => setFlightPriceOverride(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
-                                  <span className="text-[11px] text-slate-400">€</span>
-                                  {flightPriceOverride && <button onClick={() => setFlightPriceOverride('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                  <input type="number" min={0} step={0.5} placeholder={(catalogCents / 100).toFixed(0)} value={flightPriceOverride} onChange={e => setFlightPriceOverride(e.target.value)} className="no-spinner min-w-0 flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
+                                  <span className="text-[11px] text-slate-400 shrink-0">€</span>
+                                  {flightPriceOverride && <button onClick={() => setFlightPriceOverride('')} className="shrink-0 text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
                                 </div>
                                 {(autoCompTotal > 0 || complementPriceOverride) && (
                                   <div className="flex items-center gap-2">
                                     <span className="text-[11px] font-bold text-slate-500 w-16 shrink-0">Options</span>
-                                    <input type="number" min={0} step={0.5} placeholder={(autoCompTotal / 100).toFixed(0)} value={complementPriceOverride} onChange={e => setComplementPriceOverride(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
-                                    <span className="text-[11px] text-slate-400">€</span>
-                                    {complementPriceOverride && <button onClick={() => setComplementPriceOverride('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                    <input type="number" min={0} step={0.5} placeholder={(autoCompTotal / 100).toFixed(0)} value={complementPriceOverride} onChange={e => setComplementPriceOverride(e.target.value)} className="no-spinner min-w-0 flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right" />
+                                    <span className="text-[11px] text-slate-400 shrink-0">€</span>
+                                    {complementPriceOverride && <button onClick={() => setComplementPriceOverride('')} className="shrink-0 text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
                                   </div>
                                 )}
                                 <div className="flex items-center justify-between pt-1 border-t border-slate-100">
@@ -1525,10 +1525,10 @@ export default function EditSlotModal({
                                       placeholder={(totalCents / 100).toFixed(2)}
                                       value={cbNetAmount}
                                       onChange={e => setCbNetAmount(e.target.value)}
-                                      className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right"
+                                      className="no-spinner min-w-0 flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-right"
                                     />
-                                    <span className="text-[11px] text-slate-400">€</span>
-                                    {cbNetAmount && <button onClick={() => setCbNetAmount('')} className="text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
+                                    <span className="text-[11px] text-slate-400 shrink-0">€</span>
+                                    {cbNetAmount && <button onClick={() => setCbNetAmount('')} className="shrink-0 text-slate-300 hover:text-rose-400 text-sm font-bold">↺</button>}
                                   </div>
                                 )}
                               </div>

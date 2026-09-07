@@ -129,3 +129,8 @@ body, *:not(.font-georgia) {
 .hbg-open .hbg-inner           { transform: translate3d(0, 1px, 0) rotate(45deg); }
 .hbg-open .hbg-inner::before   { transform: rotate(-45deg) translate3d(-5.71429px, -6px, 0); opacity: 0; }
 .hbg-open .hbg-inner::after    { transform: translate3d(0, -11px, 0) rotate(-90deg); }
+
+/* Masquer les flèches spinner des inputs numériques dans la modale planning */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.no-spinner { -moz-appearance: textfield; }
