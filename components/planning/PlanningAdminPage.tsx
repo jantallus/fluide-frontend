@@ -283,7 +283,7 @@ export default function PlanningAdmin() {
   ), [calendarEvents, visibleMonitors, timeBounds, handleEventClick, loadAppointments, renderEventContent]);
 
   return (
-    <div className="p-2 md:p-4 bg-slate-50 min-h-screen">
+    <div className="p-2 md:p-4 min-h-screen">
       <style dangerouslySetInnerHTML={{ __html: `
         .fc-scrollgrid-section-header .fc-scroller {
           overflow-x: hidden !important;
