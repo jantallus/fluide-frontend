@@ -29,6 +29,7 @@ export default function AravisLayout({ children }: { children: React.ReactNode }
   useEffect(() => { setIsMobileMenuOpen(false); }, [pathname]);
 
   useEffect(() => {
+    document.title = 'Planning · Aravis Parapente';
     const userData = localStorage.getItem('user');
     if (!userData) { router.push('/login'); return; }
     const parsed = JSON.parse(userData);

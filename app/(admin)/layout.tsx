@@ -31,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // La sécurité réelle est gérée par middleware.ts (vérifie le cookie auth_token côté serveur).
   // Ici on lit juste localStorage.user pour afficher le nom et filtrer le menu.
   useEffect(() => {
+    document.title = 'Planning · Fluide Parapente';
     const userData = localStorage.getItem('user');
 
     if (!userData) {

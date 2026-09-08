@@ -1467,7 +1467,7 @@ export default function EditSlotModal({
                               <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Encaissé par</label>
                               {(paymentType === 'online' || paymentType === 'bon_cadeau') ? (
                                 <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-600 flex items-center justify-between">
-                                  <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || 'Caisse Fluide'}</span>
+                                  <span>{monitors.find(m => m.id.toString() === encaisseurId)?.title || 'Paiement en ligne'}</span>
                                   <span className="text-[9px] text-slate-400 font-normal">automatique</span>
                                 </div>
                               ) : (
