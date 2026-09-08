@@ -60,7 +60,6 @@ export default function AravisPrestationsPage() {
                   <div className="space-y-3 mb-8">
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⏱️ {f.duration_minutes} min</div>
                     <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase">⚖️ {f.weight_min ?? 20} - {f.weight_max ?? 110} kg</div>
-                    <div className="flex items-center gap-2 text-rose-500 font-bold text-[10px] uppercase">⏳ Bloqué {f.booking_delay_hours || 0}h avant</div>
                     <div className="flex items-center gap-2 font-bold text-[10px] uppercase flex-wrap">
                       {f.season === 'SUMMER' && <span className="text-amber-500 bg-amber-50 px-2 py-1 rounded-md">☀️ Exclusif Été</span>}
                       {f.season === 'WINTER' && <span className="text-[#4A8FBE] bg-[#E3F1F7] px-2 py-1 rounded-md">❄️ Exclusif Hiver</span>}
