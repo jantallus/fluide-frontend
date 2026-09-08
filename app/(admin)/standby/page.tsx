@@ -436,7 +436,7 @@ export default function StandbyPage() {
                         <a href={`sms:${c.phone}`} title="SMS" className="w-6 h-6 rounded-full bg-sky-50 hover:bg-sky-100 flex items-center justify-center text-xs transition-colors" aria-label="SMS">💬</a>
                       )}
                       {c.email && (
-                        <a href={`mailto:${c.email}`} title="Email" className="w-6 h-6 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-xs transition-colors" aria-label="Email">✉️</a>
+                        <a href={`mailto:${c.email}`} title="Email" className="w-6 h-6 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-xs transition-colors" aria-label="Email">📧</a>
                       )}
                     </div>
                   </td>
@@ -507,7 +507,7 @@ export default function StandbyPage() {
                         <div className="flex gap-1.5 mt-1">
                           {c.phone && <a href={`tel:${c.phone}`} className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px]">📞</a>}
                           {c.phone && <a href={`sms:${c.phone}`} className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center text-[10px]">💬</a>}
-                          {c.email && <a href={`mailto:${c.email}`} className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px]">✉️</a>}
+                          {c.email && <a href={`mailto:${c.email}`} className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px]">📧</a>}
                         </div>
                       </td>
                       <td className="p-3 text-xs text-slate-500">{c.flight_type}</td>
