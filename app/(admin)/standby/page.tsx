@@ -359,7 +359,7 @@ export default function StandbyPage() {
 
   const rowBg = (c: StandbyClient) => {
     if (c.status === 'done') return 'bg-emerald-50 border-l-4 border-l-emerald-400';
-    if (c.status === 'scheduled') return 'bg-orange-50 border-l-4 border-l-orange-400';
+    if (c.status === 'scheduled') return 'bg-orange-100 border-l-4 border-l-orange-500';
     return 'bg-white border-l-4 border-l-slate-200';
   };
 
