@@ -77,6 +77,7 @@ export default function EditSlotModal({
   const [complementPriceOverride, setComplementPriceOverride] = useState('');
   const [cbNetAmount, setCbNetAmount] = useState('');
   const [standbyPrefill, setStandbyPrefill] = useState<{ standby_id: number; name: string; phone: string; email: string; flight_type: string; weight_info: string; nb_passengers: number } | null>(null);
+  const standbyIdRef = React.useRef<number | null>(null);
 
   // ── Fetch partenaires + moniteurs complets ────────────────────────────────────
   useEffect(() => {
@@ -105,11 +106,14 @@ export default function EditSlotModal({
       const raw = localStorage.getItem('standby_prefill');
       if (raw) {
         localStorage.removeItem('standby_prefill');
-        setStandbyPrefill(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        setStandbyPrefill(parsed);
+        standbyIdRef.current = parsed.standby_id ?? null;
       } else {
         setStandbyPrefill(null);
+        standbyIdRef.current = null;
       }
-    } catch { setStandbyPrefill(null); }
+    } catch { setStandbyPrefill(null); standbyIdRef.current = null; }
   }, [selectedEvent]);
 
   // ── Parsing message collé ─────────────────────────────────────────────────
@@ -599,16 +603,19 @@ export default function EditSlotModal({
       }
 
       // Auto-passage "programmé" si le créneau vient d'une demande
+      const standbyId = standbyIdRef.current;
       const firstBooking = updatesToApply.find(u => u.data.status === 'booked');
-      if (standbyPrefill?.standby_id && firstBooking) {
+      if (standbyId && firstBooking) {
+        standbyIdRef.current = null;
         const linkedSlot = appointments.find(a => a.id === firstBooking.id);
         const startRaw = linkedSlot?.start_time || (linkedSlot as Slot & { start?: string | Date })?.start;
         const bookedDate = startRaw ? new Date(startRaw).toISOString().split('T')[0] : null;
         const bookedTime = startRaw ? new Date(startRaw).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : null;
-        apiFetch(`/api/standby/${standbyPrefill.standby_id}`, {
+        apiFetch(`/api/standby/${standbyId}`, {
           method: 'PATCH',
           body: JSON.stringify({ status: 'scheduled', slot_id: firstBooking.id, booked_date: bookedDate, booked_time: bookedTime }),
-        }).catch(() => {});
+        }).then(r => { if (!r.ok) console.error('[standby] PATCH échoué', r.status); })
+          .catch(e => console.error('[standby] PATCH erreur réseau', e));
       }
 
       await loadAppointments();
