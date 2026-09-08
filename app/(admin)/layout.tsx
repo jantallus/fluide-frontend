@@ -87,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Moniteurs', icon: Users, path: '/moniteurs', roles: ['admin', 'permanent'] },
     { name: 'Partenaires', icon: Handshake, path: '/partenaires', roles: ['admin'] },
     { name: 'Clients', icon: User, path: '/clients', badge: clientCount, roles: ['admin'] },
-    { name: 'Liste d\'attente', icon: Clock, path: '/standby', roles: ['admin'] },
+    { name: 'Demandes', icon: Clock, path: '/standby', roles: ['admin'] },
     { name: 'Régularisation', icon: ArrowLeftRight, path: '/regularisation', roles: ['admin'] },
     { name: 'Bons Cadeaux', icon: Gift, path: '/gift-cards', roles: ['admin'] },
     { name: 'Configurations', icon: Settings, path: '/config', roles: ['admin'] },
