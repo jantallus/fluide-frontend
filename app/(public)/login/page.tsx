@@ -39,7 +39,7 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(userToStore));
 
         if (userToStore.role === 'aravis') {
-          router.push('/aravis-admin/planning');
+          window.location.href = 'https://admin.parabooking.app/aravis-admin/planning';
         } else if (userToStore.role === 'admin' || userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
         } else {
