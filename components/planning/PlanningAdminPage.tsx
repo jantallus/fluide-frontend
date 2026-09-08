@@ -144,7 +144,7 @@ export default function PlanningAdmin() {
     calendarEvents.forEach(ev => {
       const t = ((ev.extendedProps as { title?: string }).title) || '';
       const m = t.match(/\(([^)]+)\)$/);
-      if (m && !m[1].toLowerCase().startsWith('client ')) {
+      if (m) {
         if (!map.has(m[1])) map.set(m[1], palette[idx++ % palette.length]);
       }
     });
@@ -188,7 +188,7 @@ export default function PlanningAdmin() {
     // Groupe : "(Chef)" dans le titre = membre secondaire ; nom seul dans groupColors = chef
     const rawTitle = ep.title || '';
     const groupMatch = rawTitle.match(/\(([^)]+)\)$/);
-    const groupLeader = (groupMatch && !groupMatch[1].toLowerCase().startsWith('client '))
+    const groupLeader = groupMatch
       ? groupMatch[1]
       : (groupColors.has(rawTitle.split('(')[0].trim()) ? rawTitle.split('(')[0].trim() : null);
     const groupColor = groupLeader ? (groupColors.get(groupLeader) ?? null) : null;
