@@ -88,7 +88,7 @@ export default function EditSlotModal({
       }
     }).catch(() => {});
     apiFetch('/api/complements').then(r => r.ok ? r.json() : []).then((data: { id: number; name: string; price_cents: number }[]) => { if (Array.isArray(data)) setAvailableComplements(data); }).catch(() => {});
-    if (currentUser?.role === 'admin') {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'aravis') {
       apiFetch('/api/users')
         .then(r => r.ok ? r.json() : [])
         .then((data: Array<{ id: string; first_name: string; is_active_monitor: boolean; receives_online_payments: boolean }>) =>
@@ -1374,7 +1374,7 @@ export default function EditSlotModal({
                   </div>
                 </div>
 
-                {currentUser?.role === 'admin' && (
+                {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
                   <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 space-y-3">
                     <label className="text-[10px] font-black uppercase text-slate-400 block">Encaissement</label>
                     {(() => {
@@ -1624,11 +1624,11 @@ export default function EditSlotModal({
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Cible (Qui ?)</label>
-                  <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBlockType(e.target.value as 'none' | 'all' | 'specific')} disabled={isOutOfSeason || currentUser?.role !== 'admin'}>
+                  <select className={`w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold transition-all mb-4 ${isOutOfSeason || (currentUser?.role !== 'admin' && currentUser?.role !== 'aravis') ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60' : ''}`} value={blockType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBlockType(e.target.value as 'none' | 'all' | 'specific')} disabled={isOutOfSeason || (currentUser?.role !== 'admin' && currentUser?.role !== 'aravis')}>
                     <option value="none">Ce pilote uniquement</option>
-                    {currentUser?.role === 'admin' && (<><option value="all">🚫 TOUS les pilotes</option><option value="specific">👥 Certains pilotes</option></>)}
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (<><option value="all">🚫 TOUS les pilotes</option><option value="specific">👥 Certains pilotes</option></>)}
                   </select>
-                  {blockType === 'specific' && !isOutOfSeason && currentUser?.role === 'admin' && (
+                  {blockType === 'specific' && !isOutOfSeason && (currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
                     <div className="mb-4 grid grid-cols-2 gap-2">
                       {monitors.map(m => (
                         <label key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100 text-[10px] font-bold cursor-pointer hover:bg-slate-50">

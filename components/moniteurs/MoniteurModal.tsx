@@ -153,7 +153,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
             {availabilities.length === 0 && <p className="text-[10px] text-sky-400 italic text-center py-2">Aucune restriction (dispo 24h/24)</p>}
           </div>
 
-          {currentUser?.role === 'admin' && (
+          {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
             <label className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-indigo-200 transition-colors">
               <input
                 type="checkbox"
@@ -168,7 +168,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
             </label>
           )}
 
-          {currentUser?.role === 'admin' && (
+          {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
             <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100 space-y-4">
               <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest px-2">💰 Encaissement & Commission</p>
 
@@ -219,12 +219,12 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
 
           <div>
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Accès & Rôle</label>
-            <select className={`w-full border-2 border-slate-100 rounded-2xl p-3 md:p-4 font-bold outline-none text-sm md:text-base ${currentUser?.role !== 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 focus:border-orange-300'}`} value={newUser.role} disabled={currentUser?.role !== 'admin'} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
+            <select className={`w-full border-2 border-slate-100 rounded-2xl p-3 md:p-4 font-bold outline-none text-sm md:text-base ${currentUser?.role !== 'admin' && currentUser?.role !== 'aravis' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 focus:border-orange-300'}`} value={newUser.role} disabled={currentUser?.role !== 'admin' && currentUser?.role !== 'aravis'} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
               <option value="monitor">🏃 Moniteur Journée (Pas d'accès logiciel)</option>
               <option value="permanent">🔑 Moniteur Permanent (Accès calendrier)</option>
               <option value="admin">🛡️ Administrateur (Accès total)</option>
             </select>
-            {currentUser?.role !== 'admin' && <p className="text-[9px] text-slate-400 mt-1 ml-4 italic">Seul un administrateur peut modifier ce champ.</p>}
+            {currentUser?.role !== 'admin' && currentUser?.role !== 'aravis' && <p className="text-[9px] text-slate-400 mt-1 ml-4 italic">Seul un administrateur peut modifier ce champ.</p>}
           </div>
 
           <div className="pt-4 space-y-3">
