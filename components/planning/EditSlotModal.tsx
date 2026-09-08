@@ -597,6 +597,20 @@ export default function EditSlotModal({
         toast.error('❌ Erreur lors de la sauvegarde. Veuillez réessayer.');
         console.error('PATCH échoué pour', failed.length, 'slot(s)');
       }
+
+      // Auto-passage "programmé" si le créneau vient d'une demande
+      const firstBooking = updatesToApply.find(u => u.data.status === 'booked');
+      if (standbyPrefill?.standby_id && firstBooking) {
+        const linkedSlot = appointments.find(a => a.id === firstBooking.id);
+        const startRaw = linkedSlot?.start_time || (linkedSlot as Slot & { start?: string | Date })?.start;
+        const bookedDate = startRaw ? new Date(startRaw).toISOString().split('T')[0] : null;
+        const bookedTime = startRaw ? new Date(startRaw).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : null;
+        apiFetch(`/api/standby/${standbyPrefill.standby_id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'scheduled', slot_id: firstBooking.id, booked_date: bookedDate, booked_time: bookedTime }),
+        }).catch(() => {});
+      }
+
       await loadAppointments();
     } catch { toast.error('❌ Erreur réseau lors de la sauvegarde.'); }
   };
