@@ -43,9 +43,9 @@ export default function LoginPage() {
 
         const isAravis = userToStore.enseigne === 'aravis' || userToStore.role === 'aravis';
         if (isAravis) {
-          window.location.href = 'https://admin.parabooking.app/aravis-admin/planning';
+          window.location.href = 'https://admin.parabooking.app/aravis/planning';
         } else if (userToStore.role === 'admin' || userToStore.role === 'monitor' || userToStore.role === 'permanent') {
-          router.push('/planning');
+          router.push('/fluide/planning');
         } else {
           router.push('/');
         }

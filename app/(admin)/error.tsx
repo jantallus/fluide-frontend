@@ -37,7 +37,7 @@ export default function AdminError({ error, reset }: Props) {
             Réessayer
           </button>
           <a
-            href="/dashboard"
+            href="/fluide/planning"
             className="w-full block text-slate-400 font-bold uppercase text-[10px] tracking-widest py-2 hover:text-slate-700 transition-colors"
           >
             Retour au tableau de bord

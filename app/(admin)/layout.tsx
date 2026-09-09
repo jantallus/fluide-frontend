@@ -77,21 +77,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // 2. Configuration du menu avec filtrage par RÔLE
   const allMenuItems = [
-    { name: 'Calendrier', icon: Calendar, path: '/planning', roles: ['admin', 'permanent', 'monitor'] },
+    { name: 'Calendrier', icon: Calendar, path: '/fluide/planning', roles: ['admin', 'permanent', 'monitor'] },
     {
       name: 'Prestations',
       icon: Wind,
-      path: '/prestations',
+      path: '/fluide/prestations',
       roles: ['admin'],
-      subItems: [{ name: 'Photos & Vidéos', path: '/prestations/complements' }]
+      subItems: [{ name: 'Photos & Vidéos', path: '/fluide/prestations/complements' }]
     },
-    { name: 'Moniteurs', icon: Users, path: '/moniteurs', roles: ['admin', 'permanent'] },
-    { name: 'Partenaires', icon: Handshake, path: '/partenaires', roles: ['admin'] },
-    { name: 'Clients', icon: User, path: '/clients', badge: clientCount, roles: ['admin'] },
-    { name: 'Demandes', icon: Clock, path: '/standby', roles: ['admin'] },
-    { name: 'Régularisation', icon: ArrowLeftRight, path: '/regularisation', roles: ['admin'] },
-    { name: 'Bons Cadeaux', icon: Gift, path: '/gift-cards', roles: ['admin'] },
-    { name: 'Configurations', icon: Settings, path: '/config', roles: ['admin'] },
+    { name: 'Moniteurs', icon: Users, path: '/fluide/moniteurs', roles: ['admin', 'permanent'] },
+    { name: 'Partenaires', icon: Handshake, path: '/fluide/partenaires', roles: ['admin'] },
+    { name: 'Clients', icon: User, path: '/fluide/clients', badge: clientCount, roles: ['admin'] },
+    { name: 'Demandes', icon: Clock, path: '/fluide/standby', roles: ['admin'] },
+    { name: 'Régularisation', icon: ArrowLeftRight, path: '/fluide/regularisation', roles: ['admin'] },
+    { name: 'Bons Cadeaux', icon: Gift, path: '/fluide/gift-cards', roles: ['admin'] },
+    { name: 'Configurations', icon: Settings, path: '/fluide/config', roles: ['admin'] },
   ];
 
   const authorizedMenus = allMenuItems.filter(item => 

@@ -4,6 +4,6 @@ import { useRouter } from 'next/navigation';
 
 export default function DashboardRedirect() {
   const router = useRouter();
-  useEffect(() => { router.replace('/planning'); }, [router]);
+  useEffect(() => { router.replace('/fluide/planning'); }, [router]);
   return null;
 }

@@ -45,7 +45,7 @@ export default function EditSlotModal({
 }: Props) {
   const { toast, confirm } = useToast();
   const pathname = usePathname();
-  const isAravisContext = pathname?.startsWith('/aravis-admin');
+  const isAravisContext = pathname?.startsWith('/aravis');
   // ── State modal ────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<FormData>({
     title: '', flight_type_id: '', weightChecked: false, phone: '', email: '', notes: '', booking_options: '', client_message: '',

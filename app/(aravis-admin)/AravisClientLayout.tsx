@@ -9,13 +9,13 @@ import { ToastProvider } from '@/components/ui/ToastProvider';
 import { Calendar, Menu, X, LogOut, ChevronLeft, ChevronRight, ClipboardList, ArrowLeftRight, User, Users, Settings, Wind } from 'lucide-react';
 
 const MENU_ITEMS = [
-  { name: 'Planning', icon: Calendar, path: '/aravis-admin/planning' },
-  { name: 'Demandes', icon: ClipboardList, path: '/aravis-admin/demandes' },
-  { name: 'Régularisation', icon: ArrowLeftRight, path: '/aravis-admin/regularisation' },
-  { name: 'Clients', icon: User, path: '/aravis-admin/clients' },
-  { name: 'Moniteurs', icon: Users, path: '/aravis-admin/moniteurs' },
-  { name: 'Prestations', icon: Wind, path: '/aravis-admin/prestations' },
-  { name: 'Configuration', icon: Settings, path: '/aravis-admin/config' },
+  { name: 'Planning', icon: Calendar, path: '/aravis/planning' },
+  { name: 'Demandes', icon: ClipboardList, path: '/aravis/demandes' },
+  { name: 'Régularisation', icon: ArrowLeftRight, path: '/aravis/regularisation' },
+  { name: 'Clients', icon: User, path: '/aravis/clients' },
+  { name: 'Moniteurs', icon: Users, path: '/aravis/moniteurs' },
+  { name: 'Prestations', icon: Wind, path: '/aravis/prestations' },
+  { name: 'Configuration', icon: Settings, path: '/aravis/config' },
 ];
 
 export default function AravisClientLayout({ children }: { children: React.ReactNode }) {

@@ -262,7 +262,7 @@ export default function StandbyPage() {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
-  const isAravisContext = pathname?.startsWith('/aravis-admin');
+  const isAravisContext = pathname?.startsWith('/aravis');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -669,7 +669,7 @@ export default function StandbyPage() {
                   };
                   try { localStorage.setItem('standby_prefill', JSON.stringify(prefill)); } catch { /* ignore */ }
                   const date = schedForm.booked_date || toInputDate(scheduleModal.availability_start) || '';
-                  const planningBase = isAravisContext ? '/aravis-admin/planning' : '/planning';
+                  const planningBase = isAravisContext ? '/aravis/planning' : '/fluide/planning';
                   router.push(`${planningBase}${date ? `?date=${date}` : ''}`);
                 }}
                 className="w-full py-3 rounded-2xl bg-slate-800 text-white text-sm font-black hover:bg-slate-700 transition-colors"

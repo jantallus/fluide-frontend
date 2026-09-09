@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const MONITOR_PATHS = ['/planning'];
+const MONITOR_PATHS = ['/fluide/planning'];
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
@@ -12,7 +12,6 @@ export async function middleware(request: NextRequest) {
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    // JWT_SECRET manquant côté frontend — refuser l'accès par sécurité
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -23,23 +22,22 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const isAravis = enseigne === 'aravis' || role === 'aravis';
-    const onAravisPath = pathname.startsWith('/aravis-admin');
+    const onAravisPath = pathname.startsWith('/aravis');
+    const onFluide = pathname.startsWith('/fluide');
 
-    // Les utilisateurs Aravis ne peuvent accéder qu'à /aravis-admin/*
     if (isAravis && !onAravisPath) {
-      return NextResponse.redirect(new URL('/aravis-admin/planning', request.url));
+      return NextResponse.redirect(new URL('/aravis/planning', request.url));
     }
 
     const isMonitor = role === 'monitor' || role === 'permanent';
     const onMonitorPath = MONITOR_PATHS.some(p => pathname.startsWith(p));
 
     if (isMonitor && !onMonitorPath && !onAravisPath) {
-      return NextResponse.redirect(new URL('/planning', request.url));
+      return NextResponse.redirect(new URL('/fluide/planning', request.url));
     }
 
     return NextResponse.next();
   } catch {
-    // Token expiré ou invalide
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
@@ -48,14 +46,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/planning/:path*',
-    '/prestations/:path*',
-    '/moniteurs/:path*',
-    '/clients/:path*',
-    '/gift-cards/:path*',
-    '/config/:path*',
-    '/stats/:path*',
-    '/aravis-admin/:path*',
+    '/fluide/:path*',
+    '/aravis/:path*',
   ],
 };
