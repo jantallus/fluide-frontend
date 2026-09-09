@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
     const role = payload.role as string;
     const { pathname } = request.nextUrl;
 
-    const isAravis = role === 'aravis';
+    const isAravis = role === 'aravis' || role === 'aravis_admin';
     const onAravisPath = pathname.startsWith('/aravis-admin');
 
     // Les utilisateurs Aravis ne peuvent accéder qu'à /aravis-admin/*

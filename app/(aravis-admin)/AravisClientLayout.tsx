@@ -33,7 +33,7 @@ export default function AravisClientLayout({ children }: { children: React.React
     const userData = localStorage.getItem('user');
     if (!userData) { router.push('/login'); return; }
     const parsed = JSON.parse(userData);
-    if (!['admin', 'aravis'].includes(parsed.role)) { router.push('/login'); return; }
+    if (!['admin', 'aravis', 'aravis_admin'].includes(parsed.role)) { router.push('/login'); return; }
     const name = parsed.first_name || parsed.firstName || parsed.email?.split('@')[0] || '';
     setUserName(name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Utilisateur');
     setIsAuthorized(true);

@@ -40,7 +40,7 @@ export default function LoginPage() {
         // Le token est dans le cookie HttpOnly posé par /api/auth/login.
         localStorage.setItem('user', JSON.stringify(userToStore));
 
-        if (userToStore.role === 'aravis') {
+        if (userToStore.role === 'aravis' || userToStore.role === 'aravis_admin') {
           window.location.href = 'https://admin.parabooking.app/aravis-admin/planning';
         } else if (userToStore.role === 'admin' || userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
