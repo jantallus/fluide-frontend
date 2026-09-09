@@ -170,7 +170,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
 
           {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
             <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100 space-y-4">
-              <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest px-2">💰 Encaissement & Commission</p>
+              <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest px-2">💰 Paiements en ligne</p>
 
               <label className="flex items-center gap-3 p-3 bg-white border border-amber-200 rounded-2xl cursor-pointer hover:border-amber-400 transition-colors">
                 <input
@@ -185,35 +185,6 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
                 </div>
               </label>
 
-              <div>
-                <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Type de commission</label>
-                <select
-                  className="w-full border border-slate-200 rounded-xl p-2 text-sm font-bold bg-white mt-1"
-                  value={newUser.commission_type}
-                  onChange={e => setNewUser({ ...newUser, commission_type: e.target.value })}
-                >
-                  <option value="none">Aucune commission</option>
-                  <option value="percentage">Pourcentage par vol (%)</option>
-                  <option value="fixed">Montant fixe par vol (€)</option>
-                </select>
-              </div>
-
-              {newUser.commission_type !== 'none' && (
-                <div>
-                  <label className="text-[8px] font-black uppercase text-slate-400 ml-1">
-                    {newUser.commission_type === 'percentage' ? 'Taux (%)' : 'Montant (€)'}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={newUser.commission_type === 'percentage' ? 1 : 0.01}
-                    max={newUser.commission_type === 'percentage' ? 100 : 100000}
-                    className="w-full border border-slate-200 rounded-xl p-2 text-sm font-bold bg-white mt-1"
-                    value={newUser.commission_value}
-                    onChange={e => setNewUser({ ...newUser, commission_value: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-              )}
             </div>
           )}
 
