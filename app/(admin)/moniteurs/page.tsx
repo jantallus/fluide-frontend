@@ -19,7 +19,7 @@ export default function MonitorsPage() {
   };
   const handleClose = () => { setShowModal(false); setUserToEdit(null); };
 
-  const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis';
+  const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis' || currentUser?.role === 'aravis_admin';
   const visibleUsers = users.filter(u => isFullAccess || u.id === currentUser?.id);
 
   return (
