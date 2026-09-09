@@ -17,12 +17,12 @@ export default function Icon() {
           borderRadius: '50%',
           fontFamily: 'system-ui, sans-serif',
           fontWeight: 900,
-          fontSize: 34,
+          fontSize: 26,
           color: 'white',
           letterSpacing: '-1px',
         }}
       >
-        P
+        PB
       </div>
     ),
     { ...size }
