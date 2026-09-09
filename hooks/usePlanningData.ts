@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
-import type { Slot, Monitor, FlightType, OpeningPeriod, SlotDefinition, Setting, User } from '@/lib/types';
+import type { Slot, Monitor, FlightType, SlotDefinition, Setting, User } from '@/lib/types';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export function usePlanningData(getDateRange: () => { start: string; end: string }) {
@@ -9,7 +9,6 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
   const [appointments, setAppointments] = useState<Slot[]>([]);
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [flightTypes, setFlightTypes] = useState<FlightType[]>([]);
-  const [openingPeriods, setOpeningPeriods] = useState<OpeningPeriod[]>([]);
   const [slotDefs, setSlotDefs] = useState<SlotDefinition[]>([]);
   const [availablePlans, setAvailablePlans] = useState<string[]>(['Standard']);
   const [timeBounds, setTimeBounds] = useState({ min: '08:00:00', max: '20:00:00' });
@@ -60,10 +59,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
         const s = await settingsRes.json();
         const syncSetting = s.find((x: Setting) => x.key === 'google_calendar_sync');
         setIsGoogleSyncEnabled(syncSetting ? syncSetting.value === 'true' : false);
-        const periodsSetting = s.find((x: Setting) => x.key === 'opening_periods');
-        if (periodsSetting?.value) {
-          try { setOpeningPeriods(JSON.parse(periodsSetting.value)); } catch {}
-        }
+
       }
       if (monRes.ok) {
         const mons = await monRes.json();
@@ -94,7 +90,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
 
   return {
     appointments, setAppointments,
-    monitors, flightTypes, openingPeriods, slotDefs,
+    monitors, flightTypes, slotDefs,
     availablePlans, timeBounds, isGoogleSyncEnabled,
     isLoading,
     loadAppointments, toggleGoogleSync,

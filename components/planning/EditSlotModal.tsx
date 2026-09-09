@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
-import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, OpeningPeriod, Partner } from '@/lib/types';
+import type { Slot, CurrentUser, FlightType, Monitor, SlotDefinition, Partner } from '@/lib/types';
 
 type FormData = {
   title: string; flight_type_id: string; weightChecked: boolean;
@@ -25,7 +25,6 @@ interface Props {
   flightTypes: FlightType[];
   monitors: Monitor[];
   slotDefs: SlotDefinition[];
-  openingPeriods: OpeningPeriod[];
   loadAppointments: () => Promise<void>;
   onClose: () => void;
 }
@@ -40,7 +39,7 @@ const IS_PAUSE_SLOT = (slot: Slot) =>
 
 export default function EditSlotModal({
   selectedEvent, currentUser, slotDuration,
-  appointments, setAppointments, flightTypes, monitors, slotDefs, openingPeriods,
+  appointments, setAppointments, flightTypes, monitors, slotDefs,
   loadAppointments, onClose,
 }: Props) {
   const { toast, confirm } = useToast();
@@ -347,14 +346,6 @@ export default function EditSlotModal({
   }, [groupSize, groupLocked]);
 
   // ── useMemos ───────────────────────────────────────────────────────────────
-  const parsedOpeningPeriods = useMemo(() =>
-    openingPeriods.map(p => {
-      if (!p.start || !p.end) return null;
-      const s = new Date(p.start); s.setHours(0, 0, 0, 0);
-      const e = new Date(p.end); e.setHours(23, 59, 59, 999);
-      return { start: s, end: e };
-    }).filter(Boolean), [openingPeriods]);
-
   const groupRootSlots = useMemo(() => {
     if (!selectedEvent || selectedEvent.status !== 'booked' || selectedEvent.title?.startsWith('↪️ Suite')) return [];
     const phone = selectedEvent.phone;
@@ -403,10 +394,7 @@ export default function EditSlotModal({
   const availableTargetSlots = useMemo(() => {
     return appointments.filter(a => {
       if (a.status !== 'available' && !currentBookingSlotIds.includes(a.id)) return false;
-      if (parsedOpeningPeriods.length > 0) {
-        const slotDate = new Date(a.start_time);
-        if (!parsedOpeningPeriods.some(p => p && slotDate >= p.start && slotDate <= p.end)) return false;
-      }
+
       const d = new Date(a.start_time);
       if (d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) !== moveConfig.date) return false;
       if (moveConfig.monitorId !== 'random' && a.monitor_id?.toString() !== moveConfig.monitorId) return false;
@@ -432,7 +420,7 @@ export default function EditSlotModal({
       }
       return true;
     });
-  }, [appointments, currentBookingSlotIds, parsedOpeningPeriods, moveConfig, formData.flight_type_id, flightTypes, slotDuration]);
+  }, [appointments, currentBookingSlotIds, moveConfig, formData.flight_type_id, flightTypes, slotDuration]);
 
   const availableTimes = useMemo(() =>
     Array.from(new Set(availableTargetSlots.map(a =>
@@ -972,7 +960,7 @@ export default function EditSlotModal({
 
   // ── Booleans dérivés ───────────────────────────────────────────────────────
   const isEventBlocked = !!(selectedEvent?.title?.includes('☕') || selectedEvent?.title?.toUpperCase().includes('PAUSE') || selectedEvent?.title?.includes('❌') || selectedEvent?.title?.toUpperCase().includes('NON DISPO'));
-  const isOutOfSeason = selectedEvent?.isOutOfSeason === true;
+  const isOutOfSeason = false;
   const isClientLocked = isEventBlocked || isOutOfSeason;
   const isClientSlotLocal = IS_CLIENT_SLOT(selectedEvent || {});
   const isAdminBlockLocal = !!(selectedEvent?.title?.includes('(Admin)'));
@@ -1735,7 +1723,7 @@ export default function EditSlotModal({
               <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100 mt-4">
                 <span className="text-4xl block mb-2">🔒</span>
                 <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Déplacement bloqué</p>
-                <p className="text-xs text-slate-500 px-4 font-medium mb-6">Vous ne pouvez pas déplacer un créneau hors saison ou en pause.</p>
+                <p className="text-xs text-slate-500 px-4 font-medium mb-6">Vous ne pouvez pas déplacer un créneau bloqué ou en pause.</p>
               </div>
             ) : (
               <>

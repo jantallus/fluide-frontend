@@ -8,9 +8,8 @@ import type { SlotDefinition } from '@/lib/types';
 export default function ConfigPage() {
   const {
     definitions, settings, setSettings, loading,
-    seasons, flights, loadData,
+    flights, loadData,
     deleteDef, renamePlan, deletePlan,
-    handleAddSeason, handleSeasonChange, handleDeleteSeason, saveSeasonsToDB,
     saveEmailSetting,
   } = useConfigData();
 
@@ -48,35 +47,6 @@ export default function ConfigPage() {
             Configuration <span className="text-indigo-500">Fluide</span>
           </h1>
         </header>
-
-        {/* PÉRIODES D'OUVERTURE */}
-        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📅 Périodes d'ouverture</h2>
-            <button onClick={handleAddSeason} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform">+ Ajouter une période</button>
-          </div>
-          <div className="space-y-4">
-            {seasons.map(season => (
-              <div key={season.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                <div className="md:col-span-4">
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Nom</label>
-                  <input type="text" className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none" value={season.name} onChange={e => handleSeasonChange(season.id, 'name', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Début</label>
-                  <input type="date" className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none text-sm" value={season.start} onChange={e => handleSeasonChange(season.id, 'start', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-4">Fin</label>
-                  <input type="date" className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none text-sm" value={season.end} onChange={e => handleSeasonChange(season.id, 'end', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-2 flex justify-end">
-                  <button onClick={() => handleDeleteSeason(season.id)} className="w-full p-4 bg-rose-100 text-rose-500 rounded-2xl font-black hover:bg-rose-500 hover:text-white flex items-center justify-center"><Trash2 size={18} /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* ROTATIONS PAR PLAN */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100">

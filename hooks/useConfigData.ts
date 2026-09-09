@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
-import type { SlotDefinition, SettingsMap, GiftCardShopTemplate, FlightType, Setting, OpeningPeriod, Season } from '@/lib/types';
+import type { SlotDefinition, SettingsMap, GiftCardShopTemplate, FlightType, Setting } from '@/lib/types';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export function useConfigData() {
@@ -9,7 +9,6 @@ export function useConfigData() {
   const [definitions, setDefinitions] = useState<SlotDefinition[]>([]);
   const [settings, setSettings] = useState<SettingsMap>({});
   const [loading, setLoading] = useState(true);
-  const [seasons, setSeasons] = useState<{ id: string; name: string; start: string; end: string }[]>([]);
   const [templates, setTemplates] = useState<GiftCardShopTemplate[]>([]);
   const [flights, setFlights] = useState<FlightType[]>([]);
 
@@ -29,9 +28,6 @@ export function useConfigData() {
         const s = await setRes.json();
         const obj = s.reduce((acc: SettingsMap, curr: Setting) => ({ ...acc, [curr.key]: curr.value }), {});
         setSettings(obj);
-        if (obj.opening_periods) {
-          try { setSeasons(JSON.parse(obj.opening_periods)); } catch { setSeasons([]); }
-        }
       }
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
@@ -61,28 +57,6 @@ export function useConfigData() {
     loadData();
   };
 
-  // ── Seasons ─────────────────────────────────────────────────────────────────
-  const saveSeasonsToDB = async (updated: Season[]) => {
-    await apiFetch('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'opening_periods', value: JSON.stringify(updated) }) });
-  };
-
-  const handleAddSeason = () => {
-    const updated = [...seasons, { id: Date.now().toString(), name: '', start: '', end: '' }];
-    setSeasons(updated);
-    saveSeasonsToDB(updated);
-  };
-
-  const handleSeasonChange = (id: string, field: string, value: string) => {
-    setSeasons(seasons.map(s => s.id === id ? { ...s, [field]: value } : s));
-  };
-
-  const handleDeleteSeason = async (id: string) => {
-    if (!await confirm('Supprimer cette période ?')) return;
-    const updated = seasons.filter(s => s.id !== id);
-    setSeasons(updated);
-    saveSeasonsToDB(updated);
-  };
-
   // ── Settings ────────────────────────────────────────────────────────────────
   const saveEmailSetting = async (key: string, value: string) => {
     try {
@@ -101,11 +75,9 @@ export function useConfigData() {
 
   return {
     definitions, settings, setSettings, loading,
-    seasons, setSeasons,
     templates, flights,
     loadData,
     deleteDef, renamePlan, deletePlan,
-    saveSeasonsToDB, handleAddSeason, handleSeasonChange, handleDeleteSeason,
     saveEmailSetting, deleteTemplate,
   };
 }

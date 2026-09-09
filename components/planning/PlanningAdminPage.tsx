@@ -23,7 +23,7 @@ export default function PlanningAdmin() {
 
   const {
     appointments, setAppointments,
-    monitors, flightTypes, openingPeriods, slotDefs,
+    monitors, flightTypes, slotDefs,
     availablePlans, timeBounds,
     isLoading,
     loadAppointments,
@@ -78,28 +78,14 @@ export default function PlanningAdmin() {
   }, [currentUser, toast]);
 
 
-  const parsedOpeningPeriods = useMemo(() =>
-    openingPeriods.map(p => {
-      if (!p.start || !p.end) return null;
-      const s = new Date(p.start); s.setHours(0, 0, 0, 0);
-      const e = new Date(p.end); e.setHours(23, 59, 59, 999);
-      return { start: s, end: e };
-    }).filter(Boolean), [openingPeriods]);
-
   const calendarEvents = useMemo(() => {
     return appointments.map(a => {
       const flight = flightTypes?.find((f: FlightType) => f.id === a.flight_type_id);
       const partnerColor = (a.payment_data as { partner_color?: string } | null)?.partner_color;
       const flightColor = partnerColor || '#d946ef';
-      let isSlotOutOfSeason = false;
-      if (parsedOpeningPeriods.length > 0) {
-        const slotDate = new Date(a.start_time);
-        isSlotOutOfSeason = !parsedOpeningPeriods.some(p => p && slotDate >= p.start && slotDate <= p.end);
-      }
       const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
       const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
-      const isEmptyAndOOS = isSlotOutOfSeason && !a.title && !a.notes && a.status === 'available';
-      let displayTitle = a.title || (isEmptyAndOOS ? 'HORS SAISON' : (a.status === 'available' ? 'LIBRE' : ''));
+      let displayTitle = a.title || (a.status === 'available' ? 'LIBRE' : '');
       if (a.phone) displayTitle += ' 📞';
       if (a.booking_options) displayTitle += ' 📸';
       if (a.client_message) displayTitle += ' 💬';
@@ -110,14 +96,14 @@ export default function PlanningAdmin() {
         start: a.start_time,
         end: a.end_time,
         title: displayTitle,
-        backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : isEmptyAndOOS ? '#f8fafc' : (a.status === 'available' ? '#ffffff' : flightColor),
-        textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : (isEmptyAndOOS ? '#94a3b8' : '#cbd5e1')) : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
+        backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : (a.status === 'available' ? '#ffffff' : flightColor),
+        textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : '#cbd5e1') : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
         interactive: !isPause,
-        extendedProps: { ...a, isOutOfSeason: isSlotOutOfSeason, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
+        extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
     });
-  }, [appointments, flightTypes, parsedOpeningPeriods]);
+  }, [appointments, flightTypes]);
 
   // Moniteurs visibles : uniquement ceux qui ont au moins un créneau dans la plage affichée
   const visibleMonitors = useMemo(() => {
@@ -369,7 +355,6 @@ export default function PlanningAdmin() {
           flightTypes={flightTypes}
           monitors={monitors}
           slotDefs={slotDefs}
-          openingPeriods={openingPeriods}
           loadAppointments={loadAppointments}
           onClose={() => setShowEditModal(false)}
         />

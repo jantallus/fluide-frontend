@@ -1560,7 +1560,7 @@ export default function ReserverPage({ volOverride, seasonOverride }: { volOverr
                                         </>
                                       )}
                                       {(!msg || msg.offSeason) && (
-                                        <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>En dehors de la saison, appelez le</p>
+                                        <p className="text-[9px] leading-tight" style={{ color: '#312783', opacity: 0.4 }}>En période de fermeture des remontées mécaniques, appelez le :</p>
                                       )}
                                       <a href="tel:0677285102" className="text-xs font-black" style={{ color: '#E6007E' }}>06 77 28 51 02</a>
                                     </div>

@@ -8,9 +8,8 @@ import type { SlotDefinition } from '@/lib/types';
 export default function AravisConfigPage() {
   const {
     definitions, settings, setSettings, loading,
-    seasons, loadData,
+    loadData,
     deleteDef, renamePlan, deletePlan,
-    handleAddSeason, handleSeasonChange, handleDeleteSeason, saveSeasonsToDB,
     saveEmailSetting,
   } = useConfigData();
 
@@ -48,35 +47,6 @@ export default function AravisConfigPage() {
             Configuration <span className="text-[#4A8FBE]">Aravis Parapente</span>
           </h1>
         </header>
-
-        {/* PÉRIODES D'OUVERTURE */}
-        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-[#D4E2ED]">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">📅 Périodes d'ouverture</h2>
-            <button onClick={handleAddSeason} className="bg-[#1B2A4A] text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-transform">+ Ajouter une période</button>
-          </div>
-          <div className="space-y-4">
-            {seasons.map(season => (
-              <div key={season.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-[#F0F4F8] p-4 rounded-3xl border border-[#D4E2ED]">
-                <div className="md:col-span-4">
-                  <label className="block text-[10px] font-black uppercase text-[#8AABBD] mb-2 ml-4">Nom</label>
-                  <input type="text" className="w-full bg-white border-2 border-[#D4E2ED] rounded-2xl p-4 font-bold outline-none focus:border-[#4A8FBE]" value={season.name} onChange={e => handleSeasonChange(season.id, 'name', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="block text-[10px] font-black uppercase text-[#8AABBD] mb-2 ml-4">Début</label>
-                  <input type="date" className="w-full bg-white border-2 border-[#D4E2ED] rounded-2xl p-4 font-bold outline-none text-sm focus:border-[#4A8FBE]" value={season.start} onChange={e => handleSeasonChange(season.id, 'start', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="block text-[10px] font-black uppercase text-[#8AABBD] mb-2 ml-4">Fin</label>
-                  <input type="date" className="w-full bg-white border-2 border-[#D4E2ED] rounded-2xl p-4 font-bold outline-none text-sm focus:border-[#4A8FBE]" value={season.end} onChange={e => handleSeasonChange(season.id, 'end', e.target.value)} onBlur={() => saveSeasonsToDB(seasons)} />
-                </div>
-                <div className="md:col-span-2 flex justify-end">
-                  <button onClick={() => handleDeleteSeason(season.id)} className="w-full p-4 bg-rose-100 text-rose-500 rounded-2xl font-black hover:bg-rose-500 hover:text-white flex items-center justify-center"><Trash2 size={18} /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* ROTATIONS PAR PLAN */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-[#D4E2ED]">
