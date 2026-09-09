@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { apiFetch } from '../../../lib/api';
+import { apiFetch } from '@/lib/api';
 import type { StatsSummary, StatsUpcomingFlight } from '@/lib/types';
 
 export default function StatsPage() {

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Client } from '@/lib/types';
-import { apiFetch } from '../../../lib/api';
+import { apiFetch } from '@/lib/api';
 import { useClientsData } from '@/hooks/useClientsData';
 import { useClientFilters } from '@/hooks/useClientFilters';
 import { useQuickEdit } from '@/hooks/useQuickEdit';

@@ -1,1 +1,1 @@
-export { default } from '@/app/(admin)/regularisation/page';
+export { default } from '@/app/(admin)/fluide/regularisation/page';

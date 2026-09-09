@@ -1,1 +1,1 @@
-export { default } from '@/app/(admin)/standby/page';
+export { default } from '@/app/(admin)/fluide/standby/page';

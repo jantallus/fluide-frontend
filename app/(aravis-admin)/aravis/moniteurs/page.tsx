@@ -1,1 +1,1 @@
-export { default } from '@/app/(admin)/moniteurs/page';
+export { default } from '@/app/(admin)/fluide/moniteurs/page';

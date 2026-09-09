@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import type { Complement } from '@/lib/types';
-import { apiFetch } from '../../../../lib/api';
+import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function ComplementsPage() {
