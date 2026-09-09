@@ -19,9 +19,10 @@ export async function middleware(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
     const role = payload.role as string;
+    const enseigne = (payload.enseigne as string) || 'fluide';
     const { pathname } = request.nextUrl;
 
-    const isAravis = role === 'aravis' || role === 'aravis_admin';
+    const isAravis = enseigne === 'aravis' || role === 'aravis';
     const onAravisPath = pathname.startsWith('/aravis-admin');
 
     // Les utilisateurs Aravis ne peuvent accéder qu'à /aravis-admin/*

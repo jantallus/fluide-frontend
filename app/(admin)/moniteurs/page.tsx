@@ -19,7 +19,7 @@ export default function MonitorsPage() {
   };
   const handleClose = () => { setShowModal(false); setUserToEdit(null); };
 
-  const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis' || currentUser?.role === 'aravis_admin';
+  const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis';
   const visibleUsers = users.filter(u => isFullAccess || u.id === currentUser?.id);
 
   return (
@@ -45,7 +45,7 @@ export default function MonitorsPage() {
           <div key={u.id} className="bg-white p-5 md:p-6 rounded-[30px] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 group hover:border-orange-100 transition-all">
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="w-12 h-12 bg-slate-50 rounded-2xl flex shrink-0 items-center justify-center text-xl border border-slate-100">
-                {u.role === 'admin' ? '🛡️' : u.role === 'permanent' ? '🔑' : (u.role === 'aravis' || u.role === 'aravis_admin') ? '🪂' : '🏃'}
+                {u.role === 'admin' ? (u.enseigne === 'aravis' ? '🪂' : '🛡️') : u.role === 'permanent' ? '🔑' : u.role === 'aravis' ? '🪂' : '🏃'}
               </div>
               <div className="overflow-hidden">
                 <h3 className="text-lg md:text-xl font-black uppercase italic text-slate-800 leading-none mb-1 truncate">{u.first_name}</h3>
@@ -54,8 +54,8 @@ export default function MonitorsPage() {
             </div>
 
             <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 md:gap-6 pt-4 md:pt-0 mt-2 md:mt-0 border-t border-slate-50 md:border-t-0 flex-wrap">
-              <div className={`px-3 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border-2 text-center flex-1 md:flex-none ${u.role === 'admin' ? 'border-rose-100 bg-rose-50 text-rose-500' : u.role === 'permanent' ? 'border-sky-100 bg-sky-50 text-sky-500' : (u.role === 'aravis' || u.role === 'aravis_admin') ? 'border-indigo-100 bg-indigo-50 text-indigo-500' : 'border-slate-100 bg-slate-50 text-slate-400'}`}>
-                {u.role === 'admin' ? 'Administrateur' : u.role === 'permanent' ? 'Permanent' : (u.role === 'aravis' || u.role === 'aravis_admin') ? 'Aravis' : 'Moniteur Journée'}
+              <div className={`px-3 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border-2 text-center flex-1 md:flex-none ${u.role === 'admin' ? (u.enseigne === 'aravis' ? 'border-indigo-100 bg-indigo-50 text-indigo-500' : 'border-rose-100 bg-rose-50 text-rose-500') : u.role === 'permanent' ? 'border-sky-100 bg-sky-50 text-sky-500' : u.role === 'aravis' ? 'border-indigo-100 bg-indigo-50 text-indigo-500' : 'border-slate-100 bg-slate-50 text-slate-400'}`}>
+                {u.role === 'admin' ? (u.enseigne === 'aravis' ? 'Admin Aravis' : 'Administrateur') : u.role === 'permanent' ? 'Permanent' : u.role === 'aravis' ? 'Aravis' : 'Moniteur Journée'}
               </div>
 
               <button onClick={() => copyIcalLink(u.id)} className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap" title="Copier le flux iCal pour Google Calendar / iPhone">

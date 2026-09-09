@@ -7,7 +7,8 @@ export interface User {
   email: string;
   first_name: string;
   last_name?: string;
-  role: 'admin' | 'aravis' | 'aravis_admin' | 'monitor' | 'permanent' | 'user';
+  role: 'admin' | 'aravis' | 'monitor' | 'permanent' | 'user';
+  enseigne?: 'fluide' | 'aravis';
   status?: string;
   is_active_monitor?: boolean;
   google_sync_enabled?: boolean;
@@ -23,7 +24,8 @@ export interface CurrentUser {
   id: string;
   email: string;
   first_name: string;
-  role: 'admin' | 'aravis' | 'aravis_admin' | 'monitor' | 'permanent' | 'user';
+  role: 'admin' | 'aravis' | 'monitor' | 'permanent' | 'user';
+  enseigne?: 'fluide' | 'aravis';
 }
 
 // ── Planning ──────────────────────────────────────────────────────────────────

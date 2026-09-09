@@ -32,6 +32,7 @@ export default function LoginPage() {
         const userToStore = {
           id: data.user.id,
           role: data.user.role ? data.user.role.toLowerCase() : 'user',
+          enseigne: data.user.enseigne || 'fluide',
           email: userEmail,
           first_name: userFirst || userEmail.split('@')[0],
         };
@@ -40,7 +41,8 @@ export default function LoginPage() {
         // Le token est dans le cookie HttpOnly posé par /api/auth/login.
         localStorage.setItem('user', JSON.stringify(userToStore));
 
-        if (userToStore.role === 'aravis' || userToStore.role === 'aravis_admin') {
+        const isAravis = userToStore.enseigne === 'aravis' || userToStore.role === 'aravis';
+        if (isAravis) {
           window.location.href = 'https://admin.parabooking.app/aravis-admin/planning';
         } else if (userToStore.role === 'admin' || userToStore.role === 'monitor' || userToStore.role === 'permanent') {
           router.push('/planning');
