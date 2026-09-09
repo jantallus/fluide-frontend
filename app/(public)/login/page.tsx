@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -8,6 +8,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => { document.title = 'Connexion · Parabooking'; }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,7 +86,7 @@ export default function LoginPage() {
               type="email"
               required
               className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-700"
-              placeholder="ex: leo@fluide.fr"
+              placeholder="ex: votre@email.fr"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
