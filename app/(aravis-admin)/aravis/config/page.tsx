@@ -156,27 +156,6 @@ export default function AravisConfigPage() {
             </div>
           </div>
 
-          <h2 className="text-xl font-black uppercase italic flex items-center gap-2 mb-6 mt-8">🎟️ Limites de Réservation</h2>
-          <div className="bg-[#F0F4F8] p-6 rounded-[30px] border border-[#D4E2ED]">
-            <label className="text-[10px] font-black uppercase text-[#8AABBD] ml-4 mb-2 block">Nombre maximum de passagers par réservation</label>
-            <p className="text-xs text-[#8AABBD] ml-4 mb-4">Par défaut : 8. Au-delà, la réservation en ligne est refusée (groupes → contact direct).</p>
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <input
-                type="number"
-                min={1}
-                max={50}
-                className="w-full md:w-48 bg-white border-2 border-[#D4E2ED] rounded-2xl p-4 font-bold outline-none focus:border-[#4A8FBE] text-[#1B2A4A] text-center text-xl"
-                value={settings['max_passengers_per_booking'] || '8'}
-                onChange={e => setSettings({ ...settings, max_passengers_per_booking: e.target.value })}
-              />
-              <button
-                onClick={() => saveEmailSetting('max_passengers_per_booking', settings['max_passengers_per_booking'] || '8')}
-                className="w-full md:w-auto bg-[#1B2A4A] text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#243860] transition-all shadow-md"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
         </section>
 
         {/* SYNCHRONISATION GOOGLE AGENDA */}
