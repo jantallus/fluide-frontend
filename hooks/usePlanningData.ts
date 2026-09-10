@@ -63,7 +63,7 @@ export function usePlanningData(getDateRange: () => { start: string; end: string
       }
       if (monRes.ok) {
         const mons = await monRes.json();
-        setMonitors(mons.map((m: User) => ({ id: String(m.id), title: m.first_name })));
+        setMonitors(mons.map((m: User) => ({ id: String(m.id), title: m.first_name, is_active: m.is_active_monitor === true && m.status === 'Actif' })));
       }
       if (flightRes.ok) setFlightTypes(await flightRes.json());
     } catch (err) { console.error('Erreur chargement planning:', err); }

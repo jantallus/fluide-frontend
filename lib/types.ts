@@ -67,6 +67,7 @@ export interface CalendarAppointment {
 export interface Monitor {
   id: string;
   title: string;
+  is_active?: boolean;
 }
 
 export interface SlotDefinition {

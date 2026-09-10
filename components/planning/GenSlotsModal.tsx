@@ -19,6 +19,10 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const activeMonitors = monitors.filter(m => m.is_active !== false);
+  const inactiveMonitors = monitors.filter(m => m.is_active === false);
+  const activeCount = genConfig.monitor_id === 'all' ? activeMonitors.length : (monitors.find(m => m.id === genConfig.monitor_id)?.is_active !== false ? 1 : 0);
+
   const sendGenerationRequest = async (force = false) => {
     try {
       const res = await apiFetch('/api/generate-slots', {
@@ -106,16 +110,32 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
             {availablePlans.map(plan => <option key={plan} value={plan}>{plan}</option>)}
           </select>
 
-          <select
-            className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
-            value={genConfig.monitor_id}
-            onChange={e => setGenConfig({ ...genConfig, monitor_id: e.target.value })}
-          >
-            <option value="all">👥 Tous les pilotes</option>
-            <optgroup label="Pilotes spécifiques">
-              {monitors.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
-            </optgroup>
-          </select>
+          <div>
+            <select
+              className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
+              value={genConfig.monitor_id}
+              onChange={e => setGenConfig({ ...genConfig, monitor_id: e.target.value })}
+            >
+              <option value="all">👥 Tous les pilotes actifs</option>
+              {activeMonitors.length > 0 && (
+                <optgroup label="Pilotes actifs">
+                  {activeMonitors.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
+                </optgroup>
+              )}
+              {inactiveMonitors.length > 0 && (
+                <optgroup label="Pilotes inactifs (aucun créneau généré)">
+                  {inactiveMonitors.map(m => <option key={m.id} value={m.id} disabled style={{ color: '#94a3b8' }}>{m.title} — inactif</option>)}
+                </optgroup>
+              )}
+            </select>
+            {genConfig.startDate && genConfig.endDate && (
+              <p className={`text-[11px] font-bold mt-2 ml-1 ${activeCount === 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                {activeCount === 0
+                  ? '⚠️ Aucun pilote actif — aucun créneau ne sera généré'
+                  : `✓ ${activeCount} pilote${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''} pris en compte`}
+              </p>
+            )}
+          </div>
 
           <button
             disabled={isGenerating}
