@@ -64,7 +64,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         : availCheck.pilots.filter(p => p.id === genConfig.monitor_id && p.available).length)
     : null;
 
-  const hasUnavailable = unavailablePilots.length > 0 || (availCheck !== null && availableCount === 0);
+  const hasUnavailable = unavailablePilots.length > 0;
 
   // Ouvre le wizard avec les pilotes actifs pré-cochés (tous, ou ceux hors période)
   const openWizard = () => {
@@ -194,10 +194,10 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         {showWizard ? (
           <div className="space-y-4">
             <h2 className="text-lg font-black uppercase italic leading-tight">
-              {availableCount === 0 ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
+              {availableCount === 0 && unavailablePilots.length > 0 ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
             </h2>
             <p className="text-[11px] text-slate-400 ml-1">
-              {availableCount === 0
+              {availableCount === 0 && unavailablePilots.length > 0
                 ? 'Aucun pilote n\'est disponible sur cette période.'
                 : `${unavailablePilots.length} pilote(s) ne couvrent pas cette période.`}
               {' '}Cochez ceux à activer.
@@ -292,7 +292,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
                   <div className="mt-2 ml-1">
                     {isChecking ? (
                       <p className="text-[11px] font-bold text-slate-300">⏳ Vérification des disponibilités...</p>
-                    ) : availCheck === null ? null : availableCount === 0 ? (
+                    ) : availCheck === null ? null : (unavailablePilots.length > 0 && availableCount === 0) ? (
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] font-bold text-rose-500">⚠️ Aucun pilote disponible</p>
                         <button
