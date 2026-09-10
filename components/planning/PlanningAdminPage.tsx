@@ -97,8 +97,8 @@ export default function PlanningAdmin() {
         end: a.end_time,
         title: displayTitle,
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : (a.status === 'available' ? '#ffffff' : flightColor),
-        textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : '#cbd5e1') : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
-        borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
+        textColor: a.status === 'available' ? ((a.title === 'NOTE' && a.notes?.trim()) ? '#f59e0b' : '#cbd5e1') : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
+        borderColor: a.status === 'available' ? ((a.title === 'NOTE' && a.notes?.trim()) ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
         interactive: !isPause,
         extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
