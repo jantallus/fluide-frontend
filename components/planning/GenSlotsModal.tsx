@@ -21,8 +21,9 @@ interface Props {
 export default function GenSlotsModal({ availablePlans, monitors, loadAppointments, onClose }: Props) {
   const { toast, confirm } = useToast();
   const [genConfig, setGenConfig] = useState({
-    startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard', monitor_id: 'all',
+    startDate: '', endDate: '', daysToApply: [1, 2, 3, 4, 5, 6, 0], plan_name: 'Standard',
   });
+  const [selectedPilotIds, setSelectedPilotIds] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [availCheck, setAvailCheck] = useState<{ pilots: PilotStatus[] } | null>(null);
@@ -34,6 +35,14 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
 
   const activeMonitors = monitors.filter(m => m.is_active !== false);
   const inactiveMonitors = monitors.filter(m => m.is_active === false);
+
+  // Initialise la sélection à tous les pilotes actifs au chargement
+  useEffect(() => {
+    if (monitors.length > 0 && selectedPilotIds.length === 0) {
+      setSelectedPilotIds(activeMonitors.map(m => m.id));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monitors]);
 
   const checkAvailability = useCallback(async (startDate: string, endDate: string) => {
     if (!startDate || !endDate) { setAvailCheck(null); return; }
@@ -52,35 +61,28 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     checkAvailability(genConfig.startDate, genConfig.endDate);
   }, [genConfig.startDate, genConfig.endDate, checkAvailability]);
 
+  // Disponibilité filtrée sur les pilotes sélectionnés
   const unavailablePilots: PilotStatus[] = availCheck
-    ? (genConfig.monitor_id === 'all'
-        ? availCheck.pilots.filter(p => !p.available)
-        : availCheck.pilots.filter(p => p.id === genConfig.monitor_id && !p.available))
+    ? availCheck.pilots.filter(p => !p.available && selectedPilotIds.includes(p.id))
     : [];
-
-  const availableCount: number | null = availCheck
-    ? (genConfig.monitor_id === 'all'
-        ? availCheck.pilots.filter(p => p.available).length
-        : availCheck.pilots.filter(p => p.id === genConfig.monitor_id && p.available).length)
+  const availableSelectedCount: number | null = availCheck
+    ? availCheck.pilots.filter(p => p.available && selectedPilotIds.includes(p.id)).length
     : null;
-
   const hasUnavailable = unavailablePilots.length > 0;
 
+  const availStatusFor = (id: string): PilotStatus | undefined =>
+    availCheck?.pilots.find(p => p.id === id);
+
   const openWizard = () => {
-    const unavailIds = unavailablePilots.map(p => p.id);
-    setPilotsToActivate(unavailIds);
-    // Générer par défaut pour tous les pilotes actifs (disponibles + ceux qu'on va activer)
-    setPilotsToGenerate(activeMonitors.map(m => m.id));
+    setPilotsToActivate(unavailablePilots.map(p => p.id));
+    setPilotsToGenerate([...selectedPilotIds]);
     setShowWizard(true);
   };
 
   const sendGenerationRequest = async (force = false, generateForIds?: string[]) => {
     try {
-      const payload: Record<string, unknown> = { ...genConfig, forceOverwrite: force };
-      if (generateForIds && generateForIds.length > 0) {
-        payload.monitor_ids = generateForIds;
-        delete payload.monitor_id;
-      }
+      const ids = generateForIds ?? selectedPilotIds;
+      const payload: Record<string, unknown> = { ...genConfig, forceOverwrite: force, monitor_ids: ids };
       const res = await apiFetch('/api/generate-slots', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -114,6 +116,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
 
   const handleGenerate = async () => {
     if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
+    if (selectedPilotIds.length === 0) { toast.warning('Sélectionnez au moins un pilote.'); return; }
     if (hasUnavailable) { openWizard(); return; }
     setIsGenerating(true);
     await sendGenerationRequest(false);
@@ -143,10 +146,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
       setIsActivating(false);
     }
     setShowWizard(false);
-    if (pilotsToGenerate.length === 0) {
-      onClose();
-      return;
-    }
+    if (pilotsToGenerate.length === 0) { onClose(); return; }
     setIsGenerating(true);
     await sendGenerationRequest(false, pilotsToGenerate);
     setIsGenerating(false);
@@ -163,7 +163,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     try {
       const res = await apiFetch('/api/delete-slots', {
         method: 'POST',
-        body: JSON.stringify({ startDate: genConfig.startDate, endDate: genConfig.endDate, monitor_id: genConfig.monitor_id, forceOverwrite: force }),
+        body: JSON.stringify({ startDate: genConfig.startDate, endDate: genConfig.endDate, monitor_ids: selectedPilotIds, forceOverwrite: force }),
       });
       const data = await res.json();
       if (res.status === 409 && data.warning) {
@@ -192,11 +192,9 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
 
   const toggleActivate = (id: string, checked: boolean) => {
     setPilotsToActivate(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
-    // Ajoute auto au groupe "générer pour" si coché
     if (checked) setPilotsToGenerate(prev => prev.includes(id) ? prev : [...prev, id]);
   };
 
-  // Dans le wizard : tous les pilotes actifs + ceux hors période (pour la section "générer pour")
   const wizardGeneratePilots = [
     ...activeMonitors,
     ...unavailablePilots
@@ -211,22 +209,18 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         {showWizard ? (
           <div className="space-y-5">
             <h2 className="text-lg font-black uppercase italic leading-tight">
-              {availableCount === 0 ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
+              {availableSelectedCount === 0 ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
             </h2>
 
-            {/* Section 1 : qui activer */}
             {unavailablePilots.length > 0 && (
               <div>
                 <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Pilotes à activer sur cette période</p>
                 <div className="space-y-1">
                   {unavailablePilots.map(p => (
                     <label key={p.id} className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-100 rounded-2xl cursor-pointer hover:bg-rose-100 transition-colors">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 accent-rose-500 shrink-0"
+                      <input type="checkbox" className="w-4 h-4 accent-rose-500 shrink-0"
                         checked={pilotsToActivate.includes(p.id)}
-                        onChange={e => toggleActivate(p.id, e.target.checked)}
-                      />
+                        onChange={e => toggleActivate(p.id, e.target.checked)} />
                       <span className="text-sm font-bold text-slate-700">{p.name}</span>
                       <span className="text-[9px] text-rose-400 ml-auto">hors période</span>
                     </label>
@@ -235,21 +229,17 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
               </div>
             )}
 
-            {/* Section 2 : pour qui générer */}
             <div>
               <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 ml-1">Générer des créneaux pour</p>
               <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
                 {wizardGeneratePilots.map(m => (
                   <label key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 accent-orange-500 shrink-0"
+                    <input type="checkbox" className="w-4 h-4 accent-orange-500 shrink-0"
                       checked={pilotsToGenerate.includes(m.id)}
                       onChange={e => {
                         if (e.target.checked) setPilotsToGenerate(prev => [...prev, m.id]);
                         else setPilotsToGenerate(prev => prev.filter(id => id !== m.id));
-                      }}
-                    />
+                      }} />
                     <span className="text-sm font-bold text-slate-700">{m.title}</span>
                     {unavailablePilots.find(p => p.id === m.id) && pilotsToActivate.includes(m.id) && (
                       <span className="text-[9px] text-orange-400 ml-auto">sera activé</span>
@@ -266,11 +256,8 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
               </div>
             </div>
 
-            <button
-              disabled={isActivating || isGenerating}
-              onClick={handleActivateAndGenerate}
-              className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isActivating || isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}
-            >
+            <button disabled={isActivating || isGenerating} onClick={handleActivateAndGenerate}
+              className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isActivating || isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}>
               {isActivating ? '⏳ Activation...' : isGenerating ? '⏳ Génération...' : pilotsToActivate.length > 0 ? '🚀 Activer et générer' : '🚀 Générer'}
             </button>
             <button onClick={handleGenerateAnyway} className="w-full text-slate-400 text-[10px] font-bold uppercase tracking-widest hover:text-slate-600 transition-colors">
@@ -283,84 +270,81 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
           <>
             <h2 className="text-xl font-black uppercase italic mb-6">Générer les créneaux</h2>
             <div className="space-y-4">
-              <input
-                type="date"
-                className="w-full border-2 border-slate-100 rounded-2xl p-4"
-                onChange={e => setGenConfig({ ...genConfig, startDate: e.target.value })}
-              />
-              <input
-                type="date"
-                className="w-full border-2 border-slate-100 rounded-2xl p-4"
-                onChange={e => setGenConfig({ ...genConfig, endDate: e.target.value })}
-              />
+              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4"
+                onChange={e => setGenConfig({ ...genConfig, startDate: e.target.value })} />
+              <input type="date" className="w-full border-2 border-slate-100 rounded-2xl p-4"
+                onChange={e => setGenConfig({ ...genConfig, endDate: e.target.value })} />
 
-              <select
-                className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
+              <select className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
                 value={genConfig.plan_name}
-                onChange={e => setGenConfig({ ...genConfig, plan_name: e.target.value })}
-              >
+                onChange={e => setGenConfig({ ...genConfig, plan_name: e.target.value })}>
                 <option value="" disabled>-- Choisir le Modèle --</option>
                 {availablePlans.map(plan => <option key={plan} value={plan}>{plan}</option>)}
               </select>
 
+              {/* Sélection des pilotes avec cases à cocher */}
               <div>
-                <select
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700"
-                  value={genConfig.monitor_id}
-                  onChange={e => setGenConfig({ ...genConfig, monitor_id: e.target.value })}
-                >
-                  <option value="all">👥 Tous les pilotes actifs</option>
-                  {activeMonitors.length > 0 && (
-                    <optgroup label="Pilotes actifs">
-                      {activeMonitors.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
-                    </optgroup>
-                  )}
-                  {inactiveMonitors.length > 0 && (
-                    <optgroup label="Pilotes inactifs">
-                      {inactiveMonitors.map(m => <option key={m.id} value={m.id} disabled style={{ color: '#94a3b8' }}>{m.title} — inactif</option>)}
-                    </optgroup>
-                  )}
-                </select>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Pilotes</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setSelectedPilotIds(activeMonitors.map(m => m.id))}
+                      className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Tous</button>
+                    <button onClick={() => setSelectedPilotIds([])}
+                      className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Aucun</button>
+                  </div>
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                  {activeMonitors.map(m => {
+                    const status = availStatusFor(m.id);
+                    const isSelected = selectedPilotIds.includes(m.id);
+                    const isUnavail = status && !status.available;
+                    return (
+                      <label key={m.id} className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${isSelected ? 'bg-slate-100' : 'bg-slate-50 opacity-50'} hover:bg-slate-100`}>
+                        <input type="checkbox" className="w-4 h-4 accent-orange-500 shrink-0"
+                          checked={isSelected}
+                          onChange={e => {
+                            if (e.target.checked) setSelectedPilotIds(prev => [...prev, m.id]);
+                            else setSelectedPilotIds(prev => prev.filter(id => id !== m.id));
+                          }} />
+                        <span className="text-sm font-bold text-slate-700 flex-1">{m.title}</span>
+                        {genConfig.startDate && genConfig.endDate && (
+                          isChecking ? null :
+                          isUnavail
+                            ? <span className="text-[9px] font-bold text-amber-400">hors période</span>
+                            : status
+                              ? <span className="text-[9px] font-bold text-slate-300">✓</span>
+                              : null
+                        )}
+                      </label>
+                    );
+                  })}
+                  {inactiveMonitors.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl opacity-30">
+                      <input type="checkbox" className="w-4 h-4 shrink-0" disabled />
+                      <span className="text-sm font-bold text-slate-400 flex-1">{m.title}</span>
+                      <span className="text-[9px] text-slate-400">inactif</span>
+                    </div>
+                  ))}
+                </div>
 
-                {genConfig.startDate && genConfig.endDate && (
-                  <div className="mt-2 ml-1">
-                    {isChecking ? (
-                      <p className="text-[11px] font-bold text-slate-300">⏳ Vérification des disponibilités...</p>
-                    ) : availCheck === null ? null : (unavailablePilots.length > 0 && availableCount === 0) ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-bold text-rose-500">⚠️ Aucun pilote disponible</p>
-                        <button onClick={openWizard} className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-700 whitespace-nowrap transition-colors">
-                          Ouvrir des pilotes →
-                        </button>
-                      </div>
-                    ) : unavailablePilots.length > 0 ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-bold text-amber-500">⚠️ {availableCount} dispo, {unavailablePilots.length} hors période</p>
-                        <button onClick={openWizard} className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-700 whitespace-nowrap transition-colors">
-                          Ajouter →
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] font-bold text-slate-400">
-                        ✓ {availableCount} pilote{availableCount! > 1 ? 's' : ''} disponible{availableCount! > 1 ? 's' : ''} sur cette période
-                      </p>
-                    )}
+                {genConfig.startDate && genConfig.endDate && !isChecking && unavailablePilots.length > 0 && (
+                  <div className="flex items-center justify-between gap-2 mt-2 ml-1">
+                    <p className="text-[11px] font-bold text-amber-500">
+                      ⚠️ {unavailablePilots.length} pilote{unavailablePilots.length > 1 ? 's' : ''} hors période
+                    </p>
+                    <button onClick={openWizard} className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-700 whitespace-nowrap transition-colors">
+                      Ajouter →
+                    </button>
                   </div>
                 )}
               </div>
 
-              <button
-                disabled={isGenerating}
-                onClick={handleGenerate}
-                className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}
-              >
+              <button disabled={isGenerating} onClick={handleGenerate}
+                className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isGenerating ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white hover:scale-105'}`}>
                 {isGenerating ? '⏳ Génération en cours...' : '🚀 Lancer la génération'}
               </button>
-              <button
-                disabled={isDeleting}
-                onClick={handleDelete}
-                className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isDeleting ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
-              >
+              <button disabled={isDeleting} onClick={handleDelete}
+                className={`w-full py-4 rounded-3xl font-black uppercase italic shadow-xl transition-all ${isDeleting ? 'bg-slate-400 text-slate-200 cursor-not-allowed' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
                 {isDeleting ? '⏳ Suppression...' : '🗑️ Supprimer ces créneaux'}
               </button>
               <button onClick={onClose} className="w-full text-slate-300 font-bold uppercase text-[10px]">Fermer</button>
