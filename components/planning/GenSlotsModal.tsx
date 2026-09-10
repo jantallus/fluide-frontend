@@ -31,6 +31,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
   const [showWizard, setShowWizard] = useState(false);
   const [pilotsToActivate, setPilotsToActivate] = useState<string[]>([]);
   const [pilotsToGenerate, setPilotsToGenerate] = useState<string[]>([]);
+  const [blockedPilotIds, setBlockedPilotIds] = useState<string[]>([]);
   const [isActivating, setIsActivating] = useState(false);
 
   const activeMonitors = monitors.filter(m => m.is_active !== false);
@@ -79,10 +80,15 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     setShowWizard(true);
   };
 
-  const sendGenerationRequest = async (force = false, generateForIds?: string[]) => {
+  const sendGenerationRequest = async (force = false, generateForIds?: string[], blockedIds?: string[]) => {
     try {
       const ids = generateForIds ?? selectedPilotIds;
-      const payload: Record<string, unknown> = { ...genConfig, forceOverwrite: force, monitor_ids: ids };
+      const payload: Record<string, unknown> = {
+        ...genConfig,
+        forceOverwrite: force,
+        monitor_ids: ids,
+        blocked_pilot_ids: blockedIds ?? blockedPilotIds,
+      };
       const res = await apiFetch('/api/generate-slots', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -90,7 +96,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
       const data = await res.json();
       if (res.status === 409 && data.warning) {
         const confirmed = await confirm(data.message);
-        if (confirmed) return sendGenerationRequest(true, generateForIds);
+        if (confirmed) return sendGenerationRequest(true, generateForIds, blockedIds);
         else { setIsGenerating(false); return; }
       }
       if (res.ok) {
@@ -298,24 +304,34 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
                     const status = availStatusFor(m.id);
                     const isSelected = selectedPilotIds.includes(m.id);
                     const isUnavail = status && !status.available;
+                    const isBlocked = blockedPilotIds.includes(m.id);
                     return (
-                      <label key={m.id} className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${isSelected ? 'bg-slate-100' : 'bg-slate-50 opacity-50'} hover:bg-slate-100`}>
-                        <input type="checkbox" className="w-4 h-4 accent-orange-500 shrink-0"
-                          checked={isSelected}
-                          onChange={e => {
-                            if (e.target.checked) setSelectedPilotIds(prev => [...prev, m.id]);
-                            else setSelectedPilotIds(prev => prev.filter(id => id !== m.id));
-                          }} />
-                        <span className="text-sm font-bold text-slate-700 flex-1">{m.title}</span>
-                        {genConfig.startDate && genConfig.endDate && (
-                          isChecking ? null :
-                          isUnavail
-                            ? <span className="text-[9px] font-bold text-amber-400">hors période</span>
-                            : status
-                              ? <span className="text-[9px] font-bold text-slate-300">✓</span>
-                              : null
+                      <div key={m.id} className={`flex items-center gap-2 p-3 rounded-2xl transition-colors ${isSelected ? 'bg-slate-100' : 'bg-slate-50 opacity-50'}`}>
+                        <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                          <input type="checkbox" className="w-4 h-4 accent-orange-500 shrink-0"
+                            checked={isSelected}
+                            onChange={e => {
+                              if (e.target.checked) setSelectedPilotIds(prev => [...prev, m.id]);
+                              else {
+                                setSelectedPilotIds(prev => prev.filter(id => id !== m.id));
+                                setBlockedPilotIds(prev => prev.filter(id => id !== m.id));
+                              }
+                            }} />
+                          <span className="text-sm font-bold text-slate-700">{m.title}</span>
+                        </label>
+                        {genConfig.startDate && genConfig.endDate && !isChecking && isUnavail && (
+                          <span className="text-[9px] font-bold text-amber-400">hors période</span>
                         )}
-                      </label>
+                        {isSelected && (
+                          <button
+                            onClick={() => setBlockedPilotIds(prev => isBlocked ? prev.filter(id => id !== m.id) : [...prev, m.id])}
+                            className={`text-[9px] font-black px-2 py-1 rounded-lg transition-colors whitespace-nowrap ${isBlocked ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}
+                            title={isBlocked ? 'Créneaux bloqués — cliquer pour générer en disponible' : 'Cliquer pour générer en bloqué'}
+                          >
+                            {isBlocked ? '🔒 Bloqué' : '🔓'}
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                   {inactiveMonitors.map(m => (
