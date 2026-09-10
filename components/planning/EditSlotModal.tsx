@@ -626,7 +626,8 @@ export default function EditSlotModal({
       }
       const updatesToApply: SlotUpdate[] = [];
       slotsToUpdate.forEach(slot => {
-        let payload: Record<string, unknown> = { title: isNonBlockingNote ? 'NOTE' : 'NON DISPO', notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
+        const noteTitle = isNonBlockingNote ? (formData.notes.trim() ? 'NOTE' : '') : 'NON DISPO';
+        let payload: Record<string, unknown> = { title: noteTitle, notes: formData.notes, status: isNonBlockingNote ? 'available' : 'booked' };
         if (isNonBlockingNote) {
           if (IS_CLIENT_SLOT(slot)) {
             payload = { ...payload, title: slot.title, status: slot.status, flight_type_id: slot.flight_type_id, phone: slot.phone, email: slot.email, weightChecked: slot.weight_checked || slot.weightChecked, booking_options: slot.booking_options, client_message: slot.client_message, weight: slot.weight };
