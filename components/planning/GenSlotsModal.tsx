@@ -63,8 +63,13 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         : availCheck.pilots.filter(p => p.id === genConfig.monitor_id && p.available).length)
     : null;
 
-  const allUnavailable = availCheck !== null && availableCount === 0 && unavailablePilots.length > 0;
-  const wizardPilots = allUnavailable ? availCheck!.pilots : unavailablePilots;
+  const allUnavailable = availCheck !== null && availableCount === 0;
+  // Si check retourne des pilotes indisponibles, les montrer ; sinon fallback sur activeMonitors (filtre backend différent)
+  const wizardPilots: PilotStatus[] = unavailablePilots.length > 0
+    ? unavailablePilots
+    : allUnavailable
+      ? activeMonitors.map(m => ({ id: m.id, name: m.title, available: false, hasRestrictions: false }))
+      : [];
 
   const sendGenerationRequest = async (force = false) => {
     try {
@@ -101,8 +106,8 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
 
   const handleGenerate = async () => {
     if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
-    if (unavailablePilots.length > 0) {
-      setPilotsToActivate(unavailablePilots.map(p => p.id));
+    if (wizardPilots.length > 0) {
+      setPilotsToActivate(wizardPilots.map(p => p.id));
       setShowWizard(true);
       return;
     }
