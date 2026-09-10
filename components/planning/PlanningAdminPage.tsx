@@ -305,7 +305,7 @@ export default function PlanningAdmin() {
             onClick={() => setShowGenModal(true)}
             className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
           >
-            <Wrench size={13} className="inline mr-1" />Générer la semaine
+            <Wrench size={13} className="inline mr-1" />Générer des créneaux
           </button>
         </div>
       </header>
