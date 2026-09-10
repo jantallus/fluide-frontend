@@ -877,6 +877,11 @@ export default function EditSlotModal({
     applyAll([{ id: selectedEvent.id, data: { title: formData.notes ? 'NOTE' : '', notes: formData.notes || '', status: 'available', phone: '', email: '', flight_type_id: null, weight: null, weightChecked: false, booking_options: '', client_message: '' } }]);
   };
 
+  const handleClearNote = async () => {
+    if (!selectedEvent || !await confirm('📝 Effacer la note ? Le créneau restera bloqué.')) return;
+    applyAll([{ id: selectedEvent.id, data: { title: 'NON DISPO', notes: '', status: 'booked' } }]);
+  };
+
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
@@ -1016,9 +1021,10 @@ export default function EditSlotModal({
                 <span className="text-4xl block mb-2">🔒</span>
                 <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-2">Créneau Verrouillé</p>
                 <p className="text-xs text-slate-500 px-4 font-medium mb-6">Ce créneau est bloqué ou en pause. Pour y ajouter un client, libérez-le d'abord.</p>
-                <div className={`flex gap-2 ${selectedEvent?.notes ? 'flex-col sm:flex-row' : ''} justify-center`}>
+                <div className={`flex gap-2 ${selectedEvent?.notes ? 'flex-col sm:flex-row' : ''} justify-center flex-wrap`}>
                   <button onClick={handleRelease} className="bg-rose-100 text-rose-500 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">{selectedEvent?.notes ? '🗑️ Libérer + effacer note' : '🗑️ Libérer ce créneau'}</button>
                   {selectedEvent?.notes && <button onClick={handleReleaseKeepNote} className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-sm">🔓 Libérer + garder note</button>}
+                  {selectedEvent?.notes && selectedEvent?.title?.toUpperCase().includes('NON DISPO') && <button onClick={handleClearNote} className="bg-amber-50 text-amber-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-sm">📝 Effacer la note</button>}
                 </div>
               </div>
             ) : isOutOfSeason ? (
@@ -1703,6 +1709,7 @@ export default function EditSlotModal({
                           return (
                             <>
                               <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">{isNoteOnly ? '🗑️ Effacer la note' : (showKeepNote ? '🗑️ Libérer + effacer note' : '🗑️ Libérer ce créneau')}</button>
+                              {showKeepNote && <button onClick={handleClearNote} className="flex-1 font-black uppercase italic text-[9px] tracking-widest transition-all rounded-xl py-2 shadow-sm bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-500 hover:text-white">📝 Effacer la note</button>}
                               {showKeepNote && <button onClick={handleReleaseKeepNote} className="flex-1 font-black uppercase italic text-[9px] tracking-widest transition-all rounded-xl py-2 shadow-sm bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50">🔓 Libérer + garder note</button>}
                               {groupRootSlots.length > 1 && (<button onClick={handleReleaseGroup} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-black uppercase italic text-[9px] tracking-widest hover:bg-rose-500 hover:text-white transition-colors py-2 shadow-sm">🧹 Libérer groupe ({groupRootSlots.length})</button>)}
                             </>
