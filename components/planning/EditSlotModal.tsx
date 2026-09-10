@@ -879,7 +879,7 @@ export default function EditSlotModal({
 
   const handleClearNote = async () => {
     if (!selectedEvent || !await confirm('📝 Effacer la note ? Le créneau restera bloqué.')) return;
-    applyAll([{ id: selectedEvent.id, data: { title: 'NON DISPO', notes: '', status: 'booked' } }]);
+    applyAll([{ id: selectedEvent.id, data: { title: selectedEvent.title, notes: '', status: 'booked' } }]);
   };
 
   const handleMove = async () => {
