@@ -51,6 +51,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     checkAvailability(genConfig.startDate, genConfig.endDate);
   }, [genConfig.startDate, genConfig.endDate, checkAvailability]);
 
+  // Pilotes indisponibles selon le check (filtrés par la sélection)
   const unavailablePilots: PilotStatus[] = availCheck
     ? (genConfig.monitor_id === 'all'
         ? availCheck.pilots.filter(p => !p.available)
@@ -63,13 +64,16 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         : availCheck.pilots.filter(p => p.id === genConfig.monitor_id && p.available).length)
     : null;
 
-  const allUnavailable = availCheck !== null && availableCount === 0;
-  // Si check retourne des pilotes indisponibles, les montrer ; sinon fallback sur activeMonitors (filtre backend différent)
-  const wizardPilots: PilotStatus[] = unavailablePilots.length > 0
-    ? unavailablePilots
-    : allUnavailable
-      ? activeMonitors.map(m => ({ id: m.id, name: m.title, available: false, hasRestrictions: false }))
-      : [];
+  const hasUnavailable = unavailablePilots.length > 0 || (availCheck !== null && availableCount === 0);
+
+  // Ouvre le wizard avec les pilotes actifs pré-cochés (tous, ou ceux hors période)
+  const openWizard = () => {
+    const preSelected = unavailablePilots.length > 0
+      ? unavailablePilots.map(p => p.id)
+      : activeMonitors.map(m => m.id);
+    setPilotsToActivate(preSelected);
+    setShowWizard(true);
+  };
 
   const sendGenerationRequest = async (force = false) => {
     try {
@@ -106,11 +110,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
 
   const handleGenerate = async () => {
     if (!genConfig.startDate || !genConfig.endDate) { toast.warning('Veuillez sélectionner des dates.'); return; }
-    if (wizardPilots.length > 0) {
-      setPilotsToActivate(wizardPilots.map(p => p.id));
-      setShowWizard(true);
-      return;
-    }
+    if (hasUnavailable) { openWizard(); return; }
     setIsGenerating(true);
     await sendGenerationRequest(false);
     setIsGenerating(false);
@@ -182,35 +182,56 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
     setIsDeleting(false);
   };
 
+  // Dans le wizard, montrer tous les pilotes de la base
+  // Actifs (is_active = true) : cochables, pré-cochés si hors période
+  // Inactifs (is_active = false) : affichés en grisé, non cochables
+  const wizardAllMonitors = [...activeMonitors, ...inactiveMonitors];
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl">
+
         {showWizard ? (
           <div className="space-y-4">
-            <h2 className="text-lg font-black uppercase italic">
-              {allUnavailable ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
+            <h2 className="text-lg font-black uppercase italic leading-tight">
+              {availableCount === 0 ? 'Ouvrir des pilotes au planning ?' : 'Ajouter des pilotes au planning ?'}
             </h2>
             <p className="text-[11px] text-slate-400 ml-1">
-              {allUnavailable
+              {availableCount === 0
                 ? 'Aucun pilote n\'est disponible sur cette période.'
                 : `${unavailablePilots.length} pilote(s) ne couvrent pas cette période.`}
+              {' '}Cochez ceux à activer.
             </p>
-            <div className="space-y-2 max-h-52 overflow-y-auto">
-              {wizardPilots.map(p => (
-                <label key={p.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
+
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {activeMonitors.map(m => (
+                <label key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
                   <input
                     type="checkbox"
                     className="w-4 h-4 accent-orange-500 shrink-0"
-                    checked={pilotsToActivate.includes(p.id)}
+                    checked={pilotsToActivate.includes(m.id)}
                     onChange={e => {
-                      if (e.target.checked) setPilotsToActivate(prev => [...prev, p.id]);
-                      else setPilotsToActivate(prev => prev.filter(id => id !== p.id));
+                      if (e.target.checked) setPilotsToActivate(prev => [...prev, m.id]);
+                      else setPilotsToActivate(prev => prev.filter(id => id !== m.id));
                     }}
                   />
-                  <span className="text-sm font-bold text-slate-700">{p.name}</span>
+                  <span className="text-sm font-bold text-slate-700">{m.title}</span>
                 </label>
               ))}
+              {inactiveMonitors.map(m => (
+                <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl opacity-40">
+                  <input type="checkbox" className="w-4 h-4 shrink-0" disabled />
+                  <div>
+                    <span className="text-sm font-bold text-slate-400">{m.title}</span>
+                    <span className="text-[9px] text-slate-400 ml-2">— inactif (Prestataires)</span>
+                  </div>
+                </div>
+              ))}
+              {wizardAllMonitors.length === 0 && (
+                <p className="text-[11px] text-slate-400 italic text-center py-4">Aucun pilote en base de données.</p>
+              )}
             </div>
+
             <button
               disabled={isActivating || isGenerating}
               onClick={handleActivateAndGenerate}
@@ -223,6 +244,7 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
             </button>
             <button onClick={() => setShowWizard(false)} className="w-full text-slate-300 font-bold uppercase text-[10px]">Annuler</button>
           </div>
+
         ) : (
           <>
             <h2 className="text-xl font-black uppercase italic mb-6">Générer les créneaux</h2>
@@ -260,26 +282,42 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
                     </optgroup>
                   )}
                   {inactiveMonitors.length > 0 && (
-                    <optgroup label="Pilotes inactifs (aucun créneau généré)">
+                    <optgroup label="Pilotes inactifs">
                       {inactiveMonitors.map(m => <option key={m.id} value={m.id} disabled style={{ color: '#94a3b8' }}>{m.title} — inactif</option>)}
                     </optgroup>
                   )}
                 </select>
 
                 {genConfig.startDate && genConfig.endDate && (
-                  <p className={`text-[11px] font-bold mt-2 ml-1 ${
-                    isChecking ? 'text-slate-300' :
-                    availableCount === 0 ? 'text-rose-500' :
-                    unavailablePilots.length > 0 ? 'text-amber-500' : 'text-slate-400'
-                  }`}>
-                    {isChecking ? '⏳ Vérification des disponibilités...' :
-                     availCheck === null ? '' :
-                     availableCount === 0
-                       ? '⚠️ Aucun pilote disponible sur cette période'
-                       : unavailablePilots.length > 0
-                         ? `⚠️ ${availableCount} disponible(s), ${unavailablePilots.length} hors période`
-                         : `✓ ${availableCount} pilote${availableCount! > 1 ? 's' : ''} disponible${availableCount! > 1 ? 's' : ''} sur cette période`}
-                  </p>
+                  <div className="mt-2 ml-1">
+                    {isChecking ? (
+                      <p className="text-[11px] font-bold text-slate-300">⏳ Vérification des disponibilités...</p>
+                    ) : availCheck === null ? null : availableCount === 0 ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-bold text-rose-500">⚠️ Aucun pilote disponible</p>
+                        <button
+                          onClick={openWizard}
+                          className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-700 whitespace-nowrap transition-colors"
+                        >
+                          Ouvrir des pilotes →
+                        </button>
+                      </div>
+                    ) : unavailablePilots.length > 0 ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-bold text-amber-500">⚠️ {availableCount} dispo, {unavailablePilots.length} hors période</p>
+                        <button
+                          onClick={openWizard}
+                          className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-700 whitespace-nowrap transition-colors"
+                        >
+                          Ajouter →
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] font-bold text-slate-400">
+                        ✓ {availableCount} pilote{availableCount! > 1 ? 's' : ''} disponible{availableCount! > 1 ? 's' : ''} sur cette période
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
