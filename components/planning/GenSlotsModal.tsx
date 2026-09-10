@@ -36,9 +36,18 @@ export default function GenSlotsModal({ availablePlans, monitors, loadAppointmen
         else { setIsGenerating(false); return; }
       }
       if (res.ok) {
-        toast.success(`✅ ${data.count || 0} créneaux générés avec succès !`);
-        onClose();
-        await loadAppointments();
+        if (data.count === 0 && data.debug) {
+          const { monitorsFound, defsFound } = data.debug;
+          if (defsFound === 0) toast.warning('0 créneau généré — aucune rotation configurée dans ce profil (Configuration → Modèles de Rotations)');
+          else if (monitorsFound === 0) toast.warning('0 créneau généré — aucun pilote actif trouvé en base de données (vérifiez is_active_monitor et statut "Actif")');
+          else toast.warning(`0 créneau généré — ${monitorsFound} pilote(s), ${defsFound} rotation(s) trouvé(s) mais filtrés par disponibilités`);
+          onClose();
+          await loadAppointments();
+        } else {
+          toast.success(`✅ ${data.count} créneaux générés avec succès !`);
+          onClose();
+          await loadAppointments();
+        }
       } else {
         toast.error('Erreur : ' + (data.error || 'Erreur inconnue'));
       }
