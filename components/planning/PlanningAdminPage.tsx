@@ -38,6 +38,17 @@ function NativeStopDiv({ style, onNativeClick, children }: {
   return <div ref={ref} style={style}>{children}</div>;
 }
 
+const isRealSlot = (a: { title?: string }) => {
+  const t = a.title || '';
+  return !(
+    t.toUpperCase().includes('NON DISPO') ||
+    t.includes('❌') ||
+    t.toUpperCase().includes('PAUSE') ||
+    t.includes('☕') ||
+    t.startsWith('↪️ Suite')
+  );
+};
+
 export default function PlanningAdmin() {
   const { toast } = useToast();
   const dateRangeRef = useRef({ start: '', end: '' });
@@ -153,7 +164,7 @@ export default function PlanningAdmin() {
       appointments
         .filter(a => {
           const t = new Date(a.start_time).getTime();
-          return t >= viewStart && t < viewEnd;
+          return t >= viewStart && t < viewEnd && isRealSlot(a);
         })
         .map(a => a.monitor_id?.toString())
     );
