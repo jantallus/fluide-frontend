@@ -115,6 +115,7 @@ export interface FlightType {
   activity_pedestrian?: boolean;
   activity_children?: boolean;
   activity_gopro?: boolean;
+  media_included?: boolean;
   tenant?: string;
 }
 

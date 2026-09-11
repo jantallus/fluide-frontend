@@ -27,6 +27,7 @@ const EMPTY_FORM = {
   activity_pedestrian: false,
   activity_children: false,
   activity_gopro: false,
+  media_included: false,
 };
 
 interface Props {
@@ -67,6 +68,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
         activity_pedestrian: flightToEdit.activity_pedestrian || false,
         activity_children: flightToEdit.activity_children || false,
         activity_gopro: flightToEdit.activity_gopro || false,
+        media_included: flightToEdit.media_included || false,
       });
     } else {
       setFormData({ ...EMPTY_FORM });
@@ -200,6 +202,11 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
           <label className="flex items-center gap-3 cursor-pointer bg-violet-50 p-4 rounded-2xl border border-violet-100 hover:border-violet-300 transition-colors mt-2">
             <input type="checkbox" className="w-5 h-5 accent-violet-500 rounded" checked={formData.allow_multi_slots} onChange={e => set({ allow_multi_slots: e.target.checked })} />
             <span className="font-bold text-violet-900 text-xs leading-tight">Autoriser l'étalement sur plusieurs créneaux</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer bg-amber-50 p-4 rounded-2xl border border-amber-100 hover:border-amber-300 transition-colors mt-2">
+            <input type="checkbox" className="w-5 h-5 accent-amber-500 rounded" checked={formData.media_included} onChange={e => set({ media_included: e.target.checked })} />
+            <span className="font-bold text-amber-900 text-xs leading-tight">📸 Photos & Vidéos incluses dans ce vol</span>
           </label>
 
           {tenant !== 'aravis' && (

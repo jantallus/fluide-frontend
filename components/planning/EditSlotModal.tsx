@@ -1570,7 +1570,7 @@ export default function EditSlotModal({
                           )}
 
                           {/* ── Compléments (Photos, Vidéos…) ── */}
-                          {availableComplements.length > 0 && (
+                          {availableComplements.length > 0 && !flightTypes.find(f => f.id?.toString() === formData.flight_type_id?.toString())?.media_included && (
                             <div>
                               <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Options (Photos, Vidéos…)</label>
                               <div className="space-y-1.5">
