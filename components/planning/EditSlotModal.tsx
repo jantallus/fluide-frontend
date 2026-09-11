@@ -75,6 +75,7 @@ export default function EditSlotModal({
   const [flightPriceOverride, setFlightPriceOverride] = useState('');
   const [complementPriceOverride, setComplementPriceOverride] = useState('');
   const [cbNetAmount, setCbNetAmount] = useState('');
+  const [secondBooking, setSecondBooking] = useState<{ title: string; phone: string; weight: string }>({ title: '', phone: '', weight: '' });
   const [standbyPrefill, setStandbyPrefill] = useState<{ standby_id: number; name: string; phone: string; email: string; flight_type: string; weight_info: string; nb_passengers: number } | null>(null);
   const standbyIdRef = React.useRef<number | null>(null);
 
@@ -291,6 +292,8 @@ export default function EditSlotModal({
     setGroupLocked(detectedGroupSize > 1);
     setIsEditing(selectedEvent.status !== 'booked');
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
+    const sb = selectedEvent.second_booking;
+    setSecondBooking(sb ? { title: sb.title || '', phone: sb.phone || '', weight: sb.weight?.toString() || '' } : { title: '', phone: '', weight: '' });
     setManualCounts({});
     const pd = selectedEvent.status === 'booked' ? selectedEvent.payment_data : null;
     setSelectedPartnerId(pd?.partner_id?.toString() ?? '');
@@ -432,6 +435,13 @@ export default function EditSlotModal({
       setMoveConfig(prev => ({ ...prev, time: '' }));
     }
   }, [availableTimes]);
+
+  const isShortFlightType = useMemo(() => {
+    if (!isAravisContext || !slotDuration || !formData.flight_type_id) return false;
+    const ft = flightTypes.find(f => f.id?.toString() === formData.flight_type_id.toString());
+    const dur = ft?.duration_minutes || 0;
+    return dur > 0 && dur * 2 <= slotDuration;
+  }, [isAravisContext, slotDuration, formData.flight_type_id, flightTypes]);
 
   const smartFlightOptions = useMemo(() => {
     const dateStr = selectedEvent?.start ? new Date(selectedEvent.start as Date | string).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '';
@@ -773,7 +783,8 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData } });
+      const secondBookingData = isShortFlightType ? { second_booking: secondBooking.title.trim() ? { title: secondBooking.title.trim(), phone: secondBooking.phone.trim() || null, weight: secondBooking.weight ? parseInt(secondBooking.weight) : null } : null } : {};
+      updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData, ...secondBookingData } });
     }
 
     applyAll(updatesToApply);
@@ -1072,6 +1083,7 @@ export default function EditSlotModal({
                   <div className="space-y-3">
                     <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-3">
                       {displayTitle && row('Passager(s)', displayTitle)}
+                      {ev.second_booking?.title && row('2ème Passager', `${ev.second_booking.title}${ev.second_booking.weight ? ` · ${ev.second_booking.weight} kg` : ''}${ev.second_booking.phone ? ` · ${ev.second_booking.phone}` : ''}`)}
                       {partner && (
                         <div>
                           <p className="text-[9px] font-black uppercase text-slate-400 mb-0.5">Partenaire</p>
@@ -1294,6 +1306,39 @@ export default function EditSlotModal({
                     })}
                   </select>
                 </div>
+
+                {isShortFlightType && (
+                  <div className="mt-4 border-t border-slate-100 pt-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1 block mb-2">2ème Passager (créneau partagé)</label>
+                    <div className="bg-sky-50 rounded-2xl p-4 space-y-2 border-2 border-sky-100">
+                      <input
+                        className="w-full bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                        value={secondBooking.title}
+                        onChange={e => setSecondBooking(p => ({ ...p, title: e.target.value }))}
+                        placeholder="Nom du 2ème passager (laisser vide si aucun)"
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                          value={secondBooking.phone}
+                          onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
+                          placeholder="Téléphone"
+                        />
+                        <input
+                          className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                          value={secondBooking.weight}
+                          onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
+                          placeholder="Poids kg"
+                          type="number"
+                          min="20" max="130"
+                        />
+                      </div>
+                      {secondBooking.title && (
+                        <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {formData.flight_type_id && (
                   <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
