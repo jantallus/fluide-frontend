@@ -105,7 +105,13 @@ export default function PlanningAdmin() {
         borderColor: a.status === 'available' ? '#e2e8f0' : isAlert ? '#fca5a5' : flightColor,
         classNames: [],
         interactive: !isPause,
-        extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null, flight_duration: flight?.duration_minutes || null },
+        extendedProps: (() => {
+          const fd = flight?.duration_minutes || 0;
+          const slotMs = a.start_time && a.end_time ? new Date(a.end_time).getTime() - new Date(a.start_time).getTime() : 0;
+          const slotMin = Math.round(slotMs / 60000);
+          const isShortFlight = a.status === 'booked' && fd > 0 && fd * 2 <= slotMin;
+          return { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null, flight_duration: fd || null, isShortFlight };
+        })(),
       };
     });
   }, [appointments, flightTypes]);
@@ -242,25 +248,24 @@ export default function PlanningAdmin() {
       </span>
     );
 
-    // ── Détection vol court (aiglon) ──
-    const isAravisCtx = currentUser?.enseigne === 'aravis' || currentUser?.role === 'aravis';
-    const slotDurMin = arg.event.start && arg.event.end
-      ? Math.round((arg.event.end.getTime() - arg.event.start.getTime()) / 60000) : 0;
-    const flightDurMin = ep.flight_duration || 0;
-    const isShortFlight = isAravisCtx && flightDurMin > 0 && flightDurMin * 2 <= slotDurMin;
+    // ── Détection vol court (aiglon) — calculé dans calendarEvents ──
+    const isShortFlight = !!(ep as Slot & { isShortFlight?: boolean }).isShortFlight;
 
     // ── Vue splitée Aiglon sans Pax 2 ──
     if (isShortFlight && !ep.second_booking?.title) {
       return (
-        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
-          <div style={{ flex: 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
+          {/* Fond blanc sur le 1/3 droit */}
+          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '33%', background: 'white', zIndex: 1 }} />
+          {/* Séparateur */}
+          <div style={{ position: 'absolute', top: 2, bottom: 2, right: '33%', width: '1px', background: 'rgba(255,255,255,0.5)', zIndex: 2 }} />
+          {/* Contenu Pax 1 (2/3 gauche) */}
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: '33%', padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', zIndex: 0 }}>
             {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
             <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalDisplayName}{badges && ` ${badges}`}</span>
             {infoLine && subSpan(infoLine)}
             {payLine && subSpan(payLine)}
           </div>
-          <div style={{ width: '1px', background: 'rgba(255,255,255,0.35)', flexShrink: 0, margin: '2px 0' }} />
-          <div style={{ flex: 1, background: 'white', flexShrink: 0 }} />
         </div>
       );
     }
