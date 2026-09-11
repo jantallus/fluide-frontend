@@ -1655,64 +1655,119 @@ export default function EditSlotModal({
 
           {/* ── Tab Pax 2 ── */}
           {activeTab === 'client2' && (
-            <div className="space-y-4">
-              <div className="bg-sky-50 rounded-2xl p-4 space-y-2 border-2 border-sky-100">
-                <label className="text-[10px] font-black uppercase text-sky-600 block mb-1">2ème Passager (créneau partagé)</label>
-                <input
-                  className="w-full bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                  value={secondBooking.title}
-                  onChange={e => setSecondBooking(p => ({ ...p, title: e.target.value }))}
-                  placeholder="Nom du 2ème passager (laisser vide si aucun)"
-                />
-                <div className="flex gap-2">
-                  <input
-                    className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                    value={secondBooking.phone}
-                    onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="Téléphone"
-                  />
-                  <input
-                    className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                    value={secondBooking.weight}
-                    onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
-                    placeholder="Poids kg"
-                    type="number"
-                    min="20" max="130"
-                  />
-                </div>
-                {secondBooking.title.trim() && (
-                  <div className="pt-2 space-y-2 border-t border-sky-200">
-                    <label className="text-[10px] font-black uppercase text-sky-600 block">Encaissement 2ème passager</label>
-                    <select
-                      value={secondBooking.payment_type}
-                      onChange={e => setSecondBooking(p => ({ ...p, payment_type: e.target.value, encaisseur_id: '' }))}
-                      className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
-                    >
-                      <option value="">— Non renseigné —</option>
-                      <option value="esp">Espèces</option>
-                      <option value="cb">CB</option>
-                      <option value="ancv">ANCV</option>
-                      <option value="ancv_connect">ANCV Connect</option>
-                      <option value="chq">Chèque</option>
-                      <option value="np">Non payé</option>
-                    </select>
-                    {secondBooking.payment_type && secondBooking.payment_type !== 'np' && (
-                      <select
-                        value={secondBooking.encaisseur_id}
-                        onChange={e => setSecondBooking(p => ({ ...p, encaisseur_id: e.target.value }))}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
-                      >
-                        <option value="">— Encaissé par —</option>
-                        {fullMonitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
-                      </select>
+            !isEditing && selectedEvent?.status === 'booked' ? (
+              /* ── Fiche lecture Pax 2 ── */
+              (() => {
+                const sb = selectedEvent!.second_booking;
+                const payTypeLabel: Record<string, string> = { esp: 'Espèces', cb: 'CB', chq: 'Chèque', ancv: 'ANCV', ancv_connect: 'ANCV Connect', np: 'Non payé' };
+                const sbEncaisseurIdStr = sb?.encaisseur_id ?? '';
+                const sbEncaisseurFull = sbEncaisseurIdStr ? fullMonitors.find(m => m.id?.toString() === sbEncaisseurIdStr) : null;
+                const sbEncaisseurFallback = sbEncaisseurIdStr ? monitors.find(m => m.id === sbEncaisseurIdStr) : null;
+                const sbEncaisseurName = sbEncaisseurFull?.first_name ?? sbEncaisseurFallback?.title ?? null;
+                const row2 = (label: string, value: React.ReactNode) => (
+                  <div key={label}>
+                    <p className="text-[9px] font-black uppercase text-slate-400 mb-0.5">{label}</p>
+                    <p className="text-sm font-bold text-slate-800">{value}</p>
+                  </div>
+                );
+                if (!sb?.title) {
+                  return (
+                    <div className="text-center py-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                      <span className="text-4xl block mb-2">👤</span>
+                      <p className="font-black text-slate-900 uppercase tracking-widest text-sm mb-1">Aucun 2ème passager</p>
+                      <p className="text-xs text-slate-500 px-4 font-medium">Cliquez sur &quot;Modifier la fiche&quot; pour en ajouter un.</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-3">
+                      {row2('Passager', sb.title)}
+                      {sb.weight && row2('Poids', `${sb.weight} kg`)}
+                    </div>
+                    {sb.payment_type && (
+                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-2">
+                        <p className="text-[9px] font-black uppercase text-slate-400">Encaissement</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {payTypeLabel[sb.payment_type] ?? sb.payment_type}
+                          {sbEncaisseurName && ` · ✓ ${sbEncaisseurName}`}
+                        </p>
+                      </div>
+                    )}
+                    {sb.phone && (
+                      <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-2">
+                        <p className="text-xs font-black uppercase text-slate-400">Téléphone</p>
+                        <p className="text-sm font-bold text-slate-700 mb-2">{sb.phone}</p>
+                        <div className="flex gap-2">
+                          <a href={`tel:${sb.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center text-[14px] bg-emerald-100 text-emerald-700 py-2 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm">📞</a>
+                          <a href={`sms:${sb.phone.replace(/\s+/g, '')}`} className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 py-2 rounded-xl font-black uppercase hover:bg-emerald-200 transition-colors shadow-sm">💬 SMS</a>
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-                {secondBooking.title && (
-                  <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
-                )}
+                );
+              })()
+            ) : (
+              /* ── Formulaire Pax 2 ── */
+              <div className="space-y-4">
+                <div className="bg-sky-50 rounded-2xl p-4 space-y-2 border-2 border-sky-100">
+                  <label className="text-[10px] font-black uppercase text-sky-600 block mb-1">2ème Passager (créneau partagé)</label>
+                  <input
+                    className="w-full bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                    value={secondBooking.title}
+                    onChange={e => setSecondBooking(p => ({ ...p, title: e.target.value }))}
+                    placeholder="Nom du 2ème passager (laisser vide si aucun)"
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                      value={secondBooking.phone}
+                      onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="Téléphone"
+                    />
+                    <input
+                      className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                      value={secondBooking.weight}
+                      onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
+                      placeholder="Poids kg"
+                      type="number"
+                      min="20" max="130"
+                    />
+                  </div>
+                  {secondBooking.title.trim() && (
+                    <div className="pt-2 space-y-2 border-t border-sky-200">
+                      <label className="text-[10px] font-black uppercase text-sky-600 block">Encaissement 2ème passager</label>
+                      <select
+                        value={secondBooking.payment_type}
+                        onChange={e => setSecondBooking(p => ({ ...p, payment_type: e.target.value, encaisseur_id: '' }))}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                      >
+                        <option value="">— Non renseigné —</option>
+                        <option value="esp">Espèces</option>
+                        <option value="cb">CB</option>
+                        <option value="ancv">ANCV</option>
+                        <option value="ancv_connect">ANCV Connect</option>
+                        <option value="chq">Chèque</option>
+                        <option value="np">Non payé</option>
+                      </select>
+                      {secondBooking.payment_type && secondBooking.payment_type !== 'np' && (
+                        <select
+                          value={secondBooking.encaisseur_id}
+                          onChange={e => setSecondBooking(p => ({ ...p, encaisseur_id: e.target.value }))}
+                          className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                        >
+                          <option value="">— Encaissé par —</option>
+                          {fullMonitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                  {secondBooking.title && (
+                    <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
+                  )}
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* ── Tab Note ── */}
@@ -1772,11 +1827,11 @@ export default function EditSlotModal({
           {/* ── Boutons save/release ── */}
           {(activeTab === 'client' || activeTab === 'client2' || activeTab === 'note') && (
             <div className="pt-4 space-y-3 border-t border-slate-100">
-              {activeTab === 'client' && !isEditing && selectedEvent?.status === 'booked' && !isClientLocked ? (
+              {(activeTab === 'client' || activeTab === 'client2') && !isEditing && selectedEvent?.status === 'booked' && !isClientLocked ? (
                 <button onClick={() => setIsEditing(true)} className="w-full bg-slate-800 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-slate-700 transition-colors">✏️ Modifier la fiche</button>
               ) : !(activeTab === 'client' && isClientLocked) && !isLockedForMe && (
                 <>
-                  {activeTab === 'client' && isEditing && selectedEvent?.status === 'booked' && (
+                  {(activeTab === 'client' || activeTab === 'client2') && isEditing && selectedEvent?.status === 'booked' && (
                     <button onClick={() => setIsEditing(false)} className="w-full bg-slate-100 text-slate-500 py-2.5 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-colors">↩ Annuler les modifications</button>
                   )}
                   <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">Enregistrer la modification</button>
