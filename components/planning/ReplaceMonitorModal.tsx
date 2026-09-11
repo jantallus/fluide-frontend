@@ -17,12 +17,19 @@ interface Props {
 export default function ReplaceMonitorModal({ monitor, monitors, viewRange, appointments, availablePlans, onClose, onSuccess }: Props) {
   const { toast, confirm } = useToast();
 
-  const defaultStart = viewRange?.start.toISOString().split('T')[0] || '';
+  const toLocalDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const defaultStart = viewRange?.start ? toLocalDate(viewRange.start) : '';
   const defaultEnd = (() => {
     if (!viewRange?.end) return '';
     const d = new Date(viewRange.end);
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDate(d);
   })();
 
   const [startDate, setStartDate] = useState(defaultStart);
