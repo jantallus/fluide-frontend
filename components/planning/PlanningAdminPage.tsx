@@ -105,7 +105,7 @@ export default function PlanningAdmin() {
         borderColor: a.status === 'available' ? '#e2e8f0' : isAlert ? '#fca5a5' : flightColor,
         classNames: [],
         interactive: !isPause,
-        extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
+        extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null, flight_duration: flight?.duration_minutes || null },
       };
     });
   }, [appointments, flightTypes]);
@@ -160,7 +160,7 @@ export default function PlanningAdmin() {
   }, [calendarEvents]);
 
   const renderEventContent = useCallback((arg: EventContentArg) => {
-    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null };
+    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null; flight_duration?: number | null };
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
@@ -242,6 +242,29 @@ export default function PlanningAdmin() {
       </span>
     );
 
+    // ── Détection vol court (aiglon) ──
+    const isAravisCtx = currentUser?.enseigne === 'aravis' || currentUser?.role === 'aravis';
+    const slotDurMin = arg.event.start && arg.event.end
+      ? Math.round((arg.event.end.getTime() - arg.event.start.getTime()) / 60000) : 0;
+    const flightDurMin = ep.flight_duration || 0;
+    const isShortFlight = isAravisCtx && flightDurMin > 0 && flightDurMin * 2 <= slotDurMin;
+
+    // ── Vue splitée Aiglon sans Pax 2 ──
+    if (isShortFlight && !ep.second_booking?.title) {
+      return (
+        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
+          <div style={{ flex: 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden' }}>
+            {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+            <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalDisplayName}{badges && ` ${badges}`}</span>
+            {infoLine && subSpan(infoLine)}
+            {payLine && subSpan(payLine)}
+          </div>
+          <div style={{ width: '1px', background: 'rgba(255,255,255,0.35)', flexShrink: 0, margin: '2px 0' }} />
+          <div style={{ flex: 1, background: 'white', flexShrink: 0 }} />
+        </div>
+      );
+    }
+
     // ── Vue splitée Aiglon (Pax 1 / Pax 2) ──
     if (ep.second_booking?.title) {
       const sb = ep.second_booking!;
@@ -301,7 +324,7 @@ export default function PlanningAdmin() {
         {payLine && subSpan(payLine)}
       </div>
     );
-  }, [monitors, groupColors, expandedPax2, togglePax2]);
+  }, [monitors, groupColors, expandedPax2, togglePax2, currentUser]);
 
   const resourceLabelContent = useCallback((arg: { resource: { id: string; title: string } }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px', minWidth: 0 }}>
