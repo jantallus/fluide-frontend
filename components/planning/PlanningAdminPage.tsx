@@ -120,6 +120,8 @@ export default function PlanningAdmin() {
   }, [appointments, flightTypes, currentUser]);
 
   const [hiddenMonitorIds, setHiddenMonitorIds] = useState<Set<string>>(new Set());
+  // Moniteurs sans créneaux que l'admin a choisi d'afficher manuellement
+  const [extraShownIds, setExtraShownIds] = useState<Set<string>>(new Set());
 
   // Moniteurs qui ont au moins un créneau dans la plage affichée
   const monitorsWithSlots = useMemo(() => {
@@ -138,10 +140,23 @@ export default function PlanningAdmin() {
     return filtered.length > 0 ? filtered : monitors;
   }, [monitors, appointments, viewRange]);
 
-  // Moniteurs affichés (sans les masqués)
+  // Moniteurs sans créneaux sur la période (cachés par défaut)
+  const monitorsWithoutSlots = useMemo(() => {
+    if (!viewRange || appointments.length === 0) return [];
+    const withSlotIds = new Set(monitorsWithSlots.map(m => m.id.toString()));
+    return monitors.filter(m => !withSlotIds.has(m.id.toString()));
+  }, [monitors, monitorsWithSlots, viewRange, appointments.length]);
+
+  // Réinitialiser les extras quand la plage change
+  useEffect(() => { setExtraShownIds(new Set()); }, [viewRange]);
+
+  // Moniteurs affichés (avec créneaux - masqués manuels + extras sans créneaux)
   const visibleMonitors = useMemo(
-    () => monitorsWithSlots.filter(m => !hiddenMonitorIds.has(m.id)),
-    [monitorsWithSlots, hiddenMonitorIds]
+    () => [
+      ...monitorsWithSlots.filter(m => !hiddenMonitorIds.has(m.id)),
+      ...monitors.filter(m => extraShownIds.has(m.id.toString())),
+    ],
+    [monitorsWithSlots, hiddenMonitorIds, monitors, extraShownIds]
   );
 
   // Moniteurs présents dans la vue mais temporairement masqués
@@ -463,7 +478,7 @@ export default function PlanningAdmin() {
           </div>
         ) : (
           <ErrorBoundary variant="widget" zone="planning/fullcalendar">
-            {hiddenActiveMonitors.length > 0 && (
+            {(hiddenActiveMonitors.length > 0 || monitorsWithoutSlots.filter(m => !extraShownIds.has(m.id.toString())).length > 0) && (
               <div className="flex flex-wrap gap-1.5 mb-3 px-1">
                 {hiddenActiveMonitors.map(m => (
                   <button
@@ -474,6 +489,17 @@ export default function PlanningAdmin() {
                   >
                     <span>{m.title}</span>
                     <span className="text-[9px] opacity-60">👁</span>
+                  </button>
+                ))}
+                {monitorsWithoutSlots.filter(m => !extraShownIds.has(m.id.toString())).map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setExtraShownIds(prev => new Set([...prev, m.id.toString()]))}
+                    className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-slate-300 text-slate-400 hover:text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors"
+                    title={`Afficher ${m.title} (aucun créneau)`}
+                  >
+                    <span>{m.title}</span>
+                    <span className="text-[9px] opacity-50">+</span>
                   </button>
                 ))}
               </div>
