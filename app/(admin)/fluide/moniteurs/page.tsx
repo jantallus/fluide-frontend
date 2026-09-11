@@ -73,9 +73,11 @@ export default function MonitorsPage() {
                   <MessageSquare size={16} />
                 </a>
               )}
-              <button onClick={() => copyIcalLink(u.id)} className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap" title="Copier le flux iCal pour Google Calendar / iPhone">
-                <CalendarDays size={12} className="inline mr-1" />Agenda
-              </button>
+              {isFullAccess && (
+                <button onClick={() => copyIcalLink(u.id)} className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap" title="Copier le flux iCal pour Google Calendar / iPhone">
+                  <CalendarDays size={12} className="inline mr-1" />Agenda
+                </button>
+              )}
 
               <div className="flex items-center gap-2 shrink-0">
                 {(isFullAccess || u.id === currentUser?.id) && (
