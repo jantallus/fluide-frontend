@@ -99,6 +99,7 @@ export default function PlanningAdmin() {
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : (a.status === 'available' ? '#ffffff' : flightColor),
         textColor: a.status === 'available' ? '#cbd5e1' : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
         borderColor: a.status === 'available' ? '#e2e8f0' : isAlert ? '#fca5a5' : flightColor,
+        classNames: (a.notes && a.notes.trim() && a.status === 'available') ? ['slot-has-note'] : [],
         interactive: !isPause,
         extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
@@ -142,12 +143,8 @@ export default function PlanningAdmin() {
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
-      // Utiliser arg.event.title (mis à jour de façon fiable par FullCalendar) plutôt que
-      // ep.notes (extendedProps peuvent être obsolètes entre deux rendus FullCalendar).
-      const hasNote = arg.event.title.includes('📝');
       return (
-        <div style={{ position: 'relative', padding: '1px 3px', paddingLeft: hasNote ? '7px' : '3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3', color: hasNote ? '#f59e0b' : undefined }}>
-          {hasNote && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', backgroundColor: '#fcd34d', borderRadius: '2px 0 0 2px' }} />}
+        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
           {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
         </div>
       );
@@ -284,6 +281,8 @@ export default function PlanningAdmin() {
           .fc-toolbar-title { font-size: 1.2rem !important; }
           .fc-button { padding: 0.3em 0.6em !important; font-size: 0.85em !important; }
         }
+        .slot-has-note { border-left: 3px solid #fcd34d !important; }
+        .slot-has-note .fc-event-main { color: #f59e0b !important; padding-left: 4px; }
       `}} />
 
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 md:mb-8 px-2 md:px-4">
