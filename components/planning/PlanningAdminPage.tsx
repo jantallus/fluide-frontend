@@ -97,8 +97,8 @@ export default function PlanningAdmin() {
         end: a.end_time,
         title: displayTitle,
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : (a.status === 'available' ? '#ffffff' : flightColor),
-        textColor: a.status === 'available' ? ((a.title === 'NOTE' && a.notes?.trim()) ? '#f59e0b' : '#cbd5e1') : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
-        borderColor: a.status === 'available' ? ((a.title === 'NOTE' && a.notes?.trim()) ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
+        textColor: a.status === 'available' ? '#cbd5e1' : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
+        borderColor: a.status === 'available' ? '#e2e8f0' : isAlert ? '#fca5a5' : flightColor,
         interactive: !isPause,
         extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
@@ -142,8 +142,10 @@ export default function PlanningAdmin() {
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
+      const hasNote = !!(ep.notes && ep.notes.trim());
       return (
-        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
+        <div style={{ position: 'relative', padding: '1px 3px', paddingLeft: hasNote ? '7px' : '3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3', color: hasNote ? '#f59e0b' : undefined }}>
+          {hasNote && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', backgroundColor: '#fcd34d', borderRadius: '2px 0 0 2px' }} />}
           {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
         </div>
       );
