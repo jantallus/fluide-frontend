@@ -464,6 +464,7 @@ export default function EditSlotModal({
     }
     const activePlanTimes = planSchedules[inferredPlan] || new Set();
     const selectedPartnerForFlight = selectedPartnerId ? partners.find(p => p.id.toString() === selectedPartnerId) : null;
+    const isAravisPartner = !!(selectedPartnerForFlight?.name?.toLowerCase().includes('aravis') || selectedPartnerForFlight?.code?.toLowerCase().includes('aravis'));
     const partnerAllowedIds = selectedPartnerForFlight?.allowed_flight_types?.length
       ? new Set(selectedPartnerForFlight.allowed_flight_types.map(ft => ft.flight_type_id))
       : null;
@@ -472,8 +473,9 @@ export default function EditSlotModal({
       // Toujours inclure le vol déjà réservé sur ce créneau (mode édition)
       if (existingFtId && f.id.toString() === existingFtId) return true;
       const ftTenant = f.tenant || 'fluide';
-      if (isAravisContext && ftTenant !== 'aravis') return false;
-      if (!isAravisContext && ftTenant === 'aravis') return false;
+      const effectiveAravisContext = isAravisContext || isAravisPartner;
+      if (effectiveAravisContext && ftTenant !== 'aravis') return false;
+      if (!effectiveAravisContext && ftTenant === 'aravis') return false;
       if (partnerAllowedIds && !partnerAllowedIds.has(f.id)) return false;
       const allowed = Array.isArray(f.allowed_time_slots) ? f.allowed_time_slots : [];
       return allowed.length === 0 || allowed.some((t: string) => activePlanTimes.has(t));
