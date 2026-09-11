@@ -337,7 +337,7 @@ export default function PlanningAdmin() {
   const resourceLabelContent = useCallback((arg: { resource: { id: string; title: string } }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px', minWidth: 0 }}>
       <span
-        style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', borderBottom: '1px dashed currentColor', opacity: 0.85 }}
+        style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', opacity: 0.85 }}
         title={`Remplacer ${arg.resource.title}`}
         onClick={(e) => { e.stopPropagation(); setReplaceMonitor({ id: arg.resource.id, title: arg.resource.title }); }}
         onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
