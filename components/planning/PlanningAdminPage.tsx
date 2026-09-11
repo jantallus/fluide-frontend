@@ -97,9 +97,9 @@ export default function PlanningAdmin() {
         end: a.end_time,
         title: displayTitle,
         backgroundColor: isPause ? '#f1f5f9' : isAlert ? '#fee2e2' : (a.status === 'available' ? '#ffffff' : flightColor),
-        textColor: a.status === 'available' ? '#cbd5e1' : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
-        borderColor: a.status === 'available' ? '#e2e8f0' : isAlert ? '#fca5a5' : flightColor,
-        classNames: (a.notes && a.notes.trim() && a.status === 'available') ? ['slot-has-note'] : [],
+        textColor: a.status === 'available' ? (a.title === 'NOTE' ? '#f59e0b' : '#cbd5e1') : isPause ? '#94a3b8' : isAlert ? '#ef4444' : '#ffffff',
+        borderColor: a.status === 'available' ? (a.title === 'NOTE' ? '#fcd34d' : '#e2e8f0') : isAlert ? '#fca5a5' : flightColor,
+        classNames: [],
         interactive: !isPause,
         extendedProps: { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null },
       };
@@ -281,8 +281,7 @@ export default function PlanningAdmin() {
           .fc-toolbar-title { font-size: 1.2rem !important; }
           .fc-button { padding: 0.3em 0.6em !important; font-size: 0.85em !important; }
         }
-        .slot-has-note { border-left: 3px solid #fcd34d !important; }
-        .slot-has-note .fc-event-main { color: #f59e0b !important; padding-left: 4px; }
+
       `}} />
 
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 md:mb-8 px-2 md:px-4">
