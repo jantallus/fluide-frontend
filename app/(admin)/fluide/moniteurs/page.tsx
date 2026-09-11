@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { Pencil, Trash2, CalendarDays } from 'lucide-react';
+import { Pencil, Trash2, CalendarDays, Mail, Phone, MessageSquare } from 'lucide-react';
 import type { CurrentUser, User } from '@/lib/types';
 import { useMoniteursData } from '@/hooks/useMoniteursData';
 import { MoniteurModal } from '@/components/moniteurs/MoniteurModal';
@@ -58,6 +58,21 @@ export default function MonitorsPage() {
                 {u.role === 'admin' ? (u.enseigne === 'aravis' ? 'Admin Aravis' : 'Administrateur') : u.role === 'permanent' ? 'Permanent' : u.role === 'aravis' ? 'Aravis' : 'Moniteur Journée'}
               </div>
 
+              {u.email && (
+                <a href={`mailto:${u.email}`} className="p-2 md:p-3 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-xl transition-all" title={`Envoyer un email à ${u.first_name}`}>
+                  <Mail size={16} />
+                </a>
+              )}
+              {u.phone && (
+                <a href={`tel:${u.phone}`} className="p-2 md:p-3 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all" title={`Appeler ${u.first_name}`}>
+                  <Phone size={16} />
+                </a>
+              )}
+              {u.phone && (
+                <a href={`sms:${u.phone}`} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all" title={`Envoyer un SMS à ${u.first_name}`}>
+                  <MessageSquare size={16} />
+                </a>
+              )}
               <button onClick={() => copyIcalLink(u.id)} className="bg-white border-2 border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none whitespace-nowrap" title="Copier le flux iCal pour Google Calendar / iPhone">
                 <CalendarDays size={12} className="inline mr-1" />Agenda
               </button>

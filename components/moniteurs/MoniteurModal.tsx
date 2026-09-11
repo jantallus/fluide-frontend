@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import type { User, CurrentUser, Availability } from '@/lib/types';
 
 const EMPTY_USER = {
-  first_name: '', email: '', password: '', role: 'monitor', is_active_monitor: true,
+  first_name: '', email: '', phone: '', password: '', role: 'monitor', is_active_monitor: true,
   google_sync_enabled: false,
   receives_online_payments: false,
   commission_type: 'none',
@@ -30,6 +30,7 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
       setNewUser({
         first_name: userToEdit.first_name,
         email: userToEdit.email,
+        phone: userToEdit.phone || '',
         password: '',
         role: userToEdit.role,
         is_active_monitor: userToEdit.is_active_monitor ?? true,
@@ -107,6 +108,10 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
           <div>
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Email (Identifiant)</label>
             <input type="email" className="w-full border-2 border-slate-100 rounded-2xl p-3 md:p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Téléphone</label>
+            <input type="tel" placeholder="06 XX XX XX XX" className="w-full border-2 border-slate-100 rounded-2xl p-3 md:p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} />
           </div>
           <div>
             <label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex justify-between flex-wrap">
