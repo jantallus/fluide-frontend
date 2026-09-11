@@ -57,6 +57,7 @@ export default function PlanningAdmin() {
 
 
   const handleEventClick = useCallback((info: EventClickArg) => {
+    if ((info.jsEvent.target as HTMLElement)?.closest('[data-pax2-toggle]')) return;
     if (currentUser?.role === 'monitor') return;
     if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
       toast.warning("Vous ne pouvez agir que sur votre propre colonne.");
@@ -316,6 +317,7 @@ export default function PlanningAdmin() {
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.35)', flexShrink: 0, margin: '2px 0' }} />
           {/* Pax 2 */}
           <div
+            data-pax2-toggle
             style={{ flex: isExp ? 2 : 1, padding: '1px 3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: 'pointer', opacity: isExp ? 1 : 0.85 }}
             onClick={(e) => { e.stopPropagation(); togglePax2(ep.id); }}
           >
