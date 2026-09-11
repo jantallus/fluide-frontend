@@ -109,6 +109,7 @@ export default function ReplaceMonitorModal({ monitor, monitors, viewRange, appo
           plan_name: selectedPlan,
           monitor_ids: [replacementId],
           daysToApply: [0, 1, 2, 3, 4, 5, 6],
+          ignoreUnavailability: true,
         }),
       });
       const data = await res.json();
