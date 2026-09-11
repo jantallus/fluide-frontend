@@ -91,7 +91,7 @@ export default function PlanningAdmin() {
       if (a.client_message) displayTitle += ' 💬';
       if (a.notes && a.notes.trim() !== '') displayTitle += ' 📝';
       return {
-        id: a.id != null ? `${a.id}-${a.status === 'available' ? 'a' : 'b'}-${a.notes && a.notes.trim() ? '1' : '0'}` : Math.random().toString(),
+        id: a.id != null ? `${a.id}` : Math.random().toString(),
         resourceId: a.monitor_id?.toString() || '',
         start: a.start_time,
         end: a.end_time,
@@ -143,9 +143,8 @@ export default function PlanningAdmin() {
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
-      const hasNote = !!(ep.notes?.trim());
       return (
-        <div style={{ padding: '1px 3px', paddingLeft: hasNote ? '6px' : '3px', borderLeft: hasNote ? '3px solid #fcd34d' : undefined, overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3', color: hasNote ? '#f59e0b' : undefined }}>
+        <div style={{ padding: '1px 3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3' }}>
           {arg.timeText && <><strong>{arg.timeText}</strong>{' '}</>}{arg.event.title}
         </div>
       );
