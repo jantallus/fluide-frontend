@@ -38,9 +38,13 @@ function NativeStopDiv({ style, onNativeClick, children }: {
   return <div ref={ref} style={style}>{children}</div>;
 }
 
-const isRealSlot = (a: { title?: string | null; status?: string }) => {
+// Un créneau "compte" pour la visibilité si c'est un vrai client OU un créneau vide (available).
+// Les créneaux bloqués (NON DISPO, ❌, etc.) ne comptent pas.
+const isCountableSlot = (a: { title?: string | null; status?: string }) => {
+  if (a.status === 'available') return true; // créneau vide = moniteur dispo ce jour
+  if (a.status !== 'booked') return false;
   const t = a.title || '';
-  if (!t || a.status !== 'booked') return false;
+  if (!t) return false;
   return !(
     t.toUpperCase().includes('NON DISPO') ||
     t.includes('❌') ||
@@ -165,7 +169,7 @@ export default function PlanningAdmin() {
       appointments
         .filter(a => {
           const t = new Date(a.start_time).getTime();
-          return t >= viewStart && t < viewEnd && isRealSlot(a);
+          return t >= viewStart && t < viewEnd && isCountableSlot(a);
         })
         .map(a => a.monitor_id?.toString())
     );
