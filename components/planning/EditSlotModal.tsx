@@ -49,7 +49,7 @@ export default function EditSlotModal({
   const [formData, setFormData] = useState<FormData>({
     title: '', flight_type_id: '', weightChecked: false, phone: '', email: '', notes: '', booking_options: '', client_message: '',
   });
-  const [activeTab, setActiveTab] = useState<'client' | 'note' | 'move'>('client');
+  const [activeTab, setActiveTab] = useState<'client' | 'client2' | 'note' | 'move'>('client');
   const [blockType, setBlockType] = useState<'none' | 'all' | 'specific'>('none');
   const [selectedMonitors, setSelectedMonitors] = useState<string[]>([]);
   const [blockUntilMs, setBlockUntilMs] = useState<number>(0);
@@ -1026,8 +1026,14 @@ export default function EditSlotModal({
         })()}
 
         <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl">
-          {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (
+          {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && !isShortFlightType && (
             <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Client</button>
+          )}
+          {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && isShortFlightType && (
+            <>
+              <button onClick={() => setActiveTab('client')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Pax 1</button>
+              <button onClick={() => setActiveTab('client2')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'client2' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>👤 Pax 2</button>
+            </>
           )}
           <button onClick={() => setActiveTab('note')} className={`flex-1 py-2 rounded-lg font-black text-[9px] uppercase ${activeTab === 'note' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}>📝 Note</button>
           {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && selectedEvent?.status !== 'available' && !isClientLocked && (
@@ -1313,66 +1319,6 @@ export default function EditSlotModal({
                   </select>
                 </div>
 
-                {isShortFlightType && (
-                  <div className="mt-4 border-t border-slate-100 pt-4">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1 block mb-2">2ème Passager (créneau partagé)</label>
-                    <div className="bg-sky-50 rounded-2xl p-4 space-y-2 border-2 border-sky-100">
-                      <input
-                        className="w-full bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                        value={secondBooking.title}
-                        onChange={e => setSecondBooking(p => ({ ...p, title: e.target.value }))}
-                        placeholder="Nom du 2ème passager (laisser vide si aucun)"
-                      />
-                      <div className="flex gap-2">
-                        <input
-                          className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                          value={secondBooking.phone}
-                          onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
-                          placeholder="Téléphone"
-                        />
-                        <input
-                          className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
-                          value={secondBooking.weight}
-                          onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
-                          placeholder="Poids kg"
-                          type="number"
-                          min="20" max="130"
-                        />
-                      </div>
-                      {secondBooking.title.trim() && (
-                        <div className="pt-2 space-y-2 border-t border-sky-200">
-                          <label className="text-[10px] font-black uppercase text-sky-600 block">Encaissement 2ème passager</label>
-                          <select
-                            value={secondBooking.payment_type}
-                            onChange={e => setSecondBooking(p => ({ ...p, payment_type: e.target.value, encaisseur_id: '' }))}
-                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
-                          >
-                            <option value="">— Non renseigné —</option>
-                            <option value="esp">Espèces</option>
-                            <option value="cb">CB</option>
-                            <option value="ancv">ANCV</option>
-                            <option value="ancv_connect">ANCV Connect</option>
-                            <option value="chq">Chèque</option>
-                            <option value="np">Non payé</option>
-                          </select>
-                          {secondBooking.payment_type && secondBooking.payment_type !== 'np' && (
-                            <select
-                              value={secondBooking.encaisseur_id}
-                              onChange={e => setSecondBooking(p => ({ ...p, encaisseur_id: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
-                            >
-                              <option value="">— Encaissé par —</option>
-                              {fullMonitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
-                            </select>
-                          )}
-                        </div>
-                      )}
-                      {secondBooking.title && (
-                        <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {formData.flight_type_id && (
                   <div className="bg-white p-4 rounded-2xl border-2 border-slate-100 mt-4 shadow-sm">
@@ -1707,6 +1653,68 @@ export default function EditSlotModal({
             )
           )}
 
+          {/* ── Tab Pax 2 ── */}
+          {activeTab === 'client2' && (
+            <div className="space-y-4">
+              <div className="bg-sky-50 rounded-2xl p-4 space-y-2 border-2 border-sky-100">
+                <label className="text-[10px] font-black uppercase text-sky-600 block mb-1">2ème Passager (créneau partagé)</label>
+                <input
+                  className="w-full bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                  value={secondBooking.title}
+                  onChange={e => setSecondBooking(p => ({ ...p, title: e.target.value }))}
+                  placeholder="Nom du 2ème passager (laisser vide si aucun)"
+                />
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                    value={secondBooking.phone}
+                    onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="Téléphone"
+                  />
+                  <input
+                    className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                    value={secondBooking.weight}
+                    onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
+                    placeholder="Poids kg"
+                    type="number"
+                    min="20" max="130"
+                  />
+                </div>
+                {secondBooking.title.trim() && (
+                  <div className="pt-2 space-y-2 border-t border-sky-200">
+                    <label className="text-[10px] font-black uppercase text-sky-600 block">Encaissement 2ème passager</label>
+                    <select
+                      value={secondBooking.payment_type}
+                      onChange={e => setSecondBooking(p => ({ ...p, payment_type: e.target.value, encaisseur_id: '' }))}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                    >
+                      <option value="">— Non renseigné —</option>
+                      <option value="esp">Espèces</option>
+                      <option value="cb">CB</option>
+                      <option value="ancv">ANCV</option>
+                      <option value="ancv_connect">ANCV Connect</option>
+                      <option value="chq">Chèque</option>
+                      <option value="np">Non payé</option>
+                    </select>
+                    {secondBooking.payment_type && secondBooking.payment_type !== 'np' && (
+                      <select
+                        value={secondBooking.encaisseur_id}
+                        onChange={e => setSecondBooking(p => ({ ...p, encaisseur_id: e.target.value }))}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                      >
+                        <option value="">— Encaissé par —</option>
+                        {fullMonitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                )}
+                {secondBooking.title && (
+                  <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Tab Note ── */}
           {activeTab === 'note' && (
             isLockedForMe ? (
@@ -1762,7 +1770,7 @@ export default function EditSlotModal({
           )}
 
           {/* ── Boutons save/release ── */}
-          {(activeTab === 'client' || activeTab === 'note') && (
+          {(activeTab === 'client' || activeTab === 'client2' || activeTab === 'note') && (
             <div className="pt-4 space-y-3 border-t border-slate-100">
               {activeTab === 'client' && !isEditing && selectedEvent?.status === 'booked' && !isClientLocked ? (
                 <button onClick={() => setIsEditing(true)} className="w-full bg-slate-800 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-slate-700 transition-colors">✏️ Modifier la fiche</button>
@@ -1772,7 +1780,7 @@ export default function EditSlotModal({
                     <button onClick={() => setIsEditing(false)} className="w-full bg-slate-100 text-slate-500 py-2.5 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-colors">↩ Annuler les modifications</button>
                   )}
                   <button onClick={handleSaveNote} className="w-full bg-sky-500 text-white py-4 rounded-3xl font-black uppercase italic shadow-xl hover:bg-sky-600 transition-colors">Enregistrer la modification</button>
-                  {(selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
+                  {activeTab !== 'client2' && (selectedEvent?.title || selectedEvent?.notes || selectedEvent?.status !== 'available') && (
                     activeTab === 'note' ? (
                       <div className="pt-2">
                         {(() => {
