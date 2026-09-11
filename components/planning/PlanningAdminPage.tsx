@@ -91,7 +91,7 @@ export default function PlanningAdmin() {
       if (a.client_message) displayTitle += ' 💬';
       if (a.notes && a.notes.trim() !== '') displayTitle += ' 📝';
       return {
-        id: a.id != null ? `${a.id}-${a.notes && a.notes.trim() ? '1' : '0'}` : Math.random().toString(),
+        id: a.id != null ? `${a.id}-${a.status === 'available' ? 'a' : 'b'}-${a.notes && a.notes.trim() ? '1' : '0'}` : Math.random().toString(),
         resourceId: a.monitor_id?.toString() || '',
         start: a.start_time,
         end: a.end_time,
