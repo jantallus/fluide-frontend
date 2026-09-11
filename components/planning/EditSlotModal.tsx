@@ -75,7 +75,7 @@ export default function EditSlotModal({
   const [flightPriceOverride, setFlightPriceOverride] = useState('');
   const [complementPriceOverride, setComplementPriceOverride] = useState('');
   const [cbNetAmount, setCbNetAmount] = useState('');
-  const [secondBooking, setSecondBooking] = useState<{ title: string; phone: string; weight: string }>({ title: '', phone: '', weight: '' });
+  const [secondBooking, setSecondBooking] = useState<{ title: string; phone: string; weight: string; payment_type: string; encaisseur_id: string }>({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' });
   const [standbyPrefill, setStandbyPrefill] = useState<{ standby_id: number; name: string; phone: string; email: string; flight_type: string; weight_info: string; nb_passengers: number } | null>(null);
   const standbyIdRef = React.useRef<number | null>(null);
 
@@ -293,7 +293,7 @@ export default function EditSlotModal({
     setIsEditing(selectedEvent.status !== 'booked');
     setPassengerWeights([selectedEvent.weight?.toString() || '']);
     const sb = selectedEvent.second_booking;
-    setSecondBooking(sb ? { title: sb.title || '', phone: sb.phone || '', weight: sb.weight?.toString() || '' } : { title: '', phone: '', weight: '' });
+    setSecondBooking(sb ? { title: sb.title || '', phone: sb.phone || '', weight: sb.weight?.toString() || '', payment_type: sb.payment_type || '', encaisseur_id: sb.encaisseur_id || '' } : { title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' });
     setManualCounts({});
     const pd = selectedEvent.status === 'booked' ? selectedEvent.payment_data : null;
     setSelectedPartnerId(pd?.partner_id?.toString() ?? '');
@@ -783,7 +783,7 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      const secondBookingData = isShortFlightType ? { second_booking: secondBooking.title.trim() ? { title: secondBooking.title.trim(), phone: secondBooking.phone.trim() || null, weight: secondBooking.weight ? parseInt(secondBooking.weight) : null } : null } : {};
+      const secondBookingData = isShortFlightType ? { second_booking: secondBooking.title.trim() ? { title: secondBooking.title.trim(), phone: secondBooking.phone.trim() || null, weight: secondBooking.weight ? parseInt(secondBooking.weight) : null, payment_type: secondBooking.payment_type || null, encaisseur_id: secondBooking.encaisseur_id || null } : null } : {};
       updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData, ...secondBookingData } });
     }
 
@@ -1083,7 +1083,13 @@ export default function EditSlotModal({
                   <div className="space-y-3">
                     <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100 space-y-3">
                       {displayTitle && row('Passager(s)', displayTitle)}
-                      {ev.second_booking?.title && row('2ème Passager', `${ev.second_booking.title}${ev.second_booking.weight ? ` · ${ev.second_booking.weight} kg` : ''}${ev.second_booking.phone ? ` · ${ev.second_booking.phone}` : ''}`)}
+                      {ev.second_booking?.title && (() => {
+                        const sb = ev.second_booking!;
+                        const payTypeLabel: Record<string, string> = { esp: 'Espèces', cb: 'CB', chq: 'Chèque', ancv: 'ANCV', ancv_connect: 'ANCV Connect', np: 'Non payé' };
+                        const sbEncaisseur = sb.encaisseur_id ? (fullMonitors.find(m => m.id?.toString() === sb.encaisseur_id)?.first_name ?? monitors.find(m => m.id === sb.encaisseur_id)?.title ?? null) : null;
+                        const sbPayStr = sb.payment_type ? `${payTypeLabel[sb.payment_type] ?? sb.payment_type}${sbEncaisseur ? ` · ✓ ${sbEncaisseur}` : ''}` : null;
+                        return row('2ème Passager', `${sb.title}${sb.weight ? ` · ${sb.weight} kg` : ''}${sb.phone ? ` · ${sb.phone}` : ''}${sbPayStr ? ` — ${sbPayStr}` : ''}`);
+                      })()}
                       {partner && (
                         <div>
                           <p className="text-[9px] font-black uppercase text-slate-400 mb-0.5">Partenaire</p>
@@ -1333,8 +1339,36 @@ export default function EditSlotModal({
                           min="20" max="130"
                         />
                       </div>
+                      {secondBooking.title.trim() && (
+                        <div className="pt-2 space-y-2 border-t border-sky-200">
+                          <label className="text-[10px] font-black uppercase text-sky-600 block">Encaissement 2ème passager</label>
+                          <select
+                            value={secondBooking.payment_type}
+                            onChange={e => setSecondBooking(p => ({ ...p, payment_type: e.target.value, encaisseur_id: '' }))}
+                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                          >
+                            <option value="">— Non renseigné —</option>
+                            <option value="esp">Espèces</option>
+                            <option value="cb">CB</option>
+                            <option value="ancv">ANCV</option>
+                            <option value="ancv_connect">ANCV Connect</option>
+                            <option value="chq">Chèque</option>
+                            <option value="np">Non payé</option>
+                          </select>
+                          {secondBooking.payment_type && secondBooking.payment_type !== 'np' && (
+                            <select
+                              value={secondBooking.encaisseur_id}
+                              onChange={e => setSecondBooking(p => ({ ...p, encaisseur_id: e.target.value }))}
+                              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-bold"
+                            >
+                              <option value="">— Encaissé par —</option>
+                              {fullMonitors.map(m => <option key={m.id} value={m.id}>{m.first_name}</option>)}
+                            </select>
+                          )}
+                        </div>
+                      )}
                       {secondBooking.title && (
-                        <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
+                        <button onClick={() => setSecondBooking({ title: '', phone: '', weight: '', payment_type: '', encaisseur_id: '' })} className="text-rose-400 text-[10px] font-black uppercase hover:text-rose-600">🗑️ Effacer le 2ème passager</button>
                       )}
                     </div>
                   </div>

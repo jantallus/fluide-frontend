@@ -244,7 +244,7 @@ export default function PlanningAdmin() {
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {finalDisplayName}{badges && ` ${badges}`}
         </span>
-        {ep.second_booking?.title && subSpan(`+ ${ep.second_booking.title}`)}
+        {ep.second_booking?.title && subSpan(`+ ${ep.second_booking.title}${ep.second_booking.payment_type ? '' : ' ⚠️'}`)}
         {infoLine && subSpan(infoLine)}
         {payLine && subSpan(payLine)}
       </div>
