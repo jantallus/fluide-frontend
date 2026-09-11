@@ -116,6 +116,7 @@ export interface FlightType {
   activity_children?: boolean;
   activity_gopro?: boolean;
   media_included?: boolean;
+  passengers_per_slot?: number;
   tenant?: string;
 }
 

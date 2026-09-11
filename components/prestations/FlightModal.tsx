@@ -28,6 +28,7 @@ const EMPTY_FORM = {
   activity_children: false,
   activity_gopro: false,
   media_included: false,
+  passengers_per_slot: 1,
 };
 
 interface Props {
@@ -69,6 +70,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
         activity_children: flightToEdit.activity_children || false,
         activity_gopro: flightToEdit.activity_gopro || false,
         media_included: flightToEdit.media_included || false,
+        passengers_per_slot: flightToEdit.passengers_per_slot ?? 1,
       });
     } else {
       setFormData({ ...EMPTY_FORM });
@@ -204,6 +206,12 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
             <input type="checkbox" className="w-5 h-5 accent-amber-500 rounded" checked={formData.media_included} onChange={e => set({ media_included: e.target.checked })} />
             <span className="font-bold text-amber-900 text-xs leading-tight">📸 Photos & Vidéos incluses dans ce vol</span>
           </label>
+
+          <div className="mt-2 bg-sky-50 p-4 rounded-2xl border border-sky-100">
+            <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Passagers par moniteur par créneau</label>
+            <input type="number" min={1} max={20} className="w-full border-2 border-white rounded-2xl p-4 font-bold mt-1 outline-none focus:border-sky-300 text-slate-800 shadow-sm" value={formData.passengers_per_slot} onChange={e => set({ passengers_per_slot: Number(e.target.value) })} />
+            <p className="text-[10px] text-slate-400 mt-2 font-medium leading-tight">Exemple : 2 = 1 moniteur peut prendre 2 passagers par créneau (vol tandem Aiglon).</p>
+          </div>
 
           {tenant !== 'aravis' && (
             <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">

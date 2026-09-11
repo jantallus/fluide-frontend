@@ -509,10 +509,13 @@ export default function EditSlotModal({
       if (!groups[timeStr]) groups[timeStr] = [];
       groups[timeStr].push(slot);
     });
-    return Object.keys(groups).map(time => ({ time, capacity: groups[time].length, slots: groups[time] })).sort((a, b) => a.time.localeCompare(b.time));
+    const paxPerSlot = flight?.passengers_per_slot || 1;
+    return Object.keys(groups).map(time => ({ time, capacity: groups[time].length * paxPerSlot, slots: groups[time] })).sort((a, b) => a.time.localeCompare(b.time));
   }, [selectedEvent, formData.flight_type_id, appointments, flightTypes, slotDuration]);
 
   const displayDistribution = useMemo(() => {
+    const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
+    const paxPerSlot = flight?.passengers_per_slot || 1;
     let remaining = groupSize;
     const result: TimeGroup[] = [];
     let canFit = true;
@@ -534,9 +537,9 @@ export default function EditSlotModal({
         const availGroup = availableTimeGroups.find(g => g.time === time);
         const availSlots = availGroup?.slots ?? [];
         const combinedSlots = [...existingSlots, ...availSlots];
-        const take = Math.min(remaining, combinedSlots.length);
+        const take = Math.min(remaining, combinedSlots.length * paxPerSlot);
         if (take > 0) {
-          result.push({ time, capacity: combinedSlots.length, slots: combinedSlots, count: take });
+          result.push({ time, capacity: combinedSlots.length * paxPerSlot, slots: combinedSlots, count: take });
           remaining -= take;
         }
       }
@@ -556,9 +559,13 @@ export default function EditSlotModal({
       }
     }
     const slotsToUse: Slot[] = [];
-    result.forEach(r => { for (let i = 0; i < r.count; i++) slotsToUse.push(r.slots[i]); });
-    return { items: result, canFit, slotsToUse };
-  }, [availableTimeGroups, groupSize, manualCounts, isManual, groupRootSlots, groupLocked]);
+    result.forEach(r => {
+      for (let i = 0; i < r.count; i++) {
+        slotsToUse.push(r.slots[Math.min(Math.floor(i / paxPerSlot), r.slots.length - 1)]);
+      }
+    });
+    return { items: result, canFit, slotsToUse, paxPerSlot };
+  }, [availableTimeGroups, groupSize, manualCounts, isManual, groupRootSlots, groupLocked, flightTypes, formData.flight_type_id]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleMainChange = (delta: number) => { setGroupSize(prev => Math.max(1, prev + delta)); setIsManual(false); };
@@ -758,6 +765,12 @@ export default function EditSlotModal({
         if (namesList.length === groupSize + 1) { const booker = namesList[0]; passengerTitle = `${namesList[index + 1]} (${booker})`; }
         else if (namesList.length > 0) { const booker = namesList[0]; passengerTitle = index === 0 ? booker : (namesList[index] ? `${namesList[index]} (${booker})` : `Passager ${index + 1} (${booker})`); }
         else { passengerTitle = groupSize > 1 ? `Passager ${index + 1}` : (effectiveTitle || ''); }
+        // If this slot was already added (passengers_per_slot > 1), add as second_booking instead
+        const existingIdx = updatesToApply.findIndex(u => u.id === baseSlot.id && u.data.status === 'booked');
+        if (existingIdx >= 0) {
+          (updatesToApply[existingIdx].data as Record<string, unknown>).second_booking = { title: passengerTitle, phone: '', weight: passengerWeights[index] ? parseInt(passengerWeights[index]) : null, payment_type: null, encaisseur_id: null };
+          return;
+        }
         const isExistingBooked = groupRootSlots.some(s => s.id === baseSlot.id);
         let slotPaymentData: Record<string, unknown>;
         if (isExistingBooked) {
