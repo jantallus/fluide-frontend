@@ -799,7 +799,7 @@ export default function EditSlotModal({
         if (nextSlot) updatesToApply.push({ id: nextSlot.id, data: { title: `↪️ Suite ${effectiveTitle || 'Vol'}`, flight_type_id: formData.flight_type_id, status: 'booked', notes: 'Extension auto' } });
       }
     } else {
-      const secondBookingData = isShortFlightType ? { second_booking: secondBooking.title.trim() ? { title: secondBooking.title.trim(), phone: secondBooking.phone.trim() || null, weight: secondBooking.weight ? parseInt(secondBooking.weight) : null, payment_type: secondBooking.payment_type || null, encaisseur_id: secondBooking.encaisseur_id || null } : null } : {};
+      const secondBookingData = isShortFlightType ? { second_booking: secondBooking.title.trim() ? { title: secondBooking.title.trim(), phone: secondBooking.phone.trim() || null, weight: secondBooking.weight ? parseInt(secondBooking.weight) : null, payment_type: secondBooking.payment_type || null, encaisseur_id: secondBooking.encaisseur_id || null } : null } : { second_booking: null };
       updatesToApply.push({ id: selectedEvent.id, data: { ...effectiveFormData, title: effectiveTitle, status: effectiveTitle.trim() ? 'booked' : 'available', weight: passengerWeights[0] ? parseInt(passengerWeights[0]) : null, weightChecked: !!passengerWeights[0], payment_data: finalPaymentData, ...secondBookingData } });
     }
 
@@ -863,7 +863,7 @@ export default function EditSlotModal({
       if (slotToFree) {
         let newTitle = ''; let newNotes = '';
         if (IS_CLIENT_SLOT(slotToFree) && i === 0 && slotToFree.notes && slotToFree.notes !== 'Extension auto') { newTitle = 'NOTE'; newNotes = slotToFree.notes; }
-        updatesToApply.push({ id: slotToFree.id, data: { title: newTitle, flight_type_id: null, weight: null, notes: newNotes, status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+        updatesToApply.push({ id: slotToFree.id, data: { title: newTitle, flight_type_id: null, weight: null, notes: newNotes, status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '', second_booking: null } });
       }
     }
     applyAll(updatesToApply);
@@ -880,7 +880,7 @@ export default function EditSlotModal({
       for (let i = 0; i < slotsNeeded; i++) {
         const ms = startMs + i * slotDuration * 60000;
         const slotToFree = appointments.find(a => a.monitor_id?.toString() === baseSlot.monitor_id?.toString() && new Date(a.start_time).getTime() === ms && (i === 0 || a.title?.startsWith('↪️ Suite')));
-        if (slotToFree) updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+        if (slotToFree) updatesToApply.push({ id: slotToFree.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '', second_booking: null } });
       }
     });
     applyAll(updatesToApply);
@@ -904,7 +904,7 @@ export default function EditSlotModal({
       if (IS_CLIENT_SLOT(slot)) {
         updatesToApply.push({ id: slot.id, data: { title: slot.title, status: slot.status, notes: '', flight_type_id: slot.flight_type_id, phone: slot.phone, email: slot.email, weightChecked: slot.weight_checked || slot.weightChecked, booking_options: slot.booking_options, client_message: slot.client_message, weight: slot.weight } });
       } else {
-        updatesToApply.push({ id: slot.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '' } });
+        updatesToApply.push({ id: slot.id, data: { title: '', flight_type_id: null, weight: null, notes: '', status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '', second_booking: null } });
       }
     });
     applyAll(updatesToApply);
@@ -912,7 +912,7 @@ export default function EditSlotModal({
 
   const handleReleaseKeepNote = async () => {
     if (!selectedEvent || !await confirm('🔓 Libérer ce créneau en conservant la note ?')) return;
-    applyAll([{ id: selectedEvent.id, data: { title: formData.notes ? 'NOTE' : '', notes: formData.notes || '', status: 'available', phone: '', email: '', flight_type_id: null, weight: null, weightChecked: false, booking_options: '', client_message: '' } }]);
+    applyAll([{ id: selectedEvent.id, data: { title: formData.notes ? 'NOTE' : '', notes: formData.notes || '', status: 'available', phone: '', email: '', flight_type_id: null, weight: null, weightChecked: false, booking_options: '', client_message: '', second_booking: null } }]);
   };
 
   const handleClearNote = async () => {
@@ -989,7 +989,7 @@ export default function EditSlotModal({
       }
       if (remaining > 0) { toast.error(`❌ Impossible : Pas assez de créneaux simultanés pour placer les ${groupRootSlots.length} passagers à partir de ${moveConfig.time}.`); return; }
       if (assignedSlots.length === groupRootSlots.length && assignedSlots.every((s, i) => s.id === groupRootSlots[i].id)) { toast.info('ℹ️ Le groupe est déjà assigné exactement à ces mêmes créneaux et pilotes.'); return; }
-      slotsToFree.forEach(id => updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null } }));
+      slotsToFree.forEach(id => updatesToApply.push({ id, data: { status: 'available', title: '', phone: '', email: '', flight_type_id: null, second_booking: null } }));
       groupRootSlots.forEach((oldSlot, g) => {
         const newBaseSlot = assignedSlots[g];
         const passengerTitle = oldSlot.title || formData.title;
