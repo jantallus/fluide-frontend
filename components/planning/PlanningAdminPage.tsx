@@ -112,7 +112,7 @@ export default function PlanningAdmin() {
           const slotMs = a.start_time && a.end_time ? new Date(a.end_time).getTime() - new Date(a.start_time).getTime() : 0;
           const slotMin = Math.round(slotMs / 60000);
           const isShortFlight = a.status === 'booked' && fd > 0 && fd * 2 <= slotMin;
-          return { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null, flight_duration: fd || null, isShortFlight, flightColor };
+          return { ...a, flight_name: flight?.name || null, price_cents: flight?.price_cents ? (a.payment_data?.price_override_cents ?? flight.price_cents) + (a.payment_data?.complement_total_cents ?? 0) : null, flight_duration: fd || null, isShortFlight };
         })(),
       };
     });
@@ -168,7 +168,7 @@ export default function PlanningAdmin() {
   }, [calendarEvents]);
 
   const renderEventContent = useCallback((arg: EventContentArg) => {
-    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null; flight_duration?: number | null; flightColor?: string };
+    const ep = arg.event.extendedProps as Slot & { isOutOfSeason?: boolean; flight_name?: string | null; price_cents?: number | null; flight_duration?: number | null };
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
@@ -252,12 +252,11 @@ export default function PlanningAdmin() {
 
     // ── Détection vol court (aiglon) — calculé dans calendarEvents ──
     const isShortFlight = !!(ep as Slot & { isShortFlight?: boolean }).isShortFlight;
-    const bg = ep.flightColor || '#d946ef';
 
     // ── Vue splitée Aiglon sans Pax 2 ──
     if (isShortFlight && !ep.second_booking?.title) {
       return (
-        <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: bg, borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
+        <div style={{ position: 'relative', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
           {/* Fond blanc sur le 1/3 droit */}
           <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '33%', background: 'white', zIndex: 1 }} />
           {/* Séparateur */}
@@ -280,7 +279,7 @@ export default function PlanningAdmin() {
       const sbPayShort = sb.payment_type ? (TYPE_SHORT[sb.payment_type] ?? null) : null;
 
       return (
-        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: bg, borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
+        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
           {/* Pax 1 */}
           <div
             style={{ flex: isExp ? 1 : 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: isExp ? 'pointer' : 'default' }}
@@ -323,7 +322,7 @@ export default function PlanningAdmin() {
     }
 
     return (
-      <div style={{ padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', background: bg, borderLeft: groupColor ? `4px solid ${groupColor}` : undefined, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+      <div style={{ padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {finalDisplayName}{badges && ` ${badges}`}
