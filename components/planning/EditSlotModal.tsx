@@ -60,6 +60,7 @@ export default function EditSlotModal({
   const [isManual, setIsManual] = useState(false);
   const [moveConfig, setMoveConfig] = useState({ date: '', time: '', monitorId: 'random' });
   const [moveGroup, setMoveGroup] = useState(false);
+  const [movePax, setMovePax] = useState<'both' | 'pax1' | 'pax2'>('both');
   const [pasteZoneOpen, setPasteZoneOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [parsed, setParsed] = useState<{ names: string[]; phone: string; email: string; weights: string[] } | null>(null);
@@ -904,6 +905,24 @@ export default function EditSlotModal({
     applyAll([{ id: selectedEvent.id, data: { title: selectedEvent.title, notes: '', status: 'booked' } }]);
   };
 
+  const handleReleasePax2 = async () => {
+    if (!selectedEvent || !await confirm('🗑️ Libérer le 2ème passager de ce créneau ?')) return;
+    const ev = selectedEvent;
+    applyAll([{ id: ev.id, data: { title: ev.title, weight: ev.weight, flight_type_id: ev.flight_type_id, notes: ev.notes, status: ev.status, phone: ev.phone, email: ev.email, weightChecked: ev.weight_checked, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: ev.payment_data, second_booking: null } }]);
+  };
+
+  const handleReleasePax1 = async () => {
+    const sb = selectedEvent?.second_booking;
+    if (!selectedEvent) return;
+    if (sb?.title) {
+      if (!await confirm('🗑️ Libérer le 1er passager ? Le 2ème passager prendra sa place.')) return;
+      const ev = selectedEvent;
+      applyAll([{ id: ev.id, data: { title: sb.title, weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', phone: sb.phone || '', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null, second_booking: null } }]);
+    } else {
+      handleRelease();
+    }
+  };
+
   const handleMove = async () => {
     if (!moveConfig.time || !selectedEvent) return;
     const flight = flightTypes.find(f => f.id.toString() === formData.flight_type_id?.toString());
@@ -965,6 +984,32 @@ export default function EditSlotModal({
           }
         }
       });
+    } else if (isShortFlightType && movePax !== 'both') {
+      // ── Déplacement pax-spécifique (aiglon) ──
+      const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
+      const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
+      const paxTargetSlot = appointments.find(a => {
+        if (a.status !== 'available') return false;
+        if (a.id === selectedEvent.id) return false;
+        const d = new Date(a.start_time);
+        return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) === moveConfig.date && (d.getHours() * 60 + d.getMinutes()) * 60000 === targetTimeMs && (moveConfig.monitorId === 'random' || a.monitor_id?.toString() === moveConfig.monitorId);
+      });
+      if (!paxTargetSlot) { toast.error("❌ Le créneau cible n'est pas disponible."); return; }
+      const ev = selectedEvent;
+      const sb = ev.second_booking;
+      if (movePax === 'pax2') {
+        if (!sb?.title) { toast.error('❌ Aucun 2ème passager à déplacer.'); return; }
+        updatesToApply.push({ id: paxTargetSlot.id, data: { title: sb.title, phone: sb.phone || '', weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, email: '', notes: null, weightChecked: !!sb.weight, booking_options: null, client_message: null, payment_data: sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null, status: 'booked', second_booking: null } });
+        updatesToApply.push({ id: ev.id, data: { title: ev.title, weight: ev.weight, flight_type_id: ev.flight_type_id, notes: ev.notes, status: ev.status, phone: ev.phone, email: ev.email, weightChecked: ev.weight_checked, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: ev.payment_data, second_booking: null } });
+      } else {
+        // movePax === 'pax1'
+        updatesToApply.push({ id: paxTargetSlot.id, data: { title: ev.title, phone: ev.phone || '', weight: ev.weight ?? null, flight_type_id: ev.flight_type_id, email: ev.email || '', notes: ev.notes, weightChecked: ev.weight_checked, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: ev.payment_data, status: 'booked', second_booking: null } });
+        if (sb?.title) {
+          updatesToApply.push({ id: ev.id, data: { title: sb.title, phone: sb.phone || '', weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null, second_booking: null } });
+        } else {
+          updatesToApply.push({ id: ev.id, data: { title: '', flight_type_id: null, weight: null, notes: ev.notes, status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '', second_booking: null } });
+        }
+      }
     } else {
       const [targetHour, targetMin] = moveConfig.time.split(':').map(Number);
       const targetTimeMs = (targetHour * 60 + targetMin) * 60000;
@@ -1852,6 +1897,15 @@ export default function EditSlotModal({
                           );
                         })()}
                       </div>
+                    ) : isShortFlightType ? (
+                      <div className="space-y-2 pt-2">
+                        <p className="text-[9px] font-black uppercase text-slate-400 text-center">Libérer</p>
+                        <div className="flex gap-2">
+                          <button onClick={handleReleasePax1} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">🗑️ Pax 1</button>
+                          <button onClick={handleReleasePax2} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">🗑️ Pax 2</button>
+                          <button onClick={handleRelease} className="flex-1 text-rose-500 font-black uppercase italic text-[9px] tracking-widest hover:text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-colors py-2 shadow-sm">🗑️ Les 2</button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex gap-2 pt-2">
                         {(() => {
@@ -1887,7 +1941,19 @@ export default function EditSlotModal({
               </div>
             ) : (
               <>
-                {groupRootSlots.length > 1 && (
+                {isShortFlightType && (
+                  <div className="mb-4 bg-sky-50 rounded-2xl p-3 border border-sky-100 space-y-2">
+                    <label className="text-[10px] font-black uppercase text-sky-600 block">Quel passager déplacer ?</label>
+                    <div className="flex gap-2">
+                      {(['both', 'pax1', 'pax2'] as const).map(opt => (
+                        <button key={opt} onClick={() => setMovePax(opt)} className={`flex-1 py-2 rounded-xl font-black text-[9px] uppercase transition-all ${movePax === opt ? 'bg-sky-500 text-white shadow-sm' : 'bg-white border border-sky-200 text-sky-600 hover:bg-sky-50'}`}>
+                          {opt === 'both' ? 'Les 2' : opt === 'pax1' ? 'Pax 1' : 'Pax 2'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {groupRootSlots.length > 1 && !isShortFlightType && (
                   <div className="mb-4 bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex items-center gap-3">
                     <input type="checkbox" className="w-5 h-5 accent-emerald-500 cursor-pointer" checked={moveGroup} onChange={e => setMoveGroup(e.target.checked)} />
                     <label className="text-xs font-bold text-emerald-900 cursor-pointer select-none" onClick={() => setMoveGroup(!moveGroup)}>Déplacer TOUT le groupe ({groupRootSlots.length} passagers)</label>
