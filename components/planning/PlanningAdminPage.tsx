@@ -95,9 +95,12 @@ export default function PlanningAdmin() {
 
   const handleEventClick = useCallback((info: EventClickArg) => {
     if (currentUser?.role === 'monitor') return;
-    if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
-      toast.warning("Vous ne pouvez agir que sur votre propre colonne.");
-      return;
+    if (currentUser?.role === 'permanent') {
+      const monitorId = (info.event.extendedProps?.monitor_id ?? info.event.getResources()[0]?.id)?.toString();
+      if (monitorId && monitorId !== currentUser?.id?.toString()) {
+        toast.warning("Vous ne pouvez agir que sur votre propre colonne.");
+        return;
+      }
     }
     const event = info.event;
     const eventTitle = event.extendedProps.title as string | undefined;
