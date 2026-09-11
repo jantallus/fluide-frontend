@@ -20,7 +20,7 @@ export default function MonitorsPage() {
   const handleClose = () => { setShowModal(false); setUserToEdit(null); };
 
   const isFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'aravis';
-  const visibleUsers = users.filter(u => isFullAccess || u.id === currentUser?.id);
+  const visibleUsers = users;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
@@ -78,9 +78,11 @@ export default function MonitorsPage() {
               </button>
 
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => openModal(u)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-sky-500 hover:bg-sky-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Modifier ce prestataire">
-                  <Pencil size={18} />
-                </button>
+                {(isFullAccess || u.id === currentUser?.id) && (
+                  <button onClick={() => openModal(u)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-sky-500 hover:bg-sky-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Modifier ce prestataire">
+                    <Pencil size={18} />
+                  </button>
+                )}
                 {isFullAccess && (
                   <button onClick={() => handleDelete(u.id, u.first_name)} className="p-2 md:p-3 text-slate-500 md:text-slate-300 bg-slate-100 md:bg-transparent hover:text-rose-500 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Supprimer définitivement">
                     <Trash2 size={18} />
