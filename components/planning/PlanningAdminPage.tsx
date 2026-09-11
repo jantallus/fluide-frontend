@@ -441,7 +441,8 @@ export default function PlanningAdmin() {
           </div>
           <button
             onClick={() => setShowGenModal(true)}
-            className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform"
+            disabled={currentUser?.role !== 'admin'}
+            className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-transform disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             <Wrench size={13} className="inline mr-1" />Générer des créneaux
           </button>
