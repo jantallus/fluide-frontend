@@ -176,11 +176,7 @@ export function FlightModal({ flightToEdit, slotDefs, onClose, onSaved, tenant }
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Couleur</label>
-              <input type="color" className="w-full h-14 rounded-2xl mt-1 overflow-hidden cursor-pointer border-2 border-transparent" value={formData.color_code} onChange={e => set({ color_code: e.target.value })} />
-            </div>
+          <div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Saison</label>
               <select className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-3 mt-1 font-bold text-xs outline-none focus:border-sky-300 text-slate-700" value={formData.season} onChange={e => set({ season: e.target.value, allowed_time_slots: [] })}>
