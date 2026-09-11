@@ -1765,16 +1765,16 @@ export default function EditSlotModal({
                   />
                   <div className="flex gap-2">
                     <input
-                      className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                      className="min-w-0 flex-1 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
                       value={secondBooking.phone}
                       onChange={e => setSecondBooking(p => ({ ...p, phone: e.target.value }))}
                       placeholder="Téléphone"
                     />
                     <input
-                      className="w-24 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
+                      className="w-20 flex-shrink-0 bg-white border-2 border-slate-100 rounded-xl p-3 font-bold text-sm"
                       value={secondBooking.weight}
                       onChange={e => setSecondBooking(p => ({ ...p, weight: e.target.value }))}
-                      placeholder="Poids kg"
+                      placeholder="kg"
                       type="number"
                       min="20" max="130"
                     />
