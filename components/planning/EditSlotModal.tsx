@@ -917,7 +917,10 @@ export default function EditSlotModal({
     if (sb?.title) {
       if (!await confirm('🗑️ Libérer le 1er passager ? Le 2ème passager prendra sa place.')) return;
       const ev = selectedEvent;
-      applyAll([{ id: ev.id, data: { title: sb.title, weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', phone: sb.phone || '', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null, second_booking: null } }]);
+      const pax2PaymentData = ev.payment_data
+        ? { ...ev.payment_data, ...(sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : {}) }
+        : (sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null);
+      applyAll([{ id: ev.id, data: { title: sb.title, weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', phone: sb.phone || '', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: pax2PaymentData, second_booking: null } }]);
     } else {
       handleRelease();
     }
@@ -1005,7 +1008,10 @@ export default function EditSlotModal({
         // movePax === 'pax1'
         updatesToApply.push({ id: paxTargetSlot.id, data: { title: ev.title, phone: ev.phone || '', weight: ev.weight ?? null, flight_type_id: ev.flight_type_id, email: ev.email || '', notes: ev.notes, weightChecked: ev.weight_checked, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: ev.payment_data, status: 'booked', second_booking: null } });
         if (sb?.title) {
-          updatesToApply.push({ id: ev.id, data: { title: sb.title, phone: sb.phone || '', weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null, second_booking: null } });
+          const movePax1PayData = ev.payment_data
+            ? { ...ev.payment_data, ...(sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : {}) }
+            : (sb.payment_type ? { payment_type: sb.payment_type, encaisseur_id: sb.encaisseur_id } : null);
+          updatesToApply.push({ id: ev.id, data: { title: sb.title, phone: sb.phone || '', weight: sb.weight ?? null, flight_type_id: ev.flight_type_id, notes: ev.notes, status: 'booked', email: ev.email || '', weightChecked: !!sb.weight, booking_options: ev.booking_options, client_message: ev.client_message, payment_data: movePax1PayData, second_booking: null } });
         } else {
           updatesToApply.push({ id: ev.id, data: { title: '', flight_type_id: null, weight: null, notes: ev.notes, status: 'available', phone: '', email: '', weightChecked: false, booking_options: '', client_message: '', second_booking: null } });
         }
