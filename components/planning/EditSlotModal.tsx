@@ -626,8 +626,6 @@ export default function EditSlotModal({
           const srv = confirmed.find(s => s.id === slot.id);
           return srv ? { ...slot, ...srv } : slot;
         }));
-        // Force FullCalendar à re-rendre les événements mis à jour (même ID = pas de re-render du contenu sinon)
-        await loadAppointments();
       }
       if (failed.length > 0) await loadAppointments();
     } catch { toast.error('❌ Erreur réseau lors de la sauvegarde.'); }

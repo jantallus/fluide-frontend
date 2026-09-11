@@ -88,7 +88,8 @@ export default function PlanningAdmin() {
     return appointments.map(a => {
       const flight = flightTypes?.find((f: FlightType) => f.id === a.flight_type_id);
       const partnerColor = (a.payment_data as { partner_color?: string } | null)?.partner_color;
-      const flightColor = partnerColor || flight?.color_code || '#d946ef';
+      const isAravis = currentUser?.enseigne === 'aravis';
+      const flightColor = partnerColor || (isAravis ? flight?.color_code : null) || '#d946ef';
       const isPause = a.title?.includes('☕') || a.title?.toUpperCase().includes('PAUSE');
       const isAlert = a.title?.includes('❌') || a.title?.toUpperCase().includes('NON DISPO');
       let displayTitle = a.title || (a.status === 'available' ? 'LIBRE' : '');
@@ -116,7 +117,7 @@ export default function PlanningAdmin() {
         })(),
       };
     });
-  }, [appointments, flightTypes]);
+  }, [appointments, flightTypes, currentUser]);
 
   const [hiddenMonitorIds, setHiddenMonitorIds] = useState<Set<string>>(new Set());
 
