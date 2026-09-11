@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const MONITOR_PATHS = ['/fluide/planning'];
+const MONITOR_PATHS = ['/fluide/planning', '/fluide/moniteurs'];
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
