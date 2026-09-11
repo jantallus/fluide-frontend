@@ -106,8 +106,10 @@ export default function PlanningAdmin() {
     });
   }, [appointments, flightTypes]);
 
-  // Moniteurs visibles : uniquement ceux qui ont au moins un créneau dans la plage affichée
-  const visibleMonitors = useMemo(() => {
+  const [hiddenMonitorIds, setHiddenMonitorIds] = useState<Set<string>>(new Set());
+
+  // Moniteurs qui ont au moins un créneau dans la plage affichée
+  const monitorsWithSlots = useMemo(() => {
     if (!viewRange || appointments.length === 0) return monitors;
     const viewStart = viewRange.start.getTime();
     const viewEnd = viewRange.end.getTime();
@@ -122,6 +124,18 @@ export default function PlanningAdmin() {
     const filtered = monitors.filter(m => idsWithSlots.has(m.id.toString()));
     return filtered.length > 0 ? filtered : monitors;
   }, [monitors, appointments, viewRange]);
+
+  // Moniteurs affichés (sans les masqués)
+  const visibleMonitors = useMemo(
+    () => monitorsWithSlots.filter(m => !hiddenMonitorIds.has(m.id)),
+    [monitorsWithSlots, hiddenMonitorIds]
+  );
+
+  // Moniteurs présents dans la vue mais temporairement masqués
+  const hiddenActiveMonitors = useMemo(
+    () => monitorsWithSlots.filter(m => hiddenMonitorIds.has(m.id)),
+    [monitorsWithSlots, hiddenMonitorIds]
+  );
 
   // Couleur unique par groupe : on scanne les titres "(Chef de groupe)" pour construire la map
   const groupColors = useMemo(() => {
@@ -236,6 +250,19 @@ export default function PlanningAdmin() {
     );
   }, [monitors, groupColors]);
 
+  const resourceLabelContent = useCallback((arg: { resource: { id: string; title: string } }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px', minWidth: 0 }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{arg.resource.title}</span>
+      <button
+        onClick={(e) => { e.stopPropagation(); setHiddenMonitorIds(prev => new Set([...prev, arg.resource.id])); }}
+        title="Masquer ce pilote"
+        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, fontSize: '11px', padding: '0 2px', lineHeight: '1', color: 'inherit' }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
+      >✕</button>
+    </div>
+  ), []);
+
   const memoizedCalendar = useMemo(() => (
     <FullCalendar
       ref={calendarRef}
@@ -243,6 +270,7 @@ export default function PlanningAdmin() {
       plugins={[resourceTimeGridPlugin, interactionPlugin, scrollgridPlugin]}
       initialView="resourceTimeGridDay"
       resources={visibleMonitors}
+      resourceLabelContent={resourceLabelContent}
       datesSet={(arg) => {
         setCurrentDate(arg.startStr.split('T')[0]);
         setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
@@ -270,7 +298,7 @@ export default function PlanningAdmin() {
       eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
       dayMinWidth={130}
     />
-  ), [calendarEvents, visibleMonitors, timeBounds, handleEventClick, loadAppointments, renderEventContent]);
+  ), [calendarEvents, visibleMonitors, timeBounds, handleEventClick, loadAppointments, renderEventContent, resourceLabelContent]);
 
   return (
     <div className="p-2 md:p-4 min-h-screen">
@@ -345,6 +373,21 @@ export default function PlanningAdmin() {
           </div>
         ) : (
           <ErrorBoundary variant="widget" zone="planning/fullcalendar">
+            {hiddenActiveMonitors.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3 px-1">
+                {hiddenActiveMonitors.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setHiddenMonitorIds(prev => { const next = new Set(prev); next.delete(m.id); return next; })}
+                    className="flex items-center gap-1.5 bg-slate-100 hover:bg-sky-50 border border-slate-200 hover:border-sky-300 text-slate-500 hover:text-sky-700 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors"
+                    title={`Réafficher ${m.title}`}
+                  >
+                    <span>{m.title}</span>
+                    <span className="text-[9px] opacity-60">👁</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {memoizedCalendar}
           </ErrorBoundary>
         )}
