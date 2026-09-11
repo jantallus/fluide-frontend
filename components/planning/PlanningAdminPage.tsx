@@ -31,6 +31,10 @@ export default function PlanningAdmin() {
 
   const currentUser = useCurrentUser();
   const [showGenModal, setShowGenModal] = useState(false);
+  const [expandedPax2, setExpandedPax2] = useState<Set<number>>(new Set());
+  const togglePax2 = useCallback((id: number) => {
+    setExpandedPax2(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }, []);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<(Slot & { isOutOfSeason?: boolean }) | null>(null);
   const [slotDuration, setSlotDuration] = useState<number>(0);
@@ -238,18 +242,66 @@ export default function PlanningAdmin() {
       </span>
     );
 
+    // ── Vue splitée Aiglon (Pax 1 / Pax 2) ──
+    if (ep.second_booking?.title) {
+      const sb = ep.second_booking!;
+      const isExp = expandedPax2.has(ep.id);
+      const sbPayShort = sb.payment_type ? (TYPE_SHORT[sb.payment_type] ?? null) : null;
+
+      return (
+        <div style={{ display: 'flex', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
+          {/* Pax 1 */}
+          <div
+            style={{ flex: isExp ? 1 : 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: isExp ? 'pointer' : 'default' }}
+            onClick={isExp ? (e) => { e.stopPropagation(); togglePax2(ep.id); } : undefined}
+          >
+            {isExp ? (
+              <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>← {finalDisplayName}</span>
+            ) : (
+              <>
+                {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+                <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalDisplayName}{badges && ` ${badges}`}</span>
+                {infoLine && subSpan(infoLine)}
+                {payLine && subSpan(payLine)}
+              </>
+            )}
+          </div>
+          {/* Séparateur */}
+          <div style={{ width: '1px', background: 'rgba(255,255,255,0.35)', flexShrink: 0, margin: '2px 0' }} />
+          {/* Pax 2 */}
+          <div
+            style={{ flex: isExp ? 2 : 1, padding: '1px 3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: 'pointer', opacity: isExp ? 1 : 0.85 }}
+            onClick={(e) => { e.stopPropagation(); togglePax2(ep.id); }}
+          >
+            {isExp ? (
+              <>
+                {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+                <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sb.title}</span>
+                {sb.weight && subSpan(`${sb.weight} kg`)}
+                {subSpan(sbPayShort ? sbPayShort : '⚠️ non enc.')}
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '8px', opacity: 0.65, lineHeight: '1.1', flexShrink: 0 }}>Pax 2</span>
+                <span style={{ fontSize: '9px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sb.title}{!sb.payment_type ? ' ⚠️' : ''}</span>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div style={{ padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
         <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {finalDisplayName}{badges && ` ${badges}`}
         </span>
-        {ep.second_booking?.title && subSpan(`+ ${ep.second_booking.title}${ep.second_booking.payment_type ? '' : ' ⚠️'}`)}
         {infoLine && subSpan(infoLine)}
         {payLine && subSpan(payLine)}
       </div>
     );
-  }, [monitors, groupColors]);
+  }, [monitors, groupColors, expandedPax2, togglePax2]);
 
   const resourceLabelContent = useCallback((arg: { resource: { id: string; title: string } }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px', minWidth: 0 }}>
