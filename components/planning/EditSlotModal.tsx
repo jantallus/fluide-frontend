@@ -606,7 +606,17 @@ export default function EditSlotModal({
           .catch(e => console.error('[standby] PATCH erreur réseau', e));
       }
 
-      await loadAppointments();
+      // Met à jour l'état avec les données confirmées par le serveur (RETURNING *).
+      // Évite qu'un rechargement complet ne restaure d'anciennes notes (trait ambre).
+      const serverSlots = await Promise.all(responses.map(r => r.ok ? r.json().catch(() => null) : null));
+      const confirmed = serverSlots.filter(Boolean) as Slot[];
+      if (confirmed.length > 0) {
+        setAppointments(prev => prev.map(slot => {
+          const srv = confirmed.find(s => s.id === slot.id);
+          return srv ? { ...slot, ...srv } : slot;
+        }));
+      }
+      if (failed.length > 0) await loadAppointments();
     } catch { toast.error('❌ Erreur réseau lors de la sauvegarde.'); }
   };
 
