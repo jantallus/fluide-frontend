@@ -17,6 +17,27 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { CurrentUser, Slot, FlightType } from '@/lib/types';
 import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
 
+// Composant avec listener natif pour stopper la propagation AVANT FullCalendar
+function NativeStopDiv({ style, onNativeClick, children }: {
+  style: React.CSSProperties;
+  onNativeClick: () => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const cbRef = useRef(onNativeClick);
+  cbRef.current = onNativeClick;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handler = (e: Event) => { e.stopPropagation(); cbRef.current(); };
+    const touchHandler = (e: TouchEvent) => { e.stopPropagation(); e.preventDefault(); cbRef.current(); };
+    el.addEventListener('click', handler);
+    el.addEventListener('touchend', touchHandler);
+    return () => { el.removeEventListener('click', handler); el.removeEventListener('touchend', touchHandler); };
+  }, []);
+  return <div ref={ref} style={style}>{children}</div>;
+}
+
 export default function PlanningAdmin() {
   const { toast } = useToast();
   const dateRangeRef = useRef({ start: '', end: '' });
@@ -34,10 +55,7 @@ export default function PlanningAdmin() {
   const [showGenModal, setShowGenModal] = useState(false);
   const [replaceMonitor, setReplaceMonitor] = useState<{ id: string; title: string } | null>(null);
   const [expandedPax2, setExpandedPax2] = useState<Set<number>>(new Set());
-  const pax2JustToggled = useRef(false);
   const togglePax2 = useCallback((id: number) => {
-    pax2JustToggled.current = true;
-    setTimeout(() => { pax2JustToggled.current = false; }, 300);
     setExpandedPax2(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   }, []);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -60,7 +78,6 @@ export default function PlanningAdmin() {
 
 
   const handleEventClick = useCallback((info: EventClickArg) => {
-    if (pax2JustToggled.current) return;
     if (currentUser?.role === 'monitor') return;
     if (currentUser?.role === 'permanent' && info.event.getResources()[0]?.id !== currentUser?.id?.toString()) {
       toast.warning("Vous ne pouvez agir que sur votre propre colonne.");
@@ -301,27 +318,27 @@ export default function PlanningAdmin() {
       return (
         <div style={{ display: 'flex', height: '100%', overflow: 'hidden', borderLeft: groupColor ? `4px solid ${groupColor}` : undefined }}>
           {/* Pax 1 */}
-          <div
-            style={{ flex: isExp ? 1 : 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: isExp ? 'pointer' : 'default' }}
-            onClick={isExp ? (e) => { e.stopPropagation(); togglePax2(ep.id); } : undefined}
-          >
-            {isExp ? (
+          {isExp ? (
+            <NativeStopDiv
+              style={{ flex: 1, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: 'pointer' }}
+              onNativeClick={() => togglePax2(ep.id)}
+            >
               <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>← {finalDisplayName}</span>
-            ) : (
-              <>
-                {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
-                <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalDisplayName}{badges && ` ${badges}`}</span>
-                {infoLine && subSpan(infoLine)}
-                {payLine && subSpan(payLine)}
-              </>
-            )}
-          </div>
+            </NativeStopDiv>
+          ) : (
+            <div style={{ flex: 2, padding: '1px 3px', paddingLeft: groupColor ? '2px' : '3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden' }}>
+              {arg.timeText && <span style={{ fontSize: '9px', opacity: 0.75, lineHeight: '1.1', flexShrink: 0 }}>{arg.timeText}</span>}
+              <span style={{ fontSize: '11px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalDisplayName}{badges && ` ${badges}`}</span>
+              {infoLine && subSpan(infoLine)}
+              {payLine && subSpan(payLine)}
+            </div>
+          )}
           {/* Séparateur */}
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.35)', flexShrink: 0, margin: '2px 0' }} />
           {/* Pax 2 */}
-          <div
+          <NativeStopDiv
             style={{ flex: isExp ? 2 : 1, padding: '1px 3px', display: 'flex', flexDirection: 'column', gap: '1px', overflow: 'hidden', cursor: 'pointer', opacity: isExp ? 1 : 0.85 }}
-            onClick={(e) => { e.stopPropagation(); togglePax2(ep.id); }}
+            onNativeClick={() => togglePax2(ep.id)}
           >
             {isExp ? (
               <>
@@ -336,7 +353,7 @@ export default function PlanningAdmin() {
                 <span style={{ fontSize: '9px', fontWeight: 'bold', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sb.title}{!sb.payment_type ? ' ⚠️' : ''}</span>
               </>
             )}
-          </div>
+          </NativeStopDiv>
         </div>
       );
     }
