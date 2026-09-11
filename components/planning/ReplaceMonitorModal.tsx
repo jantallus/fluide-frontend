@@ -84,7 +84,11 @@ export default function ReplaceMonitorModal({ monitor, monitors, viewRange, appo
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`✅ ${data.count} créneau(x) transféré(s) à ${replacement?.title}`);
+        if (data.skipped > 0) {
+          toast.warning(`✅ ${data.count} créneau(x) transféré(s) à ${replacement?.title} — ⚠️ ${data.skipped} réservation(s) non transférée(s) : ${replacement?.title} avait déjà des réservations à ces horaires`);
+        } else {
+          toast.success(`✅ ${data.count} créneau(x) transféré(s) à ${replacement?.title}`);
+        }
         await onSuccess();
         onClose();
       } else {
@@ -164,7 +168,7 @@ export default function ReplaceMonitorModal({ monitor, monitors, viewRange, appo
             {bBooked > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
                 <p className="font-black text-[11px] text-amber-600">⚠️ {replacement.title} a déjà {bBooked} réservation{bBooked > 1 ? 's' : ''}</p>
-                <p className="text-[10px] text-amber-500 mt-0.5">Vérifiez les conflits dans le calendrier après le transfert.</p>
+                <p className="text-[10px] text-amber-500 mt-0.5">Ces réservations resteront sur {replacement.title} après le transfert (pas de double-réservation possible).</p>
               </div>
             )}
             {bBlocked > 0 && (
