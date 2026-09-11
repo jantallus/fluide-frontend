@@ -116,41 +116,31 @@ export function MoniteurModal({ userToEdit, currentUser, onClose, onSaved }: Pro
             <input type="password" placeholder={userToEdit ? "••••••••" : ""} className="w-full border-2 border-slate-100 rounded-2xl p-3 md:p-4 font-bold bg-slate-50 focus:border-orange-300 outline-none" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
           </div>
 
-          <div className="bg-sky-50 p-4 rounded-3xl border border-sky-100 space-y-4">
+          <div className="bg-rose-50 p-4 rounded-3xl border border-rose-100 space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 gap-2">
-              <p className="text-[10px] font-black uppercase text-sky-600 tracking-widest">📅 Périodes d'activité</p>
-              <button onClick={() => setAvailabilities(prev => [...prev, { start_date: '', end_date: '', daily_start_time: '09:00', daily_end_time: '18:00' }])} className="w-full sm:w-auto bg-sky-500 text-white text-[9px] font-black px-3 py-2 sm:py-1 rounded-lg shadow-sm hover:bg-sky-600 uppercase">
+              <p className="text-[10px] font-black uppercase text-rose-500 tracking-widest">🚫 Périodes d'indisponibilité</p>
+              <button onClick={() => setAvailabilities(prev => [...prev, { start_date: '', end_date: '', daily_start_time: null, daily_end_time: null }])} className="w-full sm:w-auto bg-rose-500 text-white text-[9px] font-black px-3 py-2 sm:py-1 rounded-lg shadow-sm hover:bg-rose-600 uppercase">
                 + Ajouter
               </button>
             </div>
 
             {availabilities.map((a, idx) => (
-              <div key={idx} className="bg-white p-3 rounded-2xl border border-sky-200 relative group/item">
-                <div className="flex flex-col sm:flex-row gap-3 mb-2">
+              <div key={idx} className="bg-white p-3 rounded-2xl border border-rose-200 relative group/item">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="w-full">
-                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Début</label>
+                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Du</label>
                     <input type="date" className="w-full border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.start_date} onChange={e => updateAvailability(idx, 'start_date', e.target.value)} />
                   </div>
                   <div className="w-full">
-                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Fin</label>
+                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Au</label>
                     <input type="date" className="w-full border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.end_date} onChange={e => updateAvailability(idx, 'end_date', e.target.value)} />
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="w-full">
-                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Heure Début</label>
-                    <input type="time" className="w-full border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.daily_start_time} onChange={e => updateAvailability(idx, 'daily_start_time', e.target.value)} />
-                  </div>
-                  <div className="w-full">
-                    <label className="text-[8px] font-black uppercase text-slate-400 ml-1">Heure Fin</label>
-                    <input type="time" className="w-full border border-slate-100 rounded-lg p-2 text-[10px] font-bold" value={a.daily_end_time} onChange={e => updateAvailability(idx, 'daily_end_time', e.target.value)} />
                   </div>
                 </div>
                 <button onClick={() => setAvailabilities(prev => prev.filter((_, i) => i !== idx))} className="absolute -top-2 -right-2 bg-rose-500 text-white w-6 h-6 sm:w-5 sm:h-5 rounded-full text-[10px] flex items-center justify-center shadow-md sm:opacity-0 group-hover/item:opacity-100 transition-opacity">✕</button>
               </div>
             ))}
 
-            {availabilities.length === 0 && <p className="text-[10px] text-sky-400 italic text-center py-2">Aucune restriction (dispo 24h/24)</p>}
+            {availabilities.length === 0 && <p className="text-[10px] text-rose-300 italic text-center py-2">Aucune indisponibilité définie</p>}
           </div>
 
           {(currentUser?.role === 'admin' || currentUser?.role === 'aravis') && (

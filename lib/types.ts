@@ -329,8 +329,8 @@ export interface GiftCardShopTemplate {
 export interface Availability {
   start_date: string;
   end_date: string;
-  daily_start_time: string;
-  daily_end_time: string;
+  daily_start_time: string | null;
+  daily_end_time: string | null;
 }
 
 // ── Statistiques détaillées ───────────────────────────────────────────────────
