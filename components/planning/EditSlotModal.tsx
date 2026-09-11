@@ -438,9 +438,14 @@ export default function EditSlotModal({
   }, [availableTimes]);
 
   const isShortFlightType = useMemo(() => {
-    if (!isAravisContext || !slotDuration || !formData.flight_type_id) return false;
+    if (!formData.flight_type_id) return false;
     const ft = flightTypes.find(f => f.id?.toString() === formData.flight_type_id.toString());
-    const dur = ft?.duration_minutes || 0;
+    if (!ft) return false;
+    // Vol avec plusieurs passagers par créneau (ex: Aiglon) → toujours Pax 1 / Pax 2
+    if ((ft.passengers_per_slot || 1) > 1) return true;
+    // Legacy : contexte Aravis + durée courte (2 vols tiennent dans 1 créneau)
+    if (!isAravisContext || !slotDuration) return false;
+    const dur = ft.duration_minutes || 0;
     return dur > 0 && dur * 2 <= slotDuration;
   }, [isAravisContext, slotDuration, formData.flight_type_id, flightTypes]);
 
