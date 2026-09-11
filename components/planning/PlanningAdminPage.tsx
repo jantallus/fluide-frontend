@@ -9,6 +9,7 @@ import { usePlanningData } from '@/hooks/usePlanningData';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import EditSlotModal from '@/components/planning/EditSlotModal';
 import GenSlotsModal from '@/components/planning/GenSlotsModal';
+import ReplaceMonitorModal from '@/components/planning/ReplaceMonitorModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Wrench, CalendarDays } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -31,6 +32,7 @@ export default function PlanningAdmin() {
 
   const currentUser = useCurrentUser();
   const [showGenModal, setShowGenModal] = useState(false);
+  const [replaceMonitor, setReplaceMonitor] = useState<{ id: string; title: string } | null>(null);
   const [expandedPax2, setExpandedPax2] = useState<Set<number>>(new Set());
   const togglePax2 = useCallback((id: number) => {
     setExpandedPax2(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -333,7 +335,13 @@ export default function PlanningAdmin() {
 
   const resourceLabelContent = useCallback((arg: { resource: { id: string; title: string } }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px', minWidth: 0 }}>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{arg.resource.title}</span>
+      <span
+        style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', borderBottom: '1px dashed currentColor', opacity: 0.85 }}
+        title={`Remplacer ${arg.resource.title}`}
+        onClick={(e) => { e.stopPropagation(); setReplaceMonitor({ id: arg.resource.id, title: arg.resource.title }); }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '0.85')}
+      >{arg.resource.title}</span>
       <button
         onClick={(e) => { e.stopPropagation(); setHiddenMonitorIds(prev => new Set([...prev, arg.resource.id])); }}
         title="Masquer ce pilote"
@@ -342,7 +350,7 @@ export default function PlanningAdmin() {
         onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
       >✕</button>
     </div>
-  ), []);
+  ), [setReplaceMonitor]);
 
   const memoizedCalendar = useMemo(() => (
     <FullCalendar
@@ -495,6 +503,18 @@ export default function PlanningAdmin() {
           monitors={monitors}
           loadAppointments={loadAppointments}
           onClose={() => setShowGenModal(false)}
+        />
+      )}
+
+      {replaceMonitor && (
+        <ReplaceMonitorModal
+          monitor={replaceMonitor}
+          monitors={monitors as { id: string; title: string; is_active?: boolean }[]}
+          viewRange={viewRange}
+          appointments={appointments}
+          availablePlans={availablePlans}
+          onClose={() => setReplaceMonitor(null)}
+          onSuccess={loadAppointments}
         />
       )}
     </div>
