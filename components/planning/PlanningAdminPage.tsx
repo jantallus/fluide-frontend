@@ -38,8 +38,9 @@ function NativeStopDiv({ style, onNativeClick, children }: {
   return <div ref={ref} style={style}>{children}</div>;
 }
 
-const isRealSlot = (a: { title?: string }) => {
+const isRealSlot = (a: { title?: string | null; status?: string }) => {
   const t = a.title || '';
+  if (!t || a.status !== 'booked') return false;
   return !(
     t.toUpperCase().includes('NON DISPO') ||
     t.includes('❌') ||
