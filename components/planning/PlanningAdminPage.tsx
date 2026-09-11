@@ -129,7 +129,10 @@ export default function PlanningAdmin() {
     const map = new Map<string, string>();
     let idx = 0;
     calendarEvents.forEach(ev => {
-      const t = ((ev.extendedProps as { title?: string }).title) || '';
+      const ep2 = ev.extendedProps as { title?: string; status?: string };
+      if (ep2.status !== 'booked') return;
+      const t = ep2.title || '';
+      if (!t || t.toUpperCase().includes('NON DISPO') || t.includes('❌') || t.toUpperCase().includes('PAUSE') || t.includes('☕')) return;
       const m = t.match(/\(([^)]+)\)$/);
       if (m) {
         if (!map.has(m[1])) map.set(m[1], palette[idx++ % palette.length]);
