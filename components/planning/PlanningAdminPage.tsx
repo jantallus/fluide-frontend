@@ -142,7 +142,9 @@ export default function PlanningAdmin() {
     const isBooked = ep.status === 'booked' && !ep.title?.startsWith('↪️ Suite');
 
     if (!isBooked) {
-      const hasNote = !!(ep.notes && ep.notes.trim());
+      // Utiliser arg.event.title (mis à jour de façon fiable par FullCalendar) plutôt que
+      // ep.notes (extendedProps peuvent être obsolètes entre deux rendus FullCalendar).
+      const hasNote = arg.event.title.includes('📝');
       return (
         <div style={{ position: 'relative', padding: '1px 3px', paddingLeft: hasNote ? '7px' : '3px', overflow: 'hidden', height: '100%', fontSize: '11px', lineHeight: '1.3', color: hasNote ? '#f59e0b' : undefined }}>
           {hasNote && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', backgroundColor: '#fcd34d', borderRadius: '2px 0 0 2px' }} />}
